@@ -1,0 +1,33 @@
+# Archivos de entorno con credenciales reales
+config/env
+
+# Respaldo automático de configuraciones
+*.bak.*
+*.backup
+
+# Llaves criptográficas y secretos
+*.id_ed25519*
+*.id_rsa*
+*.pem
+*.key
+*.crt
+*.pfx
+vault_*.yml
+admin.password
+
+# Configuración de clúster y certificados
+rke2.yaml
+kubeconfig
+*.kubeconfig
+
+# Archivos de logs de ejecución
+/var/log/infra-setup/
+*.log
+
+# Imágenes pesadas de virtualización y Packer
+*.qcow2
+*.iso
+*.raw
+*.tar.gz
+output-*/
+.vagrant/
