@@ -141,9 +141,10 @@ etcd-arg:
 EOF
     fi
 
-    log_info "Instalando e iniciando servicio rke2-server..."
+    log_info "Instalando e iniciando servicio rke2-server (versión ${RKE2_VERSION:-latest})..."
     if [[ "${DRY_RUN}" = false ]]; then
-        curl -sfL https://get.rke2.io | sh -
+        [[ -f /etc/environment ]] && export $(grep -E '^(http_proxy|https_proxy|no_proxy)=' /etc/environment | xargs -r) 2>/dev/null || true
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="${RKE2_VERSION}" sh -
         systemctl enable --now rke2-server.service
     fi
     log_success "Primer nodo Control Plane desplegado exitosamente."
@@ -168,9 +169,10 @@ etcd-arg:
 EOF
     fi
 
-    log_info "Instalando e iniciando servicio rke2-server secundario..."
+    log_info "Instalando e iniciando servicio rke2-server secundario (versión ${RKE2_VERSION:-latest})..."
     if [[ "${DRY_RUN}" = false ]]; then
-        curl -sfL https://get.rke2.io | sh -
+        [[ -f /etc/environment ]] && export $(grep -E '^(http_proxy|https_proxy|no_proxy)=' /etc/environment | xargs -r) 2>/dev/null || true
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="${RKE2_VERSION}" sh -
         systemctl enable --now rke2-server.service
     fi
     log_success "Nodo Control Plane secundario unido al clúster."
@@ -188,9 +190,10 @@ kubelet-arg:
 EOF
     fi
 
-    log_info "Instalando e iniciando servicio rke2-agent..."
+    log_info "Instalando e iniciando servicio rke2-agent (versión ${RKE2_VERSION:-latest})..."
     if [[ "${DRY_RUN}" = false ]]; then
-        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+        [[ -f /etc/environment ]] && export $(grep -E '^(http_proxy|https_proxy|no_proxy)=' /etc/environment | xargs -r) 2>/dev/null || true
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION="${RKE2_VERSION}" sh -
         systemctl enable --now rke2-agent.service
     fi
     log_success "Nodo Worker configurado y unido al clúster."

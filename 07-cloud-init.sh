@@ -26,7 +26,8 @@ confirm_action "¿Desea preparar los generadores de ConfigDrive y plantillas Pac
 # 7.1 PLANTILLA PACKER HCL2 (/opt/infra/packer/packer.pkr.hcl)
 # ------------------------------------------------------------------------------
 log_info "7.1 Generando plantilla HCL2 de HashiCorp Packer..."
-run_cmd mkdir -p /opt/infra/packer /opt/infra/scripts /opt/infra/configdrive
+run_cmd mkdir -p /opt/infra/packer /opt/infra/scripts /opt/infra/configdrive /opt/infra/config
+run_cmd cp -a "${NODES_CSV}" /opt/infra/config/nodes.csv 2>/dev/null || true
 
 PACKER_FILE="/opt/infra/packer/packer.pkr.hcl"
 backup_file "${PACKER_FILE}"
@@ -49,7 +50,8 @@ variable "nexus_ip" {
 }
 
 source "qemu" "debian_baremetal" {
-  iso_url          = "https://cdimage.debian.org/cdimage/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso" --cambiar iso por local
+  # Nota: Reemplazar por imagen ISO local en entorno aislado si no hay salida a Internet
+  iso_url          = "https://cdimage.debian.org/cdimage/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso"
   iso_checksum     = "none"
   output_directory = "/opt/infra/packer/output-debian"
   vm_name          = "${IRONIC_IMAGE_NAME}"
@@ -114,7 +116,14 @@ if [[ -z "${TARGET_NODE}" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NODES_CSV="${SCRIPT_DIR}/../config/nodes.csv"
+NODES_CSV="${SCRIPT_DIR}/config/nodes.csv"
+if [[ ! -f "${NODES_CSV}" ]]; then
+    if [[ -f "/opt/infra-scripts/config/nodes.csv" ]]; then
+        NODES_CSV="/opt/infra-scripts/config/nodes.csv"
+    elif [[ -f "${SCRIPT_DIR}/../config/nodes.csv" ]]; then
+        NODES_CSV="${SCRIPT_DIR}/../config/nodes.csv"
+    fi
+fi
 OUTPUT_DIR="/opt/infra/configdrive/${TARGET_NODE}"
 mkdir -p "${OUTPUT_DIR}/openstack/latest"
 

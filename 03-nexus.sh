@@ -183,8 +183,14 @@ check_service "postgresql"
 log_info "Esperando disponibilidad del socket HTTP de Nexus (:8081)..."
 retry 15 10 check_port "${NEXUS_PORT}" "tcp"
 
+check_nexus_status() {
+    local code
+    code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NEXUS_PORT}/service/rest/v1/status" 2>/dev/null || echo "000")
+    [[ "${code}" == "200" ]]
+}
+
 log_info "Validando endpoint REST de estado de Nexus..."
-retry 12 10 curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:${NEXUS_PORT}/service/rest/v1/status" | grep -q "200"
+retry 15 10 check_nexus_status
 log_success "Endpoint REST /service/rest/v1/status respondió 200 OK."
 
 echo -e "\n${COLOR_GREEN}==================================================================${COLOR_NC}"

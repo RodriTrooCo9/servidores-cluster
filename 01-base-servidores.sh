@@ -99,11 +99,16 @@ NETWORK_CONF="/etc/systemd/network/10-lan-static.network"
 backup_file "${NETWORK_CONF}"
 
 if [[ "${DRY_RUN}" = false ]]; then
+    MATCH_DIRECTIVE="Name=${LAN_IFACE}"
+    if [[ -n "${NODE_MAC}" ]] && [[ "${NODE_MAC}" != *"<"* ]]; then
+        MATCH_DIRECTIVE="MACAddress=${NODE_MAC}"
+    fi
+
     if [[ "${NODE_ID}" == "314" ]]; then
         # Salvaguarda del README: En el Bastión NO se define Gateway en LAN
         cat > "${NETWORK_CONF}" << EOF
 [Match]
-Name=${LAN_IFACE}
+${MATCH_DIRECTIVE}
 
 [Network]
 Address=${NODE_IP}/24
@@ -112,7 +117,7 @@ EOF
     else
         cat > "${NETWORK_CONF}" << EOF
 [Match]
-Name=${LAN_IFACE}
+${MATCH_DIRECTIVE}
 
 [Network]
 Address=${NODE_IP}/24

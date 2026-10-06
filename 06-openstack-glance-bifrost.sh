@@ -44,6 +44,7 @@ if [[ "${DRY_RUN}" = false ]]; then
             -v /httpboot:/httpboot:shared \
             -v /tftpboot:/tftpboot:shared \
             -v /var/lib/ironic:/var/lib/ironic:rw \
+            -v /opt/ironic:/opt/ironic:shared \
             -e HTTP_PORT="${HTTPBOOT_PORT}" \
             -e IRONIC_IP="${PXE_IP}" \
             -e OS_AUTH_TYPE=none \
@@ -121,7 +122,7 @@ export OS_ENDPOINT="http://${PXE_IP}:${IRONIC_API_PORT}"
 if [[ "${DRY_RUN}" = false ]]; then
     # Espera a que el endpoint de Ironic responda
     log_info "Esperando disponibilidad de la API de Ironic (:6385)..."
-    retry 15 5 curl -s "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" >/dev/null
+    retry 15 5 curl -sf "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" >/dev/null
 
     if command -v openstack >/dev/null 2>&1; then
         openstack baremetal create "${BAREMETAL_YML}" 2>/dev/null || {

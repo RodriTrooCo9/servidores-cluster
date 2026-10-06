@@ -25,8 +25,8 @@ confirm_action "¿Desea configurar los servicios de arranque por red PXE e iPXE 
 # ------------------------------------------------------------------------------
 # 5.1 INSTALACIÓN DE PAQUETES
 # ------------------------------------------------------------------------------
-log_info "5.1 Instalando dnsmasq, ipxe y Nginx..."
-apt_install dnsmasq ipxe nginx
+log_info "5.1 Instalando dnsmasq, ipxe, Nginx y curl..."
+apt_install dnsmasq ipxe nginx curl
 
 # ------------------------------------------------------------------------------
 # 5.2 CONFIGURACIÓN DE dnsmasq.conf CON RESERVAS POR MAC LEÍDAS DE nodes.csv
@@ -59,19 +59,25 @@ EOF
         echo "dhcp-host=${mac},${ip},${hostname},infinite" >> "${DNSMASQ_CONF}"
     done < "${NODES_CSV}"
 
-    cat >> "${DNSMASQ_CONF}" << 'EOF'
+    cat >> "${DNSMASQ_CONF}" << EOF
 
 # Servidor TFTP Integrado
 enable-tftp
 tftp-root=/tftpboot
 
-# Bootloaders según arquitectura del firmware
+# Detección de cliente iPXE para evitar bucles de arranque
+dhcp-userclass=set:ipxe,iPXE
+
+# Si el cliente ya ejecuta iPXE, entregar script de arranque vía HTTP
+dhcp-boot=tag:ipxe,http://${PXE_IP}:${HTTPBOOT_PORT}/boot.ipxe
+
+# Si no es iPXE, entregar binario de arranque según arquitectura de firmware
 dhcp-match=set:bios,option:client-arch,0
-dhcp-boot=tag:bios,undionly.kpxe
+dhcp-boot=tag:!ipxe,tag:bios,undionly.kpxe
 
 dhcp-match=set:efi-x86_64,option:client-arch,7
 dhcp-match=set:efi-x86_64,option:client-arch,9
-dhcp-boot=tag:efi-x86_64,ipxe.efi
+dhcp-boot=tag:!ipxe,tag:efi-x86_64,ipxe.efi
 EOF
 fi
 log_success "Archivo /etc/dnsmasq.conf generado con reservas de la flota completa."
@@ -92,7 +98,7 @@ if [[ "${DRY_RUN}" = false ]]; then
         cp /usr/lib/ipxe/ipxe-x86_64.efi /tftpboot/ipxe.efi
     fi
 
-    # Script maestro de booteo iPXE
+    # Script maestro de booteo iPXE en TFTP y HTTP (/httpboot)
     cat > /tftpboot/boot.ipxe << EOF
 #!ipxe
 echo ==========================================================
@@ -102,8 +108,9 @@ kernel http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.kernel ipa-api-url=http://${PXE
 initrd http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.initramfs
 boot
 EOF
+    cp /tftpboot/boot.ipxe /httpboot/boot.ipxe
 fi
-log_success "Binarios de arranque y script /tftpboot/boot.ipxe listos."
+log_success "Binarios de arranque y script boot.ipxe listos en /tftpboot y /httpboot."
 
 # ------------------------------------------------------------------------------
 # 5.4 SERVIDOR HTTP NGINX EN PUERTO 8089 PARA STREAMING DE IMÁGENES

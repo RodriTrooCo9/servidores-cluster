@@ -71,7 +71,8 @@ printf "+------+-----------------+---------------+--------+--------+----------+-
 echo -e "\n${COLOR_BOLD}ESTADO DE SERVICIOS CENTRALES:${COLOR_NC}"
 
 # Sonatype Nexus
-NEXUS_CODE=$(curl -s -o /dev/null -w "%{http_code}\n" "http://${NEXUS_IP}:${NEXUS_PORT}/service/rest/v1/status" 2>/dev/null || echo "000")
+NEXUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${NEXUS_IP}:${NEXUS_PORT}/service/rest/v1/status" 2>/dev/null)
+[[ -z "${NEXUS_CODE}" ]] && NEXUS_CODE="000"
 if [[ "${NEXUS_CODE}" == "200" ]]; then
     echo -e "  • Sonatype Nexus 3 OSS (:8081)       : [${COLOR_GREEN}SALUDABLE (200 OK)${COLOR_NC}]"
 else
@@ -79,7 +80,8 @@ else
 fi
 
 # PXE HTTP
-HTTPBOOT_CODE=$(curl -s -o /dev/null -w "%{http_code}\n" "http://${PXE_IP}:${HTTPBOOT_PORT}/boot.ipxe" 2>/dev/null || echo "000")
+HTTPBOOT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${PXE_IP}:${HTTPBOOT_PORT}/boot.ipxe" 2>/dev/null)
+[[ -z "${HTTPBOOT_CODE}" ]] && HTTPBOOT_CODE="000"
 if [[ "${HTTPBOOT_CODE}" == "200" ]]; then
     echo -e "  • Servidor HTTP Bootloader (:8089)   : [${COLOR_GREEN}ACTIVO (200 OK)${COLOR_NC}]"
 else
@@ -102,9 +104,11 @@ KUBECONFIG_FILE="${KUBECONFIG:-/root/.kube/config}"
 
 if command -v kubectl >/dev/null 2>&1 && [[ -f "${KUBECONFIG_FILE}" ]]; then
     echo -e "\n${COLOR_BOLD}ESTADO DEL CLÚSTER KUBERNETES:${COLOR_NC}"
-    kubectl --kubeconfig="${KUBECONFIG_FILE}" get nodes -o wide || true
+    kubectl --kubeconfig="${KUBECONFIG_FILE}" --request-timeout=3s get nodes -o wide 2>/dev/null || {
+        echo -e "  • [${COLOR_YELLOW}AVISO${COLOR_NC}] No se pudo conectar al API Server de Kubernetes en ${KUBECONFIG_FILE}."
+    }
     echo ""
-    kubectl --kubeconfig="${KUBECONFIG_FILE}" get pods -A -l k8s-app=cilium || true
+    kubectl --kubeconfig="${KUBECONFIG_FILE}" --request-timeout=3s get pods -A -l k8s-app=cilium 2>/dev/null || true
 fi
 
 echo -e "\n${COLOR_BLUE}==================================================================${COLOR_NC}"

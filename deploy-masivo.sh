@@ -188,23 +188,41 @@ fi
 export OS_AUTH_TYPE=none
 export OS_ENDPOINT="http://${PXE_IP}:${IRONIC_API_PORT}"
 
+baremetal_cli() {
+    if command -v openstack >/dev/null 2>&1; then
+        openstack baremetal "$@"
+    else
+        podman exec ironic-conductor baremetal "$@"
+    fi
+}
+
+check_port_open() {
+    local host="$1"
+    local port="$2"
+    if command -v nc >/dev/null 2>&1; then
+        nc -z -w 2 "${host}" "${port}" >/dev/null 2>&1
+    else
+        timeout 2 bash -c "</dev/tcp/${host}/${port}" >/dev/null 2>&1
+    fi
+}
+
 log_info "3. Preparando estados en Ironic..."
 for node in "${TARGET_NAMES[@]}"; do
     if [[ "${DRY_RUN}" = false ]]; then
-        CURRENT_STATE=$(openstack baremetal node show "${node}" -f value -c provision_state 2>/dev/null || echo "not_found")
+        CURRENT_STATE=$(baremetal_cli node show "${node}" -f value -c provision_state 2>/dev/null || echo "not_found")
         
         if [[ "${REBUILD}" = true ]] && [[ "${CURRENT_STATE}" =~ ^(active|deploy failed|error)$ ]]; then
             log_warn "Undeploy de ${node} para reinstalación limpia..."
-            openstack baremetal node undeploy "${node}" || true
+            baremetal_cli node undeploy "${node}" || true
             sleep 3
-            CURRENT_STATE=$(openstack baremetal node show "${node}" -f value -c provision_state 2>/dev/null || echo "unknown")
+            CURRENT_STATE=$(baremetal_cli node show "${node}" -f value -c provision_state 2>/dev/null || echo "unknown")
         fi
 
         if [[ "${CURRENT_STATE}" == "enroll" ]]; then
-            openstack baremetal node manage "${node}" || true
+            baremetal_cli node manage "${node}" || true
         fi
         if [[ "${CURRENT_STATE}" == "manageable" ]]; then
-            openstack baremetal node provide "${node}" || true
+            baremetal_cli node provide "${node}" || true
         fi
     fi
 done
@@ -213,7 +231,7 @@ log_info "4. Disparando comando de despliegue en paralelo..."
 for node in "${TARGET_NAMES[@]}"; do
     log_info "Lanzando orden de deploy sobre ${node}..."
     if [[ "${DRY_RUN}" = false ]]; then
-        openstack baremetal node deploy "${node}" &
+        baremetal_cli node deploy "${node}" &
     fi
 done
 
@@ -243,11 +261,11 @@ while (( ELAPSED < TIMEOUT )); do
         node="${TARGET_NAMES[$i]}"
         ip="${TARGET_IPS[$i]}"
         
-        STATE=$(openstack baremetal node show "${node}" -f value -c provision_state 2>/dev/null || echo "error")
+        STATE=$(baremetal_cli node show "${node}" -f value -c provision_state 2>/dev/null || echo "error")
         SSH_STATUS="ESPERANDO_BOOT"
         
         if [[ "${STATE}" == "active" ]]; then
-            if nc -z -w 2 "${ip}" 22 >/dev/null 2>&1; then
+            if check_port_open "${ip}" 22; then
                 SSH_STATUS="${COLOR_GREEN}SSH_ONLINE${COLOR_NC}"
             else
                 SSH_STATUS="${COLOR_YELLOW}BOOT_LOCAL${COLOR_NC}"
