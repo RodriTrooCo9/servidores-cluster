@@ -71,7 +71,7 @@ printf "+------+-----------------+---------------+--------+--------+----------+-
 echo -e "\n${COLOR_BOLD}ESTADO DE SERVICIOS CENTRALES:${COLOR_NC}"
 
 # Sonatype Nexus
-NEXUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${NEXUS_IP}:${NEXUS_PORT}/service/rest/v1/status" 2>/dev/null)
+NEXUS_CODE=$(curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" "http://${NEXUS_IP}:${NEXUS_PORT}/service/rest/v1/status" 2>/dev/null || true)
 [[ -z "${NEXUS_CODE}" ]] && NEXUS_CODE="000"
 if [[ "${NEXUS_CODE}" == "200" ]]; then
     echo -e "  • Sonatype Nexus 3 OSS (:8081)       : [${COLOR_GREEN}SALUDABLE (200 OK)${COLOR_NC}]"
@@ -80,7 +80,7 @@ else
 fi
 
 # PXE HTTP
-HTTPBOOT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${PXE_IP}:${HTTPBOOT_PORT}/boot.ipxe" 2>/dev/null)
+HTTPBOOT_CODE=$(curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" "http://${PXE_IP}:${HTTPBOOT_PORT}/boot.ipxe" 2>/dev/null || true)
 [[ -z "${HTTPBOOT_CODE}" ]] && HTTPBOOT_CODE="000"
 if [[ "${HTTPBOOT_CODE}" == "200" ]]; then
     echo -e "  • Servidor HTTP Bootloader (:8089)   : [${COLOR_GREEN}ACTIVO (200 OK)${COLOR_NC}]"
@@ -89,7 +89,7 @@ else
 fi
 
 # Ironic API
-IRONIC_STATUS=$(curl -s "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" 2>/dev/null || echo "")
+IRONIC_STATUS=$(curl -s --connect-timeout 2 "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" 2>/dev/null || echo "")
 if [[ -n "${IRONIC_STATUS}" ]]; then
     echo -e "  • OpenStack Ironic Standalone (:6385): [${COLOR_GREEN}ACTIVO (API ONLINE)${COLOR_NC}]"
 else
