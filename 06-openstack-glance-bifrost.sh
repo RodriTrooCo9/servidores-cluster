@@ -25,31 +25,34 @@ confirm_action "¿Desea desplegar OpenStack Ironic Standalone y enrolar los 8 no
 # ------------------------------------------------------------------------------
 # 6.1 INSTALACIÓN DE PODMAN Y CONTENEDOR IRONIC STANDALONE
 # ------------------------------------------------------------------------------
-log_info "6.1 Instalando Podman..."
-apt_install podman python3-openstackclient 2>/dev/null || apt_install podman
+log_info "6.1 Instalando Podman y clientes de Ironic..."
+apt_install podman python3-openstackclient python3-ironicclient 2>/dev/null || apt_install podman python3-ironicclient 2>/dev/null || apt_install podman
 
 log_info "Verificando contenedor de Ironic Standalone..."
 run_cmd mkdir -p /httpboot/ipa /httpboot/images /tftpboot /var/lib/ironic /opt/ironic
 
 if [[ "${DRY_RUN}" = false ]]; then
     if podman ps -a --format "{{.Names}}" | grep -q "^ironic-conductor$"; then
-        log_info "Contenedor 'ironic-conductor' ya existe. Asegurando ejecución..."
-        podman start ironic-conductor || true
-    else
-        log_info "Creando y arrancando contenedor Podman 'ironic-conductor'..."
-        podman run -d --name ironic-conductor \
-            --net=host \
-            --privileged \
-            --restart=always \
-            -v /httpboot:/httpboot:shared \
-            -v /tftpboot:/tftpboot:shared \
-            -v /var/lib/ironic:/var/lib/ironic:rw \
-            -v /opt/ironic:/opt/ironic:shared \
-            -e HTTP_PORT="${HTTPBOOT_PORT}" \
-            -e IRONIC_IP="${PXE_IP}" \
-            -e OS_AUTH_TYPE=none \
-            quay.io/metal3-io/ironic:latest
+        log_info "Recreando contenedor 'ironic-conductor' con punto de entrada de servicio activo..."
+        podman rm -f ironic-conductor >/dev/null 2>&1 || true
     fi
+
+    log_info "Creando y arrancando contenedor Podman 'ironic-conductor'..."
+    podman run -d --name ironic-conductor \
+        --net=host \
+        --privileged \
+        --restart=always \
+        -v /httpboot:/httpboot:shared \
+        -v /httpboot:/shared/html:rw \
+        -v /tftpboot:/tftpboot:shared \
+        -v /tftpboot:/shared/tftpboot:rw \
+        -v /var/lib/ironic:/data:rw \
+        -v /opt/ironic:/opt/ironic:shared \
+        -e HTTP_PORT="${HTTPBOOT_PORT}" \
+        -e IRONIC_IP="${PXE_IP}" \
+        -e PROVISIONING_INTERFACE="${PXE_IFACE}" \
+        -e OS_AUTH_TYPE=none \
+        quay.io/metal3-io/ironic:latest /usr/bin/runironic
 fi
 log_success "Contenedor Ironic Standalone iniciado en puerto ${IRONIC_API_PORT}."
 
@@ -74,10 +77,10 @@ fi
 log_success "Ramdisk IPA listo en /httpboot/ipa/."
 
 # ------------------------------------------------------------------------------
-# 6.3 GENERACIÓN DEL INVENTARIO OFICIAL /opt/ironic/baremetal.yml
+# 6.3 GENERACIÓN DEL INVENTARIO OFICIAL /opt/ironic/baremetal.yaml
 # ------------------------------------------------------------------------------
-log_info "6.3 Generando archivo maestro /opt/ironic/baremetal.yml desde config/nodes.csv..."
-BAREMETAL_YML="/opt/ironic/baremetal.yml"
+log_info "6.3 Generando archivo maestro /opt/ironic/baremetal.yaml desde config/nodes.csv..."
+BAREMETAL_YML="/opt/ironic/baremetal.yaml"
 backup_file "${BAREMETAL_YML}"
 
 if [[ "${DRY_RUN}" = false ]]; then
@@ -95,18 +98,15 @@ EOF
     driver_info:
       deploy_kernel: "http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.kernel"
       deploy_ramdisk: "http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.initramfs"
-    instance_info:
-      image_source: "http://${PXE_IP}:${HTTPBOOT_PORT}/images/${IRONIC_IMAGE_NAME}"
-      image_checksum: "${IRONIC_IMAGE_CHECKSUM}"
-      root_gb: 110
-    nics:
-      - mac: "${mac}"
-    ipv4_address: "${ip}"
     properties:
       cpus: 4
       memory_mb: ${local_ram_mb}
       local_gb: 120
       cpu_arch: "x86_64"
+    extra:
+      ipv4_address: "${ip}"
+    ports:
+      - address: "${mac}"
 EOF
     done < "${NODES_CSV}"
 fi
@@ -122,17 +122,67 @@ export OS_ENDPOINT="http://${PXE_IP}:${IRONIC_API_PORT}"
 if [[ "${DRY_RUN}" = false ]]; then
     # Espera a que el endpoint de Ironic responda
     log_info "Esperando disponibilidad de la API de Ironic (:6385)..."
-    retry 15 5 curl -sf "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" >/dev/null
+    retry 20 5 curl -sf "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" >/dev/null
 
-    if command -v openstack >/dev/null 2>&1; then
-        openstack baremetal create "${BAREMETAL_YML}" 2>/dev/null || {
-            log_warn "Algunos nodos ya estaban creados previamente en Ironic."
+    if command -v openstack >/dev/null 2>&1 && openstack baremetal --help >/dev/null 2>&1; then
+        log_info "Registrando nodos usando 'openstack baremetal create'..."
+        openstack baremetal create "${BAREMETAL_YML}" || {
+            log_warn "Aviso durante registro de nodos en Ironic."
         }
+        log_info "Asociando metadatos de imagen (instance_info)..."
+        while IFS=',' read -r id mac hostname ip role ram disk bmc; do
+            [[ "${id}" == "id" ]] && continue
+            openstack baremetal node set "${hostname}" \
+                --instance-info image_source="http://${PXE_IP}:${HTTPBOOT_PORT}/images/${IRONIC_IMAGE_NAME}" \
+                --instance-info image_checksum="${IRONIC_IMAGE_CHECKSUM}" \
+                --instance-info root_gb="110" >/dev/null 2>&1 || true
+        done < "${NODES_CSV}"
+    elif command -v baremetal >/dev/null 2>&1; then
+        log_info "Registrando nodos usando 'baremetal create'..."
+        baremetal create "${BAREMETAL_YML}" || {
+            log_warn "Aviso durante registro de nodos en Ironic."
+        }
+        log_info "Asociando metadatos de imagen (instance_info)..."
+        while IFS=',' read -r id mac hostname ip role ram disk bmc; do
+            [[ "${id}" == "id" ]] && continue
+            baremetal node set "${hostname}" \
+                --instance-info image_source="http://${PXE_IP}:${HTTPBOOT_PORT}/images/${IRONIC_IMAGE_NAME}" \
+                --instance-info image_checksum="${IRONIC_IMAGE_CHECKSUM}" \
+                --instance-info root_gb="110" >/dev/null 2>&1 || true
+        done < "${NODES_CSV}"
     else
-        log_info "Ejecutando cliente Ironic dentro del contenedor podman..."
-        podman exec ironic-conductor baremetal create "${BAREMETAL_YML}" 2>/dev/null || {
-            log_warn "Algunos nodos ya estaban creados previamente en Ironic."
-        }
+        log_info "Registrando nodos mediante API REST de Ironic (Python)..."
+        python3 -c "
+import urllib.request, json, yaml, sys
+
+api_url = 'http://${PXE_IP}:${IRONIC_API_PORT}/v1'
+headers = {'Content-Type': 'application/json', 'X-OpenStack-Ironic-API-Version': '1.38'}
+
+with open('${BAREMETAL_YML}') as f:
+    data = yaml.safe_load(f)
+
+for n in data.get('nodes', []):
+    node_body = {
+        'name': n['name'],
+        'driver': n['driver'],
+        'driver_info': n.get('driver_info', {}),
+        'properties': n.get('properties', {}),
+        'extra': n.get('extra', {})
+    }
+    req = urllib.request.Request(f'{api_url}/nodes', data=json.dumps(node_body).encode(), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req) as resp:
+            node_resp = json.loads(resp.read().decode())
+            node_uuid = node_resp['uuid']
+            print(f'  [OK] Nodo {n[\"name\"]} creado con UUID: {node_uuid}')
+            for p in n.get('ports', []):
+                port_body = {'node_uuid': node_uuid, 'address': p['address']}
+                port_req = urllib.request.Request(f'{api_url}/ports', data=json.dumps(port_body).encode(), headers=headers, method='POST')
+                urllib.request.urlopen(port_req)
+                print(f'       Puerto MAC {p[\"address\"]} asociado.')
+    except Exception as e:
+        print(f'  [INFO] Nodo {n[\"name\"]} ya existe o aviso: {e}')
+" 2>/dev/null || log_warn "Aviso en registro de nodos."
     fi
 fi
 log_success "Nodos físicos registrados en el inventario de Ironic."
@@ -148,13 +198,15 @@ fi
 
 check_port "${IRONIC_API_PORT}" "tcp"
 
-NODES_COUNT=$(curl -s "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" | grep -o '"uuid"' | wc -l || echo "0")
+NODES_COUNT=$(openstack baremetal node list -f value -c UUID 2>/dev/null | grep -c . || echo "0")
+NODES_COUNT=$(echo "${NODES_COUNT}" | head -n 1 | tr -d '[:space:]')
+[[ -z "${NODES_COUNT}" ]] && NODES_COUNT=0
 log_info "Total de nodos bare-metal registrados en Ironic: ${NODES_COUNT}"
 
 if (( NODES_COUNT > 0 )); then
     log_success "API de Ironic respondiendo correctamente con nodos en catálogo."
 else
-    log_warn "API activa pero aún no reporta nodos registrados. Revise /opt/ironic/baremetal.yml."
+    log_warn "API activa pero aún no reporta nodos registrados. Revise ${BAREMETAL_YML}."
 fi
 
 echo -e "\n${COLOR_GREEN}==================================================================${COLOR_NC}"
