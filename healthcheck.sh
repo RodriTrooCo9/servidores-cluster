@@ -28,9 +28,22 @@ printf "+------+-----------------+---------------+--------+--------+----------+-
 while IFS=',' read -r id mac hostname ip role ram disk bmc; do
     [[ "${id}" == "id" ]] && continue
 
+    TARGET_IP="${ip}"
+    case "${id}" in
+        306) SSH_USER="n306"; FALLBACK_IP="192.168.21.30" ;;
+        314) SSH_USER="aget-ic"; FALLBACK_IP="192.168.21.107" ;;
+        315) SSH_USER="io"; FALLBACK_IP="192.168.21.163" ;;
+        321) SSH_USER="debian"; FALLBACK_IP="192.168.21.9" ;;
+        *)   SSH_USER="${ADMIN_USER}"; FALLBACK_IP="" ;;
+    esac
+
     PING_STATUS="${COLOR_RED}FAIL${COLOR_NC}"
+    ACTIVE_IP="${ip}"
     if ping -c 1 -W 1 "${ip}" >/dev/null 2>&1; then
         PING_STATUS="${COLOR_GREEN}OK${COLOR_NC}  "
+    elif [[ -n "${FALLBACK_IP}" ]] && ping -c 1 -W 1 "${FALLBACK_IP}" >/dev/null 2>&1; then
+        PING_STATUS="${COLOR_GREEN}OK${COLOR_NC}  "
+        ACTIVE_IP="${FALLBACK_IP}"
     fi
 
     SSH_STATUS="${COLOR_RED}DOWN${COLOR_NC}"
@@ -38,11 +51,11 @@ while IFS=',' read -r id mac hostname ip role ram disk bmc; do
     DISK_USAGE="N/A       "
 
     # Probar socket SSH
-    if nc -z -w 1 "${ip}" 22 >/dev/null 2>&1 || nc -z -w 1 "${ip}" 2222 >/dev/null 2>&1; then
+    if nc -z -w 1 "${ACTIVE_IP}" 22 >/dev/null 2>&1 || nc -z -w 1 "${ACTIVE_IP}" 2222 >/dev/null 2>&1; then
         SSH_STATUS="${COLOR_GREEN}UP${COLOR_NC}  "
         
         # Consultar métricas si hay llaves SSH
-        METRICS=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${ADMIN_USER}@${ip}" \
+        METRICS=$(ssh -n -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=2 "${SSH_USER}@${ACTIVE_IP}" \
             "free -h | awk '/^Mem:/{print \$7}'; df -h / | awk 'NR==2{print \$5}'" 2>/dev/null || echo "")
         
         if [[ -n "${METRICS}" ]]; then
@@ -60,8 +73,11 @@ while IFS=',' read -r id mac hostname ip role ram disk bmc; do
         fi
     fi
 
+    DISPLAY_IP="${ip}"
+    [[ "${ACTIVE_IP}" != "${ip}" ]] && DISPLAY_IP="${ACTIVE_IP}"
+
     printf "| %-4s | %-15s | %-13s | %b | %b | %-8s | %b | %-23s |\n" \
-        "${id}" "${hostname}" "${ip}" "${PING_STATUS}" "${SSH_STATUS}" "${RAM_FREE}" "${DISK_USAGE}" "${role:0:23}"
+        "${id}" "${hostname}" "${DISPLAY_IP}" "${PING_STATUS}" "${SSH_STATUS}" "${RAM_FREE}" "${DISK_USAGE}" "${role:0:23}"
 done < "${NODES_CSV}"
 printf "+------+-----------------+---------------+--------+--------+----------+------------+-------------------------+\n"
 

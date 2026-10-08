@@ -23,10 +23,10 @@ echo -e "${COLOR_BLUE}==========================================================
 confirm_action "¿Desea instalar PostgreSQL 16 y Sonatype Nexus 3 en este servidor?"
 
 # ------------------------------------------------------------------------------
-# 3.1 INSTALACIÓN Y CONFIGURACIÓN DE POSTGRESQL 16
+# 3.1 INSTALACIÓN Y CONFIGURACIÓN DE POSTGRESQL
 # ------------------------------------------------------------------------------
-log_info "3.1 Instalando base de datos relacional PostgreSQL 16..."
-apt_install postgresql postgresql-contrib
+log_info "3.1 Instalando base de datos relacional PostgreSQL..."
+apt_install postgresql
 
 log_info "Configurando usuario y base de datos 'nexus' en PostgreSQL..."
 if [[ "${DRY_RUN}" = false ]]; then
@@ -48,15 +48,29 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${POSTGRES_NEXUS_DB}'
 GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_NEXUS_DB} TO ${POSTGRES_NEXUS_USER};
 \c ${POSTGRES_NEXUS_DB}
 CREATE SCHEMA IF NOT EXISTS ${POSTGRES_NEXUS_USER} AUTHORIZATION ${POSTGRES_NEXUS_USER};
+GRANT ALL ON SCHEMA public TO ${POSTGRES_NEXUS_USER};
 EOF
 fi
-log_success "Base de datos PostgreSQL 16 configurada para Nexus."
+log_success "Base de datos PostgreSQL configurada para Nexus."
 
 # ------------------------------------------------------------------------------
 # 3.2 INSTALACIÓN DE JAVA 17, USUARIO Y LÍMITES DEL SISTEMA
 # ------------------------------------------------------------------------------
-log_info "3.2 Instalando OpenJDK 17 LTS y configurando límites de descriptores..."
-apt_install openjdk-17-jdk-headless wget tar curl
+log_info "3.2 Verificando e instalando Java 17 LTS y configurando límites de descriptores..."
+if ! command -v java >/dev/null 2>&1 || ! java -version 2>&1 | grep -q "17\."; then
+    if apt-cache show openjdk-17-jdk-headless >/dev/null 2>&1; then
+        apt_install openjdk-17-jdk-headless wget tar curl
+    else
+        log_info "Configurando repositorio oficial Eclipse Temurin Java 17 LTS (Adoptium)..."
+        mkdir -p /etc/apt/keyrings
+        curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public -o /etc/apt/keyrings/adoptium.asc
+        echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb bookworm main" > /etc/apt/sources.list.d/adoptium.list
+        apt-get update -qq
+        apt_install temurin-17-jdk wget tar curl
+    fi
+else
+    apt_install wget tar curl
+fi
 
 if ! id "nexus" >/dev/null 2>&1; then
     run_cmd useradd --system --no-create-home --shell /bin/false nexus
@@ -83,26 +97,36 @@ if [[ ! -d /opt/sonatype/nexus ]]; then
     if [[ "${DRY_RUN}" = false ]]; then
         cd /opt/sonatype
         if [[ ! -f latest-unix.tar.gz ]]; then
-            log_info "Descargando paquete oficial de Nexus..."
-            wget -q --show-progress https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+            log_info "Descargando paquete oficial de Nexus 3 (3.76.1)..."
+            NEXUS_URL="https://download.sonatype.com/nexus/3/nexus-3.76.1-01-unix.tar.gz"
+            if ! wget -q --show-progress -O latest-unix.tar.gz "${NEXUS_URL}"; then
+                log_warn "Error descargando versión 3.76.1; intentando versión 3.70.3..."
+                wget -q --show-progress -O latest-unix.tar.gz "https://download.sonatype.com/nexus/3/nexus-3.70.3-01-unix.tar.gz"
+            fi
         fi
         tar -xzf latest-unix.tar.gz
         ln -sf nexus-3* nexus
     fi
 fi
 
-# Tuning JVM para nodo físico de 16 GB RAM
+# Tuning JVM para nodo físico de 16 GB RAM y backend PostgreSQL
 VMOPTIONS="/opt/sonatype/nexus/bin/nexus.vmoptions"
 if [[ "${DRY_RUN}" = false ]]; then
-    cat > "${VMOPTIONS}" << EOF
--Xms${NEXUS_JVM_HEAP_MB}m
--Xmx${NEXUS_JVM_HEAP_MB}m
+    backup_file "${VMOPTIONS}"
+    sed -i "s/^-Xms[0-9]*m/-Xms${NEXUS_JVM_HEAP_MB}m/" "${VMOPTIONS}"
+    sed -i "s/^-Xmx[0-9]*m/-Xmx${NEXUS_JVM_HEAP_MB}m/" "${VMOPTIONS}"
+    if ! grep -q "MaxDirectMemorySize" "${VMOPTIONS}"; then
+        cat >> "${VMOPTIONS}" << EOF
 -XX:MaxDirectMemorySize=${NEXUS_JVM_HEAP_MB}m
 -Djava.util.prefs.userRoot=/opt/sonatype/sonatype-work/nexus3/javaprefs
--XX:+UseG1GC
+-Dnexus.datastore.enabled=true
+-Dnexus.datastore.nexus.jdbcUrl=jdbc:postgresql://localhost:${POSTGRES_PORT}/${POSTGRES_NEXUS_DB}
+-Dnexus.datastore.nexus.username=${POSTGRES_NEXUS_USER}
+-Dnexus.datastore.nexus.password=${POSTGRES_NEXUS_PASSWORD}
 EOF
+    fi
 fi
-log_success "Tuning JVM aplicado: 4 GB Heap + 4 GB DirectMemory con G1GC."
+log_success "Tuning JVM aplicado: 4 GB Heap + 4 GB DirectMemory con G1GC y backend PostgreSQL."
 
 # ------------------------------------------------------------------------------
 # 3.4 CONEXIÓN DE NEXUS A POSTGRESQL 16
@@ -181,7 +205,7 @@ check_port "${POSTGRES_PORT}" "tcp"
 check_service "postgresql"
 
 log_info "Esperando disponibilidad del socket HTTP de Nexus (:8081)..."
-retry 15 10 check_port "${NEXUS_PORT}" "tcp"
+retry 30 10 check_port "${NEXUS_PORT}" "tcp"
 
 check_nexus_status() {
     local code
@@ -190,8 +214,14 @@ check_nexus_status() {
 }
 
 log_info "Validando endpoint REST de estado de Nexus..."
-retry 15 10 check_nexus_status
+retry 30 10 check_nexus_status
 log_success "Endpoint REST /service/rest/v1/status respondió 200 OK."
+
+ADMIN_PASS_FILE="/opt/sonatype/sonatype-work/nexus3/admin.password"
+if [[ -f "${ADMIN_PASS_FILE}" ]]; then
+    INIT_PASS=$(cat "${ADMIN_PASS_FILE}")
+    log_info "Contraseña administrativa inicial (admin): ${INIT_PASS}"
+fi
 
 echo -e "\n${COLOR_GREEN}==================================================================${COLOR_NC}"
 echo -e "${COLOR_GREEN}   FASE 3 COMPLETADA CON ÉXITO: NEXUS 3 OPERATIVO EN PUERTO 8081  ${COLOR_NC}"

@@ -40,9 +40,10 @@ backup_file "${SOURCES_LIST}"
 
 if [[ "${DRY_RUN}" = false ]]; then
     cat > "${SOURCES_LIST}" << EOF
-# Configuración generada por automatización: Consumo exclusivo de caché local Nexus
+# Configuración generada por automatización: Consumo de caché local Nexus
 deb http://${NEXUS_IP}:${NEXUS_PORT}/repository/debian-proxy/ trixie main contrib non-free non-free-firmware
 deb http://${NEXUS_IP}:${NEXUS_PORT}/repository/debian-proxy/ trixie-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
 EOF
 fi
 log_success "Archivo /etc/apt/sources.list configurado hacia ${NEXUS_IP}:${NEXUS_PORT}."
@@ -81,13 +82,21 @@ backup_file "${ENV_FILE}"
 
 if [[ "${DRY_RUN}" = false ]]; then
     sed -i '/_proxy=/d' "${ENV_FILE}" 2>/dev/null || true
-    cat >> "${ENV_FILE}" << EOF
+    if command -v nc >/dev/null 2>&1 && nc -z -w 2 "${BASTION_LAN_IP}" "${SQUID_PORT}" 2>/dev/null; then
+        log_info "Proxy Squid activo en ${BASTION_LAN_IP}:${SQUID_PORT}. Configurando http_proxy..."
+        cat >> "${ENV_FILE}" << EOF
 http_proxy="http://${BASTION_LAN_IP}:${SQUID_PORT}"
 https_proxy="http://${BASTION_LAN_IP}:${SQUID_PORT}"
 no_proxy="localhost,127.0.0.1,${INTERNAL_SUBNET},10.42.0.0/16,10.43.0.0/16,.svc,.cluster.local"
 EOF
+    else
+        log_warn "Proxy Squid no detectado en ${BASTION_LAN_IP}:${SQUID_PORT}. Omitiendo variables de proxy externas."
+        cat >> "${ENV_FILE}" << EOF
+no_proxy="localhost,127.0.0.1,${INTERNAL_SUBNET},10.42.0.0/16,10.43.0.0/16,.svc,.cluster.local"
+EOF
+    fi
 fi
-log_success "Variables de proxy aplicadas preservando el tráfico interno del clúster."
+log_success "Variables de entorno aplicadas preservando el tráfico interno del clúster."
 
 # ------------------------------------------------------------------------------
 # 4.4 VALIDACIÓN DE FASE 4

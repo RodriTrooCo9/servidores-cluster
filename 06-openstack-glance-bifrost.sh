@@ -28,33 +28,56 @@ confirm_action "¿Desea desplegar OpenStack Ironic Standalone y enrolar los 8 no
 log_info "6.1 Instalando Podman y clientes de Ironic..."
 apt_install podman python3-openstackclient python3-ironicclient 2>/dev/null || apt_install podman python3-ironicclient 2>/dev/null || apt_install podman
 
-log_info "Verificando contenedor de Ironic Standalone..."
+# Autodetección de interfaz de red física si no existe PXE_IFACE
+if [[ ! -d "/sys/class/net/${PXE_IFACE}" ]]; then
+    DETECTED_IFACE=$(ip -4 route show default 2>/dev/null | awk '{print $5}' | head -n1)
+    if [[ -z "${DETECTED_IFACE}" ]]; then
+        DETECTED_IFACE=$(ip -br link | awk '$1 !~ /^lo/ {print $1; exit}')
+    fi
+    log_warn "Interfaz '${PXE_IFACE}' no encontrada. Auto-detectada: '${DETECTED_IFACE}'."
+    PXE_IFACE="${DETECTED_IFACE}"
+fi
+
+log_info "Verificando estructura de directorios y servicio de Ironic Standalone..."
 run_cmd mkdir -p /httpboot/ipa /httpboot/images /tftpboot /var/lib/ironic /opt/ironic
 
 if [[ "${DRY_RUN}" = false ]]; then
-    if podman ps -a --format "{{.Names}}" | grep -q "^ironic-conductor$"; then
-        log_info "Recreando contenedor 'ironic-conductor' con punto de entrada de servicio activo..."
-        podman rm -f ironic-conductor >/dev/null 2>&1 || true
-    fi
+    IRONIC_SERVICE="/etc/systemd/system/ironic-conductor.service"
+    cat > "${IRONIC_SERVICE}" << EOF
+[Unit]
+Description=OpenStack Ironic Standalone Conductor & API
+After=network-online.target nginx.service dnsmasq.service
+Wants=network-online.target
 
-    log_info "Creando y arrancando contenedor Podman 'ironic-conductor'..."
-    podman run -d --name ironic-conductor \
-        --net=host \
-        --privileged \
-        --restart=always \
-        -v /httpboot:/httpboot:shared \
-        -v /httpboot:/shared/html:rw \
-        -v /tftpboot:/tftpboot:shared \
-        -v /tftpboot:/shared/tftpboot:rw \
-        -v /var/lib/ironic:/data:rw \
-        -v /opt/ironic:/opt/ironic:shared \
-        -e HTTP_PORT="${HTTPBOOT_PORT}" \
-        -e IRONIC_IP="${PXE_IP}" \
-        -e PROVISIONING_INTERFACE="${PXE_IFACE}" \
-        -e OS_AUTH_TYPE=none \
-        quay.io/metal3-io/ironic:latest /usr/bin/runironic
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/podman rm -f ironic-conductor
+ExecStart=/usr/bin/podman run --name ironic-conductor \\
+    --net=host \\
+    --privileged \\
+    -v /httpboot:/httpboot:shared \\
+    -v /httpboot:/shared/html:rw \\
+    -v /tftpboot:/tftpboot:shared \\
+    -v /tftpboot:/shared/tftpboot:rw \\
+    -v /var/lib/ironic:/data:rw \\
+    -v /opt/ironic:/opt/ironic:shared \\
+    -e HTTP_PORT="${HTTPBOOT_PORT}" \\
+    -e IRONIC_IP="${PXE_IP}" \\
+    -e PROVISIONING_INTERFACE="${PXE_IFACE}" \\
+    -e OS_AUTH_TYPE=none \\
+    quay.io/metal3-io/ironic:latest /usr/bin/runironic
+ExecStop=/usr/bin/podman stop -t 10 ironic-conductor
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now ironic-conductor
 fi
-log_success "Contenedor Ironic Standalone iniciado en puerto ${IRONIC_API_PORT}."
+log_success "Servicio Ironic Standalone registrado en systemd y activo en puerto ${IRONIC_API_PORT}."
 
 # ------------------------------------------------------------------------------
 # 6.2 DESCARGA DEL RAMDISK IPA OFICIAL (IRONIC PYTHON AGENT)
@@ -125,27 +148,35 @@ if [[ "${DRY_RUN}" = false ]]; then
     retry 20 5 curl -sf "http://${PXE_IP}:${IRONIC_API_PORT}/v1/nodes" >/dev/null
 
     if command -v openstack >/dev/null 2>&1 && openstack baremetal --help >/dev/null 2>&1; then
-        log_info "Registrando nodos usando 'openstack baremetal create'..."
-        openstack baremetal create "${BAREMETAL_YML}" || {
-            log_warn "Aviso durante registro de nodos en Ironic."
-        }
-        log_info "Asociando metadatos de imagen (instance_info)..."
+        log_info "Registrando nodos en Ironic de forma idempotente..."
         while IFS=',' read -r id mac hostname ip role ram disk bmc; do
             [[ "${id}" == "id" ]] && continue
+            local_ram_mb=$(( ram * 1024 ))
+            if ! openstack baremetal node show "${hostname}" >/dev/null 2>&1; then
+                log_info "Creando nodo bare-metal: ${hostname} (${ip} / ${mac})..."
+                openstack baremetal node create \
+                    --name "${hostname}" \
+                    --driver "manual-management" \
+                    --driver-info deploy_kernel="http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.kernel" \
+                    --driver-info deploy_ramdisk="http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.initramfs" \
+                    --property cpus=4 \
+                    --property memory_mb="${local_ram_mb}" \
+                    --property local_gb=120 \
+                    --property cpu_arch="x86_64" \
+                    --extra ipv4_address="${ip}"
+                
+                openstack baremetal port create --node "${hostname}" --address "${mac}" >/dev/null 2>&1 || true
+                log_success "Nodo ${hostname} enrolado correctamente con puerto MAC ${mac}."
+            else
+                log_info "Nodo ${hostname} ya existe en catálogo; sincronizando parámetros..."
+                openstack baremetal node set "${hostname}" \
+                    --driver-info deploy_kernel="http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.kernel" \
+                    --driver-info deploy_ramdisk="http://${PXE_IP}:${HTTPBOOT_PORT}/ipa/ipa.initramfs" \
+                    --property memory_mb="${local_ram_mb}" >/dev/null 2>&1 || true
+            fi
+
+            # Asociar metadatos de imagen (instance_info)
             openstack baremetal node set "${hostname}" \
-                --instance-info image_source="http://${PXE_IP}:${HTTPBOOT_PORT}/images/${IRONIC_IMAGE_NAME}" \
-                --instance-info image_checksum="${IRONIC_IMAGE_CHECKSUM}" \
-                --instance-info root_gb="110" >/dev/null 2>&1 || true
-        done < "${NODES_CSV}"
-    elif command -v baremetal >/dev/null 2>&1; then
-        log_info "Registrando nodos usando 'baremetal create'..."
-        baremetal create "${BAREMETAL_YML}" || {
-            log_warn "Aviso durante registro de nodos en Ironic."
-        }
-        log_info "Asociando metadatos de imagen (instance_info)..."
-        while IFS=',' read -r id mac hostname ip role ram disk bmc; do
-            [[ "${id}" == "id" ]] && continue
-            baremetal node set "${hostname}" \
                 --instance-info image_source="http://${PXE_IP}:${HTTPBOOT_PORT}/images/${IRONIC_IMAGE_NAME}" \
                 --instance-info image_checksum="${IRONIC_IMAGE_CHECKSUM}" \
                 --instance-info root_gb="110" >/dev/null 2>&1 || true
@@ -204,7 +235,8 @@ NODES_COUNT=$(echo "${NODES_COUNT}" | head -n 1 | tr -d '[:space:]')
 log_info "Total de nodos bare-metal registrados en Ironic: ${NODES_COUNT}"
 
 if (( NODES_COUNT > 0 )); then
-    log_success "API de Ironic respondiendo correctamente con nodos en catálogo."
+    log_success "API de Ironic respondiendo correctamente con nodos en catálogo:"
+    openstack baremetal node list
 else
     log_warn "API activa pero aún no reporta nodos registrados. Revise ${BAREMETAL_YML}."
 fi
