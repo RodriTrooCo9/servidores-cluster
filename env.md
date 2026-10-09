@@ -1,3 +1,16 @@
+! importante!
+ * 0.101.29.0/24
+ * 10.101.29.1 gtw 
+ * 192.168.26.120 dns
+
+
+
+## ip privada
+---
+sudo ip addr add 10.100.29.250/24 dev eno1
+
+---
+
 ### credenciales de las sonatype
 - admin
 - 70c7d98a-6561-40c3-b72f-9893b8eedd7d

@@ -30,7 +30,7 @@ while IFS=',' read -r id mac hostname ip role ram disk bmc; do
 
     TARGET_IP="${ip}"
     case "${id}" in
-        306) SSH_USER="n306"; FALLBACK_IP="192.168.21.30" ;;
+        306) SSH_USER="n306"; FALLBACK_IP="192.168.29.25" ;;
         314) SSH_USER="aget-ic"; FALLBACK_IP="192.168.21.107" ;;
         315) SSH_USER="io"; FALLBACK_IP="192.168.21.163" ;;
         321) SSH_USER="debian"; FALLBACK_IP="192.168.21.9" ;;
