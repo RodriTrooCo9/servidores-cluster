@@ -1,5 +1,5 @@
 ! importante!
- * 0.101.29.0/24
+ * 10.101.29.0/24
  * 10.101.29.1 gtw 
  * 192.168.26.120 dns
 
@@ -29,13 +29,13 @@ id,mac,hostname,ip,role,ram_gb,disk_gb,bmc_ip
 * 321,64:00:6a:2a:62:a4,k8s-worker-01,10.0.1.111,k8s-worker,8,128,<BMC_IP_321>
 * 279,64:00:6a:2a:2f:cb,k8s-worker-02,10.0.1.112,k8s-worker,8,128,<BMC_IP_279>
 
+ssh aget-ic@192.168.21.107      // Contraseña: ag70v7
+
 
 ### Nodo 306 (PXE Controller)
 ssh n306@192.168.29.25          // Contraseña: 306
 
-### Nodo 314 (K8s Control Plane)
-ssh aget-ic@192.168.21.107      // Contraseña: ag70v7
-
+### Nodo 314 (K8s Control Plane) DENY
 ### Nodo 315 (K8s Worker)
 ssh io@192.168.21.163           // Contraseña: 59766
 
@@ -50,3 +50,17 @@ ssh io@192.168.21.163           // Contraseña: 59766
 ### token de verificacion 
 
 `{"token":"DockerToken.ff416530-7b9b-37b1-8cde-f176dbcf197c"}`
+
+
+
+### 
+315	,64:00:6a:2a:5f:99,	nexus-repo	,Sonatype Nexus 3 / Worker	,10.100.29.20	ssh nexus-repo (o ssh io@10.100.29.20)
+
+* 314	64:00:6a:2a:60:62	bastion	Bastión / K8s Master Leader	10.100.29.10	🟢 EN VIVO (ONLINE)	ssh bastion
+* 315	64:00:6a:2a:5f:99	nexus-repo	Sonatype Nexus 3 OSS / Worker	10.100.29.20	🟢 EN VIVO (ONLINE)	ssh nexus-repo
+* 306	64:00:6a:2a:62:42	pxe-controller	Servidor PXE / dnsmasq / Ironic	10.100.29.30	🟢 EN VIVO (Wi-Fi)	ssh n306-wifi (cable pendiente)
+
+
+
+
+nodo 321 - ip -> 10.100.29.100/24           n321/{k8s-worker-02} - 321
