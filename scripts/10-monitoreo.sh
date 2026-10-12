@@ -338,7 +338,8 @@ EOF
 
     # Hardening de Grafana
     sed -i 's/;allow_sign_up = true/allow_sign_up = false/g' /etc/grafana/grafana.ini || true
-    sed -i 's/;enabled = true/enabled = false/g' /etc/grafana/grafana.ini || true
+    sed -i '/^\[auth.anonymous\]/,/^\[/ s/^;enabled = true/enabled = false/' /etc/grafana/grafana.ini || true
+    sed -i '/^\[auth.anonymous\]/,/^\[/ s/^enabled = true/enabled = false/' /etc/grafana/grafana.ini || true
 
     systemctl daemon-reload
     systemctl enable --now prometheus alertmanager blackbox_exporter grafana-server
