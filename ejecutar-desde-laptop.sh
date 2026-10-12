@@ -70,24 +70,24 @@ cmd_check() {
     printf "| %-4s | %-15s | %-13s | %-6s | %-10s | %-23s |\n" "ID" "HOSTNAME" "IP" "PING" "SSH (SSHD)" "ROL"
     printf "+------+-----------------+---------------+--------+------------+-------------------------+\n"
 
-    while IFS=',' read -r id mac hostname ip role ram disk bmc; do
+    while IFS=',' read -u 9 -r id mac hostname ip role ram disk bmc; do
         [[ "${id}" == "id" ]] && continue
         local alias_name
         alias_name="$(get_node_ssh_alias "${id}" "${hostname}")"
 
         local ping_res="${COLOR_RED}FAIL${COLOR_NC}"
-        if ping -c 1 -W 1 "${ip}" >/dev/null 2>&1; then
+        if ssh -n -o BatchMode=yes -o ConnectTimeout=2 n306-wifi "ping -c 1 -W 1 ${ip}" >/dev/null 2>&1; then
             ping_res="${COLOR_GREEN}OK${COLOR_NC}  "
         fi
 
         local ssh_res="${COLOR_RED}DOWN${COLOR_NC}      "
-        if ssh -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=no "${alias_name}" "uptime" >/dev/null 2>&1; then
+        if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "uptime" >/dev/null 2>&1; then
             ssh_res="${COLOR_GREEN}CONECTADO${COLOR_NC} "
         fi
 
         printf "| %-4s | %-15s | %-13s | %b | %b | %-23s |\n" \
             "${id}" "${hostname}" "${ip}" "${ping_res}" "${ssh_res}" "${role:0:23}"
-    done < "${NODES_CSV}"
+    done 9< "${NODES_CSV}"
     printf "+------+-----------------+---------------+--------+------------+-------------------------+\n"
 }
 
@@ -99,9 +99,9 @@ cmd_sync() {
         alias_name="$(get_node_ssh_alias "${id}" "${hostname}")"
 
         log_info "Sincronizando hacia [${hostname}] (${alias_name})..."
-        if ssh -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "mkdir -p /tmp/infra-scripts" 2>/dev/null; then
+        if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "mkdir -p /tmp/infra-scripts" 2>/dev/null; then
             scp -r -q -o BatchMode=yes -o ConnectTimeout=5 "${SCRIPT_DIR}/"* "${alias_name}:/tmp/infra-scripts/"
-            ssh "${alias_name}" "chmod +x /tmp/infra-scripts/*.sh"
+            ssh -n "${alias_name}" "chmod +x /tmp/infra-scripts/*.sh"
             log_success "Sincronizado exitosamente en ${hostname}."
         else
             log_warn "Nodo ${hostname} (${alias_name}) no accesible por SSH. Omitiendo sync."
