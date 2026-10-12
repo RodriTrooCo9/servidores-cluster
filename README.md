@@ -99,6 +99,7 @@ infra-scripts/
 │   ├── env.md                         # Cheat-sheet de IPs, claves, BIOS y alias SSH
 │   ├── estructura.md                  # Manual de operación y trazabilidad del repositorio
 │   ├── manual_maestro_infraestructura_pxe_openstack.md # Manual técnico exhaustivo
+│   ├── arranque_e_instalacion_por_red_pxe.md # Guía e investigación técnica de arranque por red PXE
 │   ├── redes/                         # Arquitectura y seguridad de redes
 │   │   ├── aislamiento_red_oficina.md # Topología As-Built y blindaje de la red corporativa
 │   │   ├── redes.md                   # Plan maestro de direccionamiento L2/L3
