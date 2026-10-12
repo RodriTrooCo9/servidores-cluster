@@ -42,7 +42,8 @@ if [[ "${CURRENT_HOSTNAME}" =~ ^(bastion)$ ]] || [[ "${NODE_ROLE}" == "bastion" 
     confirm_action "¿Desea configurar kubeconfig y kubectl en este Bastión?"
 
     mkdir -p "$HOME/.kube" /root/.kube
-    K8S_LEADER_IP="10.0.1.101"
+    K8S_LEADER_IP="$(awk -F',' '$5 ~ /k8s-control-plane-leader/ {print $4}' "${NODES_CSV}" | head -n1)"
+    [[ -z "${K8S_LEADER_IP}" ]] && K8S_LEADER_IP="10.100.29.101"
     
     if [[ "${DRY_RUN}" = false ]]; then
         apt_install curl
@@ -116,7 +117,8 @@ RKE2_CONFIG="${RKE2_DIR}/config.yaml"
 run_cmd mkdir -p "${RKE2_DIR}"
 backup_file "${RKE2_CONFIG}"
 
-K8S_LEADER_IP="10.0.1.101"
+K8S_LEADER_IP="$(awk -F',' '$5 ~ /k8s-control-plane-leader/ {print $4}' "${NODES_CSV}" | head -n1)"
+[[ -z "${K8S_LEADER_IP}" ]] && K8S_LEADER_IP="10.100.29.101"
 
 if [[ "${NODE_ROLE}" == "k8s-control-plane-leader" ]] || [[ "${CURRENT_HOSTNAME}" == "k8s-cp-01" ]]; then
     log_info "Configurando Control Plane Líder (k8s-cp-01)..."

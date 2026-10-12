@@ -42,7 +42,7 @@ X11Forwarding no
 MaxAuthTries 3
 ClientAliveInterval 300
 ClientAliveCountMax 2
-AllowUsers ${ADMIN_USER}
+AllowUsers ${ADMIN_USER} aget-ic
 EOF
 
     # PROTOCOLO DE SEGURIDAD DEL README: Validar sintaxis antes de reiniciar
@@ -94,9 +94,30 @@ fi
 log_success "Squid Proxy configurado en ${BASTION_LAN_IP}:${SQUID_PORT}."
 
 # ------------------------------------------------------------------------------
-# 2.3 CORTAFUEGOS NFTABLES DE ALTO RENDIMIENTO
+# 2.2.1 ENRUTAMIENTO DEL KERNEL (SYSCTL IP FORWARDING & HARDENING)
 # ------------------------------------------------------------------------------
-log_info "2.3 Configurando cortafuegos perimetral nftables..."
+log_info "2.2.1 Configurando enrutamiento del kernel y protección anti-spoofing..."
+SYSCTL_CONF="/etc/sysctl.d/99-bastion-router.conf"
+backup_file "${SYSCTL_CONF}"
+
+if [[ "${DRY_RUN}" = false ]]; then
+    cat > "${SYSCTL_CONF}" << 'EOF'
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+EOF
+    sysctl --system >/dev/null 2>&1 || true
+fi
+log_success "Enrutamiento IPv4 y mitigaciones de kernel activadas."
+
+# ------------------------------------------------------------------------------
+# 2.3 CORTAFUEGOS NFTABLES DE ALTO RENDIMIENTO (AISLAMIENTO, NAT Y PROXYJUMP)
+# ------------------------------------------------------------------------------
+log_info "2.3 Configurando cortafuegos perimetral nftables con NAT Masquerade..."
 apt_install nftables
 
 NFT_CONF="/etc/nftables.conf"
@@ -111,19 +132,48 @@ table inet filter {
     chain input {
         type filter hook input priority 0; policy drop;
 
+        # 1. Tráfico local en loopback
         iif "lo" accept
+
+        # 2. Conexiones establecidas y relacionadas
+        ct state established,related accept
+        ct state invalid drop
+
+        # 3. Tráfico total desde la red interna del clúster (LAN)
+        iif "${BASTION_LAN_IFACE}" accept
+
+        # 4. Acceso SSH desde la red/IP de administración externa (WAN)
+        iif "${BASTION_WAN_IFACE}" ip saddr { ${ADMIN_ALLOWED_IPS} } tcp dport { 22, ${BASTION_SSH_PORT} } ct state new accept
+
+        # 5. Ping ICMP permitido solo desde administración
+        iif "${BASTION_WAN_IFACE}" ip saddr { ${ADMIN_ALLOWED_IPS} } icmp type echo-request accept
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # 1. Tráfico de retorno establecido
         ct state established,related accept
 
-        # Acceso SSH de administración externo
-        tcp dport ${BASTION_SSH_PORT} accept
+        # 2. Salida de los nodos del clúster (LAN) hacia la red corporativa/internet (WAN)
+        iif "${BASTION_LAN_IFACE}" oif "${BASTION_WAN_IFACE}" accept
 
-        # Servicios habilitados para la subred privada LAN (${BASTION_LAN_IFACE})
-        iif "${BASTION_LAN_IFACE}" tcp dport { 22, ${SQUID_PORT} } accept
-        iif "${BASTION_LAN_IFACE}" udp dport { ${CHRONY_NTP_PORT} } accept
-        iif "${BASTION_LAN_IFACE}" ip protocol icmp accept
+        # 3. Tráfico SSH directo o ProxyJump desde Laptop Admin hacia nodos del clúster
+        iif "${BASTION_WAN_IFACE}" oif "${BASTION_LAN_IFACE}" ip saddr { ${ADMIN_ALLOWED_IPS} } tcp dport 22 accept
     }
-    chain forward { type filter hook forward priority 0; policy drop; }
-    chain output { type filter hook output priority 0; policy accept; }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}
+
+table ip nat {
+    chain postrouting {
+        type filter hook postrouting priority 100; policy accept;
+
+        # Enmascarar (NAT) el tráfico del clúster al salir a la oficina
+        oif "${BASTION_WAN_IFACE}" masquerade
+    }
 }
 EOF
 
@@ -138,7 +188,7 @@ EOF
         exit 1
     fi
 fi
-log_success "Reglas de firewall nftables activadas y persistentes."
+log_success "Reglas de firewall nftables y NAT Masquerade activadas y persistentes."
 
 # ------------------------------------------------------------------------------
 # 2.4 VALIDACIÓN DE FASE 2

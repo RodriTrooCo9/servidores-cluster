@@ -40,6 +40,10 @@ if [[ "${DRY_RUN}" = false ]]; then
 interface=${PXE_IFACE}
 bind-interfaces
 
+# Salvaguarda perimetral: Ignorar cualquier petición DHCP de clientes no autorizados
+dhcp-ignore=tag:!known
+dhcp-mac=set:known,64:00:6a:2a:*:*:*
+
 # Gateway y DNS predeterminado (Bastión)
 dhcp-option=3,${INTERNAL_GATEWAY}
 dhcp-option=6,${INTERNAL_DNS}
@@ -56,7 +60,7 @@ EOF
     while IFS=',' read -r id mac hostname ip role ram disk bmc; do
         [[ "${id}" == "id" ]] && continue
         echo "# Nodo ID ${id}: ${hostname} (${role})" >> "${DNSMASQ_CONF}"
-        echo "dhcp-host=${mac},${ip},${hostname},infinite" >> "${DNSMASQ_CONF}"
+        echo "dhcp-host=${mac},set:known,${ip},${hostname},infinite" >> "${DNSMASQ_CONF}"
     done < "${NODES_CSV}"
 
     cat >> "${DNSMASQ_CONF}" << EOF
