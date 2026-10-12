@@ -9,8 +9,16 @@
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh"
+if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/common.sh"
+elif [[ -f "${REPO_DIR}/lib/common.sh" ]]; then
+    source "${REPO_DIR}/lib/common.sh"
+else
+    echo "ERROR: No se encontró lib/common.sh" >&2
+    exit 1
+fi
 
 DEPLOY_ALL=false
 FILTER_NODES=""

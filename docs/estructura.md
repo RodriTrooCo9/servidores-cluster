@@ -10,27 +10,50 @@
 
 ```text
 infra-scripts/
-├── README.md                          # Este manual de operación y tabla de trazabilidad
-├── .gitignore                         # Exclusión de claves, certificados, respaldos e ISOs
-├── config/
-│   ├── env.example                    # Plantilla maestra de variables de entorno y puertos
-│   └── nodes.csv                      # Inventario físico de los 8 nodos con MACs normalizadas
-├── lib/
-│   └── common.sh                      # Biblioteca común: logging, respaldos, comprobaciones y traps
-├── 00-preflight.sh                    # Auditoría previa de Debian 13, kernel 6.12+, RAM y disco
-├── 01-base-servidores.sh              # Hostname, /etc/hosts, systemd-networkd, Chrony y sudoers
-├── 02-bastion.sh                      # Endurecimiento SSH :2222, Squid :3128 y cortafuegos nftables
-├── 03-nexus.sh                        # Sonatype Nexus 3 OSS con PostgreSQL 16 y afinamiento de memoria
-├── 04-clientes-nexus.sh               # Redirección de APT hacia Nexus, variables de proxy y mirrors
-├── 05-pxe-dhcp-tftp.sh                # dnsmasq con reservas fijas por MAC, bootloader iPXE y Nginx :8089
-├── 06-openstack-glance-bifrost.sh     # Ironic Standalone en Podman, ramdisk IPA y enrolamiento por MAC
-├── 07-cloud-init.sh                   # Plantilla Packer HCL2 y generador de volumen ConfigDrive (config-2)
-├── 08-kubernetes.sh                   # Clúster RKE2 (3 Control Planes HA + 2 Workers) con Cilium eBPF
-├── 09-verificacion.sh                 # Validación integral de conectividad, datapath Cilium y API Server
-├── deploy-masivo.sh                   # El "Botón Único": Aprovisionamiento masivo paralelo por MAC
+├── README.md                          # Guía Maestra de Arquitectura y Despliegue
 ├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto desde Laptop (SSH Jump Host)
-├── healthcheck.sh                     # Auditoría de estado y tabla visual de métricas de la flota
-└── rollback/                          # Scripts individuales de desmantelamiento por fase
+├── .gitignore                         # Exclusión de claves, certificados, respaldos e ISOs
+│
+├── config/                            # Parámetros, variables y catálogo de red
+│   ├── env                            # Variables maestras activas del clúster (chmod 600)
+│   ├── env.example                    # Plantilla de variables de entorno y puertos
+│   ├── nodes.csv                      # Inventario físico de los 8 nodos con MACs normalizadas
+│   └── dnsmasq.conf                   # Plantilla de referencia para reservas DHCP y PXE
+│
+├── docs/                              # DOCUMENTACIÓN TÉCNICA Y OPERATIVA (.md)
+│   ├── env.md                         # Cheat-sheet de IPs, claves, BIOS y alias SSH
+│   ├── estructura.md                  # Este manual de operación y trazabilidad
+│   ├── manual_maestro_infraestructura_pxe_openstack.md # Manual técnico exhaustivo
+│   ├── redes/                         # Arquitectura y seguridad de redes
+│   │   ├── aislamiento_red_oficina.md # Topología As-Built y blindaje de la red corporativa
+│   │   ├── redes.md                   # Plan maestro de direccionamiento L2/L3
+│   │   └── conflictos_vlan_manual.md  # Matriz de riesgos y mitigación de VLANs
+│   ├── runbooks/                      # Procedimientos operativos estándar (SOP)
+│   │   ├── blindaje-red-oficina.md    # Protocolo de contención Rogue DHCP y reglas NAT
+│   │   └── recuperacion-desastres.md  # Procedimientos ante caídas de nodos y etcd
+│   └── openstack/                     # Decisiones de diseño y arquitectura bare-metal
+│       ├── glance_ironic_bifrost_arquitectura_comparativa.md
+│       ├── OpenStack Glance, Formatos de Disco e Ironic Bare-Metal.md
+│       └── Diferencias entre un entorno de desarrollo y uno de producción.md
+│
+├── lib/                               # Biblioteca compartida
+│   └── common.sh                      # Logging, comprobaciones, traps y carga de configuración
+│
+├── scripts/                           # SCRIPTS EJECUTABLES DE APROVISIONAMIENTO (.sh)
+│   ├── 00-preflight.sh                # Fase 0: Validación de requisitos y variables
+│   ├── 01-base-servidores.sh          # Fase 1: Hostname, red estática, Chrony y sudoers
+│   ├── 02-bastion.sh                  # Fase 2: Bastion Host, SSH :2222, Squid y nftables
+│   ├── 03-nexus.sh                    # Fase 3: Sonatype Nexus 3 OSS + PostgreSQL 17
+│   ├── 04-clientes-nexus.sh           # Fase 4: Redirección APT hacia el proxy de Nexus
+│   ├── 05-pxe-dhcp-tftp.sh            # Fase 5: Servidor PXE, dnsmasq amarrado y Nginx :8089
+│   ├── 06-openstack-glance-bifrost.sh # Fase 6: Ironic Standalone en Podman y ramdisk IPA
+│   ├── 07-cloud-init.sh               # Fase 7: Plantillas Cloud-Init, ConfigDrive y NoCloud
+│   ├── 08-kubernetes.sh               # Fase 8: Clúster RKE2 HA + Cilium eBPF
+│   ├── 09-verificacion.sh             # Fase 9: Validación integral de conectividad y K8s
+│   ├── deploy-masivo.sh               # Despliegue masivo bare-metal "un solo botón"
+│   └── healthcheck.sh                 # Auditoría de estado y tabla visual de métricas
+│
+└── rollback/                          # Scripts de reversión por fase
     ├── rollback-01-base-servidores.sh
     ├── rollback-02-bastion.sh
     ├── rollback-03-nexus.sh

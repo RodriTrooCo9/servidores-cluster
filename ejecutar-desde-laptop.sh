@@ -103,7 +103,7 @@ cmd_sync() {
         log_info "Sincronizando hacia [${hostname}] (${alias_name})..."
         if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "mkdir -p /tmp/infra-scripts" 2>/dev/null; then
             scp -r -q -o BatchMode=yes -o ConnectTimeout=5 "${SCRIPT_DIR}/"* "${alias_name}:/tmp/infra-scripts/"
-            ssh -n "${alias_name}" "chmod +x /tmp/infra-scripts/*.sh"
+            ssh -n "${alias_name}" "chmod +x /tmp/infra-scripts/*.sh /tmp/infra-scripts/scripts/*.sh 2>/dev/null || true"
             log_success "Sincronizado exitosamente en ${hostname}."
         else
             log_warn "Nodo ${hostname} (${alias_name}) no accesible por SSH. Omitiendo sync."
@@ -118,11 +118,12 @@ run_remote_script() {
 
     log_info "--> Ejecutando ${script_name} en [${target_alias}]..."
     if [[ "${DRY_RUN}" = true ]]; then
-        echo -e "${COLOR_CYAN}[DRY-RUN] ssh ${target_alias} 'sudo /tmp/infra-scripts/${script_name} ${args}'${COLOR_NC}"
+        echo -e "${COLOR_CYAN}[DRY-RUN] ssh ${target_alias} 'sudo /tmp/infra-scripts/scripts/${script_name} ${args}'${COLOR_NC}"
         return 0
     fi
 
-    ssh -t -o ConnectTimeout=5 "${target_alias}" "sudo /tmp/infra-scripts/${script_name} ${args}"
+    local remote_cmd="if [ -f /tmp/infra-scripts/scripts/${script_name} ]; then sudo /tmp/infra-scripts/scripts/${script_name} ${args}; else sudo /tmp/infra-scripts/${script_name} ${args}; fi"
+    ssh -t -o ConnectTimeout=5 "${target_alias}" "${remote_cmd}"
 }
 
 cmd_fase() {
@@ -220,7 +221,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --health)
-            "${SCRIPT_DIR}/healthcheck.sh"
+            if [[ -f "${SCRIPT_DIR}/scripts/healthcheck.sh" ]]; then
+                "${SCRIPT_DIR}/scripts/healthcheck.sh"
+            else
+                "${SCRIPT_DIR}/healthcheck.sh"
+            fi
             shift
             ;;
         --all)
@@ -234,7 +239,11 @@ while [[ $# -gt 0 ]]; do
             cmd_fase 5
             cmd_fase 8
             cmd_fase 9
-            "${SCRIPT_DIR}/healthcheck.sh"
+            if [[ -f "${SCRIPT_DIR}/scripts/healthcheck.sh" ]]; then
+                "${SCRIPT_DIR}/scripts/healthcheck.sh"
+            else
+                "${SCRIPT_DIR}/healthcheck.sh"
+            fi
             shift
             ;;
         --dry-run)
