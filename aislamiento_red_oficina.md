@@ -303,3 +303,49 @@ En el Nodo 306:
 sudo arping -I enp2s0 -c 3 10.100.29.30
 ```
 * **Resultado esperado**: `0 replies received`. Si responde alguna MAC adicional, indica que otra máquina tiene esa misma IP configurada estáticamente.
+
+---
+
+## 8. Arquitectura Definitiva en Producción (Topología As-Built)
+
+La solución final adoptada e implementada en el laboratorio garantiza **cero impacto y aislamiento absoluto** mediante la siguiente topología física y lógica:
+
+```
+ [ Tu Laptop Admin ] (192.168.29.16)
+       │ (100% Conectada por Wi-Fi wlp4s0)
+       ▼
+ ┌────────────────────────────────────────────────────────┐
+ │                      WIFI OFICINA                      │
+ └─────────────────────────┬──────────────────────────────┘
+                           │
+                           ▼ (Wi-Fi wlp3s0: 192.168.29.25)
+                  ┌─────────────────┐
+                  │    Nodo 306     │ (Jump Host / NAT Router / PXE)
+                  │(pxe-controller) │
+                  └────────┬────────┘
+                           │ (Ethernet enp2s0: 10.100.29.30)
+ ══════════════════════════╪════════════════════════════════════════════════
+                           ▼
+            ┌─────────────────────────────┐
+            │   SWITCH AISLADO PRIVADO    │ ◄── [DESCONECTADO DE LA PARED]
+            │      (10.100.29.0/24)       │     (Cero colisiones L2 / DHCP)
+            └──────┬───────────────┬──────┘
+                   │               │
+                   ▼               ▼
+            ┌─────────────┐ ┌──────────────┐ ┌─────────────────────────┐
+            │  Nodo 314   │ │   Nodo 315   │ │ Nodos K8s (269, 280,    │
+            │  (bastion)  │ │ (nexus-repo) │ │ 320, 321, 279)          │
+            │10.100.29.10 │ │10.100.29.20  │ │10.100.29.101..112       │
+            └─────────────┘ └──────────────┘ └─────────────────────────┘
+```
+
+### Características de la Topología Operativa:
+1. **Switch Dedicado sin Enlace a la Pared**: El switch del clúster físico no posee ningún cable Ethernet conectado a las tomas de red de la empresa. Las tramas L2 (ARP, DHCP, STP) están físicamente confinadas.
+2. **Laptop sin Cables**: El ingeniero opera de forma remota a través de la Wi-Fi corporativa.
+3. **Nodo 306 como Pasarela Dual**:
+   * **wlp3s0 (Wi-Fi)**: Recibe peticiones SSH y realiza NAT Masquerade saliente para dar internet al clúster (`iptables -t nat -A POSTROUTING -o wlp3s0 -j MASQUERADE`).
+   * **enp2s0 (Ethernet)**: Asigna IPs fijas y dinámicas en `10.100.29.0/24`, despacha TFTP/HTTPBoot y orquesta los metadatos de Cloud-Init.
+4. **Túneles Locales Disponibles**:
+   * `kubectl` en Laptop ➔ `https://127.0.0.1:6443` (túnel SSH hacia `10.100.29.10:6443`).
+   * Sonatype Nexus Web UI ➔ `http://localhost:8081` (túnel SSH hacia `10.100.29.20:8081`).
+

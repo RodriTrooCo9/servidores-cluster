@@ -33,7 +33,7 @@ flowchart TD
 ```
 
 #### 2. Tormenta de Broadcast (*Broadcast Storm*)
-Cuando un dispositivo de red necesita averiguar qué dirección MAC corresponde a una dirección IP (por ejemplo, `10.0.1.111`), emite una trama **ARP Request** con dirección MAC de destino `ff:ff:ff:ff:ff:ff` (difusión masiva).
+Cuando un dispositivo de red necesita averiguar qué dirección MAC corresponde a una dirección IP (por ejemplo, `10.100.29.111`), emite una trama **ARP Request** con dirección MAC de destino `ff:ff:ff:ff:ff:ff` (difusión masiva).
 * El Switch A recibe la trama en el puerto del servidor y, por regla de Ethernet, **la reenvía por todos los puertos activos de esa VLAN**, excepto por el que la recibió.
 * La trama viaja por el Enlace 1 y por el Enlace 2 hacia el Switch B.
 * El Switch B recibe la trama del Enlace 1 y la reenvía por todos sus puertos, incluido el Enlace 2. A su vez, recibe la trama del Enlace 2 y la reenvía por el Enlace 1.
@@ -83,7 +83,7 @@ sequenceDiagram
     autonumber
     participant N321 as MiniPC 321 (Cliente PXE)
     participant SW as Switch Compartido (Sin VLAN aislada)
-    participant N306 as Nodo 306 (dnsmasq 10.0.1.30)
+    participant N306 as Nodo 306 (dnsmasq 10.100.29.30)
     participant OFI as Router Oficina (DHCP 192.168.21.1)
 
     Note over N321: Encendido / Booteo UEFI Network
@@ -92,7 +92,7 @@ sequenceDiagram
     SW->>OFI: Reenvía DHCPDISCOVER (Mismo dominio de difusión)
 
     par Condición de Carrera en Respuestas
-        N306-->>SW: DHCPOFFER (10.0.1.111, Next-Server: 10.0.1.30, boot: ipxe.efi)
+        N306-->>SW: DHCPOFFER (10.100.29.111, Next-Server: 10.100.29.30, boot: ipxe.efi)
         OFI-->>SW: DHCPOFFER (192.168.21.145, Gateway: 192.168.21.1)
     end
 
@@ -100,7 +100,7 @@ sequenceDiagram
         SW->>N321: Entrega IP 192.168.21.145
         Note over N321: ERROR: Sin opciones TFTP/PXE. La máquina no bootea por red o aborta.
     else Si Gana el Nodo 306
-        SW->>N321: Entrega IP 10.0.1.111
+        SW->>N321: Entrega IP 10.100.29.111
         N321->>N306: TFTP Read Request: ipxe.efi
         N306->>N321: Envía ipxe.efi (Con sonde RFC 2347 Error 8 - Comportamiento Normal)
         N321->>N306: HTTP GET boot.ipxe -> Descarga kernel y initrd
@@ -108,7 +108,7 @@ sequenceDiagram
         Note over N321: El instalador inicia y emite una NUEVA petición DHCP...
         alt Segunda Carrera DHCP durante Instalación
             OFI-->>N321: El instalador toma IP 192.168.21.x y Gateway 192.168.21.1
-            Note over N321: PANTALLAZO AZUL: No encuentra el repositorio http://10.0.1.30/iso/
+            Note over N321: PANTALLAZO AZUL: No encuentra el repositorio http://10.100.29.30/iso/
         end
     end
 ```
@@ -123,7 +123,7 @@ sequenceDiagram
 #### ¿Por qué aparecía el "Pantallazo Azul" con un cuadro de entrada abajo?
 1. **Falta de automatización en el kernel**: El instalador de Debian (*Debian Installer*) detectó que faltaban parámetros mandatorios de localización (idioma, teclado, país) o no pudo cargar el archivo `preseed.cfg`. Cuando esto ocurre, despliega su pantalla interactiva en modo texto azul (`newt/curses`) preguntando *"Select a language"*.
 2. **Desincronización de Versiones Kernel-ISO**: El instalador arrancaba con un kernel Debian 13 (6.12), pero el repositorio montado en Nginx contenía paquetes de otra distribución (Debian 14 Forky o repositorio incompleto). Al buscar los paquetes del kernel para instalarlos en el disco duro (`linux-image-*`), la suma de verificación fallaba y el instalador se detenía en un shell de recuperación.
-3. **Pérdida de la ruta al servidor HTTP**: Durante la fase de red del instalador, si el DHCP del router de oficina respondía antes que el nodo 306, la máquina cliente recibía una IP del rango `192.168.21.0/24` con gateway `192.168.21.1`. Al intentar conectar con `http://10.0.1.30/iso/dists/trixie/`, la petición salía hacia el router de oficina, el cual no conocía la ruta hacia `10.0.1.30` y descartaba los paquetes, congelando la instalación.
+3. **Pérdida de la ruta al servidor HTTP**: Durante la fase de red del instalador, si el DHCP del router de oficina respondía antes que el nodo 306, la máquina cliente recibía una IP del rango `192.168.21.0/24` con gateway `192.168.21.1`. Al intentar conectar con `http://10.100.29.30/iso/dists/trixie/`, la petición salía hacia el router de oficina, el cual no conocía la ruta hacia `10.100.29.30` y descartaba los paquetes, congelando la instalación.
 
 ---
 
@@ -382,7 +382,7 @@ interface=enp2s0
 bind-interfaces
 
 # Desactivar cualquier asignación dinámica abierta:
-dhcp-range=10.0.1.0,static
+dhcp-range=10.100.29.0,static
 
 # Ignorar a cualquier cliente que no esté en la lista blanca de MACs:
 dhcp-ignore=tag:!known
@@ -474,19 +474,19 @@ Para evitar que el instalador de Debian vuelva a detenerse en una pantalla inter
 
 ```text
 #!ipxe
-kernel http://10.0.1.30/debian/linux initrd=initrd.gz \
+kernel http://10.100.29.30/debian/linux initrd=initrd.gz \
     auto=true \
     priority=critical \
     locale=en_US.UTF-8 \
     keymap=es \
     file=/preseed.cfg \
-    ip=10.0.1.111::10.0.1.30:255.255.255.0:k8s-worker-01:enp2s0:none:8.8.8.8 \
+    ip=10.100.29.111::10.100.29.30:255.255.255.0:k8s-worker-01:enp2s0:none:8.8.8.8 \
     netcfg/choose_interface=auto \
     netcfg/link_wait_timeout=15 \
     hw-detect/load_media=false \
     nomodeset \
     --- quiet
-initrd http://10.0.1.30/debian/initrd.gz
+initrd http://10.100.29.30/debian/initrd.gz
 boot
 ```
 
@@ -495,10 +495,10 @@ boot
 * `priority=critical`: Suprime todas las preguntas ordinarias; el instalador solo se detendrá si ocurre un error fatal insalvable.
 * `locale=en_US.UTF-8 keymap=es`: Satisface de antemano las preguntas de idioma y teclado, **eliminando el pantallazo azul inicial**.
 * `file=/preseed.cfg`: Indica al instalador que lea el archivo de preconfiguración inyectado dentro de la memoria RAM del `initrd.gz`.
-* `ip=10.0.1.111::10.0.1.30:255.255.255.0:k8s-worker-01:enp2s0:none:8.8.8.8`: **Fija la red a nivel de kernel**.
-  * `10.0.1.111`: IP del cliente.
+* `ip=10.100.29.111::10.100.29.30:255.255.255.0:k8s-worker-01:enp2s0:none:8.8.8.8`: **Fija la red a nivel de kernel**.
+  * `10.100.29.111`: IP del cliente.
   * `::`: Servidor NFS (vacío).
-  * `10.0.1.30`: Puerta de enlace (Nodo 306).
+  * `10.100.29.30`: Puerta de enlace (Nodo 306).
   * `255.255.255.0`: Máscara de subred.
   * `k8s-worker-01`: Hostname.
   * `enp2s0`: Interfaz física.
@@ -557,7 +557,7 @@ Ordenado por velocidad y profundidad de diagnóstico:
   *(Verificar que no aparezcan nombres de máquinas o MACs de celulares de oficina).*
 - [ ] **2.3 Disponibilidad del Repositorio de Instalación HTTP**:
   ```bash
-  curl -I http://10.0.1.30/iso/dists/trixie/Release
+  curl -I http://10.100.29.30/iso/dists/trixie/Release
   ```
   *(Debe retornar `HTTP/1.1 200 OK`).*
 
@@ -610,7 +610,7 @@ flowchart LR
 1. **Garantizar Aislamiento de dnsmasq**:
    * Mantener en `/etc/dnsmasq.conf`: `dhcp-ignore=tag:!known` y `bind-interfaces`.
 2. **Eliminar la Condición de Carrera en PXE**:
-   * En `/tftpboot/autoexec.ipxe`, pasar el argumento estático `ip=10.0.1.111::10.0.1.30:255.255.255.0:...` para que el instalador de la miniPC 321 no realice peticiones DHCP a la oficina.
+   * En `/tftpboot/autoexec.ipxe`, pasar el argumento estático `ip=10.100.29.111::10.100.29.30:255.255.255.0:...` para que el instalador de la miniPC 321 no realice peticiones DHCP a la oficina.
 3. **Verificación Física de Switches**:
    * Asegurar que solo exista **un único cable UTP** conectando ambos switches hasta que se configure formalmente LACP.
 

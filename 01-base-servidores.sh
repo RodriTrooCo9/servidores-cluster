@@ -49,7 +49,7 @@ if [[ -z "${NODE_ID}" ]]; then
         log_warn "Nodo no encontrado en ${NODES_CSV}. Usando valores por defecto debido a --force."
         NODE_ID="999"
         NODE_NAME="${CURRENT_HOSTNAME}"
-        NODE_IP="10.0.1.99"
+        NODE_IP="10.100.29.99"
         NODE_ROLE="custom"
     else
         log_error "El nodo actual no coincide con ningún registro en ${NODES_CSV}."

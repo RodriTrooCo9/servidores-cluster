@@ -2,7 +2,7 @@
 # ==============================================================================
 # SCRIPT 03: INSTALACIÓN DE SONATYPE NEXUS 3 CON POSTGRESQL 16 (03-nexus.sh)
 # Objetivo: PostgreSQL 16, Java 17, Nexus 3 OSS, JVM tuning 4 GB y mitigación 128 GB
-# Nodo de Ejecución: [NEXUS] (Nodo 315 | IP: 10.0.1.20 | MAC: 64:00:6a:2a:5f:99)
+# Nodo de Ejecución: [NEXUS] (Nodo 315 | IP: 10.100.29.20 | MAC: 64:00:6a:2a:5f:99)
 # Fase README: FASE 3: Sonatype Nexus 3 con Backend PostgreSQL 16 y Tuning de Disco
 # Uso: sudo ./03-nexus.sh [--dry-run] [--force] [-y]
 # ==============================================================================

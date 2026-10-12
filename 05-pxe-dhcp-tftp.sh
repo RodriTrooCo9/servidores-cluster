@@ -2,7 +2,7 @@
 # ==============================================================================
 # SCRIPT 05: SERVICIOS DE ARRANQUE POR RED PXE/TFTP Y DHCP (05-pxe-dhcp-tftp.sh)
 # Objetivo: Instalar dnsmasq con reservas por MAC, bootloader iPXE y Nginx HTTP :8089
-# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.0.1.30 | MAC: 64:00:6a:2a:62:42)
+# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.100.29.30 | MAC: 64:00:6a:2a:62:42)
 # Fase README: FASE 5: Servicios de Arranque por Red PXE / iPXE con Reservas por MAC
 # Uso: sudo ./05-pxe-dhcp-tftp.sh [--dry-run] [--force] [-y]
 # ==============================================================================

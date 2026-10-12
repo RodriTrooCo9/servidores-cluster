@@ -2,7 +2,7 @@
 # ==============================================================================
 # SCRIPT 07: PLANTILLAS CLOUD-INIT Y CONFIGDRIVE (07-cloud-init.sh)
 # Objetivo: Generar plantilla Packer y generador de volumen ConfigDrive (config-2)
-# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.0.1.30 | MAC: 64:00:6a:2a:62:42)
+# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.100.29.30 | MAC: 64:00:6a:2a:62:42)
 # Fase README: FASE 7: Plantillas Cloud-Init, ConfigDrive y Compilación Inmutable con Packer
 # Uso: sudo ./07-cloud-init.sh [--dry-run] [--force] [-y]
 # ==============================================================================

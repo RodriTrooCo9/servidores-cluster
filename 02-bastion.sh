@@ -2,7 +2,7 @@
 # ==============================================================================
 # SCRIPT 02: CONFIGURACIÓN Y ENDURECIMIENTO DEL BASTION HOST (02-bastion.sh)
 # Objetivo: SSH en puerto 2222, Squid Proxy Egress (:3128) y Firewall nftables
-# Nodo de Ejecución: [BASTION] (Nodo 314 | IP: 10.0.1.10 | MAC: 64:00:6a:2a:60:62)
+# Nodo de Ejecución: [BASTION] (Nodo 314 | IP: 10.100.29.10 | MAC: 64:00:6a:2a:60:62)
 # Fase README: FASE 2: Bastion Host (Seguridad Perimetral, SSH ProxyJump y nftables)
 # Uso: sudo ./02-bastion.sh [--dry-run] [--force] [-y]
 # ==============================================================================

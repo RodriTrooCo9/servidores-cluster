@@ -3,7 +3,7 @@
 # SCRIPT MAESTRO: DESPLIEGUE MASIVO "UN SOLO BOTÓN" (deploy-masivo.sh)
 # Objetivo: Enrolar y aprovisionar en paralelo la flota bare-metal según su MAC
 # Soporta: --all, --nodes <lista>, --rebuild, --power-method [wol|ipmi|redfish|manual]
-# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.0.1.30 | MAC: 64:00:6a:2a:62:42)
+# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.100.29.30 | MAC: 64:00:6a:2a:62:42)
 # Fase README: FASE 8: Despliegue Masivo por Red Privada "Un Solo Botón"
 # Uso: sudo ./deploy-masivo.sh [--all] [--nodes 314,315] [--rebuild] [--dry-run]
 # ==============================================================================

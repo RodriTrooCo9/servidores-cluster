@@ -183,7 +183,7 @@ interface=enp2s0
 bind-interfaces
 
 # 2. PUERTA DE ENLACE Y SERVIDOR DNS CORPORATIVO
-dhcp-option=3,10.100.29.1
+dhcp-option=3,10.100.29.30
 dhcp-option=6,192.168.26.120
 
 # 3. RANGO DINÁMICO EFÍMERO (Para descubrimiento Baremetal o Ironic Inspector)

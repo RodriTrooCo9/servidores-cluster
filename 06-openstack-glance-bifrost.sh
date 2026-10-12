@@ -2,7 +2,7 @@
 # ==============================================================================
 # SCRIPT 06: OPENSTACK GLANCE E IRONIC STANDALONE (06-openstack-glance-bifrost.sh)
 # Objetivo: Desplegar Ironic con Podman, descargar IPA ramdisk y enrolar 8 nodos por MAC
-# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.0.1.30 | MAC: 64:00:6a:2a:62:42)
+# Nodo de Ejecución: [PXE] (Nodo 306 | IP: 10.100.29.30 | MAC: 64:00:6a:2a:62:42)
 # Fase README: FASE 6: OpenStack Glance e Ironic Standalone para Servidores Físicos
 # Uso: sudo ./06-openstack-glance-bifrost.sh [--dry-run] [--force] [-y]
 # ==============================================================================

@@ -28,6 +28,7 @@ infra-scripts/
 ├── 08-kubernetes.sh                   # Clúster RKE2 (3 Control Planes HA + 2 Workers) con Cilium eBPF
 ├── 09-verificacion.sh                 # Validación integral de conectividad, datapath Cilium y API Server
 ├── deploy-masivo.sh                   # El "Botón Único": Aprovisionamiento masivo paralelo por MAC
+├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto desde Laptop (SSH Jump Host)
 ├── healthcheck.sh                     # Auditoría de estado y tabla visual de métricas de la flota
 └── rollback/                          # Scripts individuales de desmantelamiento por fase
     ├── rollback-01-base-servidores.sh
@@ -49,17 +50,18 @@ Los scripts deben ejecutarse estrictamente en el siguiente orden lógico:
 | Paso | Script | Fase del README | Nodo Destino | IP | Propósito Clave |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **0** | `00-preflight.sh` | Pre-requisitos | Cualquier nodo | N/A | Valida Debian 13, kernel 6.12+, RAM (8/16 GB) y disco 128 GB. |
-| **1** | `01-base-servidores.sh` | Fase 1 | **Todos (1 al 8)** | `10.0.1.x` | Fija hostnames, red estática, Chrony NTP y usuario administrativo. |
-| **2** | `02-bastion.sh` | Fase 2 | **Bastion (ID 314)** | `10.0.1.10` | Asegura OpenSSH en puerto 2222, proxy Squid :3128 y firewall `nftables`. |
-| **3** | `03-nexus.sh` | Fase 3 | **Nexus (ID 315)** | `10.0.1.20` | Despliega PostgreSQL 16 y Nexus 3 OSS con tuning de 4 GB JVM. |
-| **4** | `04-clientes-nexus.sh`| Fase 4 | **Clientes (3 al 8)** | `10.0.1.x` | Redirige `sources.list` y containerd al proxy local de Nexus. |
-| **5** | `05-pxe-dhcp-tftp.sh` | Fase 5 | **PXE (ID 306)** | `10.0.1.30` | Arranca `dnsmasq` con 8 reservas fijas por MAC y Nginx en :8089. |
-| **6** | `06-openstack-glance-bifrost.sh` | Fase 6 | **PXE (ID 306)** | `10.0.1.30` | Inicia Ironic en Podman, descarga IPA y enrola los 8 nodos en catálogo. |
-| **7** | `07-cloud-init.sh` | Fase 7 | **PXE (ID 306)** | `10.0.1.30` | Prepara plantillas Packer y generador de volumen `config-2`. |
-| **8** | `deploy-masivo.sh` | Fase 8 | **PXE (ID 306)** | `10.0.1.30` | **"Un solo botón"**: Dispara WoL/IPMI y despliega la imagen en paralelo. |
-| **9** | `08-kubernetes.sh` | Fase 9 | **K8s (269,280,320,321,279)** | `10.0.1.10x` | Inicia RKE2 Server (CPs) y RKE2 Agent (Workers) con Cilium eBPF. |
-| **10**| `09-verificacion.sh` | Fase 11 | **Bastion (ID 314)** | `10.0.1.10` | Ejecuta prueba de tráfico pod-a-pod y valida los 5 nodos Ready. |
-| **--**| `healthcheck.sh` | Operaciones | **Bastion (ID 314)** | `10.0.1.10` | Inspección continua con tabla visual en tiempo real. |
+| **1** | `01-base-servidores.sh` | Fase 1 | **Todos (1 al 8)** | `10.100.29.x` | Fija hostnames, red estática, Chrony NTP y usuario administrativo. |
+| **2** | `02-bastion.sh` | Fase 2 | **Bastion (ID 314)** | `10.100.29.10` | Asegura OpenSSH, proxy Squid :3128 y firewall `nftables`. |
+| **3** | `03-nexus.sh` | Fase 3 | **Nexus (ID 315)** | `10.100.29.20` | Despliega PostgreSQL 17 y Nexus 3 OSS con tuning de 4 GB JVM. |
+| **4** | `04-clientes-nexus.sh`| Fase 4 | **Clientes (3 al 8)** | `10.100.29.x` | Redirige `sources.list` y containerd al proxy local de Nexus. |
+| **5** | `05-pxe-dhcp-tftp.sh` | Fase 5 | **PXE (ID 306)** | `10.100.29.30` | Arranca `dnsmasq` con reservas fijas por MAC y Nginx en :80/:8089. |
+| **6** | `06-openstack-glance-bifrost.sh` | Fase 6 | **PXE (ID 306)** | `10.100.29.30` | Inicia Ironic en Podman, descarga IPA y enrola los 8 nodos en catálogo. |
+| **7** | `07-cloud-init.sh` | Fase 7 | **PXE (ID 306)** | `10.100.29.30` | Prepara plantillas Packer, ConfigDrive `config-2` y NoCloud HTTP. |
+| **8** | `deploy-masivo.sh` | Fase 8 | **PXE (ID 306)** | `10.100.29.30` | **"Un solo botón"**: Dispara WoL/IPMI y despliega la imagen en paralelo. |
+| **9** | `08-kubernetes.sh` | Fase 9 | **K8s (269,280,320,321,279)** | `10.100.29.10x` | Inicia RKE2 Server (CPs) y RKE2 Agent (Workers) con Cilium eBPF. |
+| **10**| `09-verificacion.sh` | Fase 11 | **Bastion (ID 314)** | `10.100.29.10` | Ejecuta prueba de tráfico pod-a-pod y valida los nodos Ready. |
+| **--**| `ejecutar-desde-laptop.sh` | Orquestación | **Desde Laptop (Wi-Fi)**| `192.168.29.16` | Orquestador centralizado con ProxyJump vía Nodo 306 (`192.168.29.25`). |
+| **--**| `healthcheck.sh` | Operaciones | **Cualquier nodo / Laptop** | N/A | Inspección continua con tabla visual en tiempo real. |
 
 ---
 
@@ -74,18 +76,18 @@ chmod 600 config/env
 nano config/env
 ```
 
-### 3.2 Copia de Scripts hacia los Nodos Internos vía ProxyJump
-Desde su estación DevOps externa, copie la carpeta hacia el Bastion Host y propáguela a los servidores internos a través del túnel SSH del puerto 2222:
+### 3.2 Despliegue y Orquestación Directa desde la Laptop (Sin cables de red)
+Con la arquitectura de aislamiento implementada, la laptop permanece **100% conectada por Wi-Fi** y administra el clúster a través del Nodo 306 (`ProxyJump n306-wifi`):
 
 ```bash
-# 1. Copiar suite completa al Bastion Host
-scp -P 2222 -i ~/.ssh/id_ed25519_bastion -r ../infra-scripts debian@<IP_BASTION_WAN>:/tmp/
+# 1. Auditar conectividad y SSH de la flota completa
+./ejecutar-desde-laptop.sh --check
 
-# 2. Conectarse al Bastion
-ssh -p 2222 -i ~/.ssh/id_ed25519_bastion debian@<IP_BASTION_WAN>
+# 2. Sincronizar scripts automáticamente a todos los nodos en línea
+./ejecutar-desde-laptop.sh --sync
 
-# 3. Propagar scripts a un nodo interno usando la llave interna (ej. al servidor Nexus)
-scp -i ~/.ssh/id_ed25519_nodes -r /tmp/infra-scripts debian@10.0.1.20:/tmp/
+# 3. Ejecutar cualquier fase de forma desatendida (-y)
+./ejecutar-desde-laptop.sh --fase 7
 ```
 
 ---
@@ -169,7 +171,7 @@ Esta tabla garantiza la coherencia técnica entre el documento de arquitectura y
 ### 8.1 Suposiciones y Decisiones Adoptadas
 1. **Idempotencia Absoluta**: Todos los scripts comprueban la existencia de usuarios, archivos, bases de datos o servicios antes de crearlos, garantizando que una re-ejecución accidental no cause interrupción del servicio ni pérdida de datos.
 2. **Desacoplamiento de Secretos**: No existen contraseñas ni tokens en texto plano dentro del código de los scripts; todas las credenciales se leen exclusivamente desde `config/env` con permisos restringidos `0600`.
-3. **Aislamiento de Red L2**: Se asume que los 8 servidores físicos están interconectados a través de un switch L2 no gestionado o VLAN dedicada para el segmento `10.0.1.0/24`, donde el Bastion es el único equipo con una segunda tarjeta hacia la WAN.
+3. **Aislamiento de Red L2**: Se asume que los 8 servidores físicos están interconectados a través de un switch L2 no gestionado o VLAN dedicada para el segmento `10.100.29.0/24`, donde el Bastion es el único equipo con una segunda tarjeta hacia la WAN.
 
 ### 8.2 Parámetros Marcados como [POR DEFINIR] en `config/env`
 * `<IP_BASTION_WAN>`: Dirección IP pública o corporativa asignada a la interfaz externa del Bastion Host.

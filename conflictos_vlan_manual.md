@@ -20,7 +20,7 @@ A continuación se desglosan los 10 problemas reales que simulan "colisiones" en
 | **4** | **Trunk Mal Configurado** | Un extremo del cable está configurado como modo *Trunk* y el otro extremo como modo *Access*. | El extremo en modo Access descarta las tramas etiquetadas por considerarlas gigantes (*giants*) o inválidas. | `show interfaces status` o `show interfaces switchport`. Paquetes unicast no pasan de un switch a otro. | Configurar ambos extremos en el mismo modo (`switchport mode trunk` en ambos lados). | Si se cambia el puerto de acceso a trunk sin VLAN nativa adecuada, se pierde la IP de administración. |
 | **5** | **VLAN Inexistente en Switch** | Se configura un puerto en la VLAN 100, pero la VLAN 100 nunca fue creada en la base de datos del switch (`vlan 100`). | La interfaz queda en estado inactivo (*down*) o el switch descarta todo el tráfico del puerto silenciosamente. | `show vlan brief` no muestra la VLAN 100 en la lista de VLANs activas del switch. | Crear explícitamente la VLAN: `vlan 100` seguido de `name CLUSTER_BAREMETAL`. | Riesgo nulo; crear una VLAN es una operación inocua y obligatoria. |
 | **6** | **Puerto en VLAN Equivocada** | El cable del servidor se conectó a un puerto asignado a la VLAN de oficina (VLAN 10) en vez de la del clúster (VLAN 100). | El servidor toma IP de la oficina, no ve al nodo 306 y falla la instalación por PXE. | `show mac address-table vlan 10` muestra la MAC del servidor en la VLAN de usuarios. | Mover el puerto a la VLAN correspondiente: `switchport access vlan 100`. | Si el puerto pertenecía a una impresora o PC crítica de oficina, dicho equipo quedará desconectado. |
-| **7** | **Dirección IP Duplicada** | Dos máquinas (o una PC estática y el DHCP) tienen configurada la misma dirección IP `10.0.1.111`. | Conexión intermitente. El comando `ping` responde con fluctuación de TTL o pérdida intermitente del 50%. | `arp-scan -I enp2s0 10.0.1.0/24` muestra dos MACs diferentes para la misma IP. Logs: `duplicate address`. | Identificar la máquina infractora por su MAC y cambiarle la IP a una disponible. | Ninguno. Corregir una IP duplicada restaura la estabilidad del servicio de inmediato. |
+| **7** | **Dirección IP Duplicada** | Dos máquinas (o una PC estática y el DHCP) tienen configurada la misma dirección IP `10.100.29.111`. | Conexión intermitente. El comando `ping` responde con fluctuación de TTL o pérdida intermitente del 50%. | `arp-scan -I enp2s0 10.100.29.0/24` muestra dos MACs diferentes para la misma IP. Logs: `duplicate address`. | Identificar la máquina infractora por su MAC y cambiarle la IP a una disponible. | Ninguno. Corregir una IP duplicada restaura la estabilidad del servicio de inmediato. |
 | **8** | **Dirección MAC Duplicada** | Dos máquinas virtuales clonadas o dos tarjetas de red tienen la misma dirección MAC de hardware. | La tabla CAM del switch conmuta constantemente de puerto (*MAC flapping*), degradando el rendimiento. | Logs del switch: `%SW_MATM-4-MACFLAP_NOTIF`. `bridge fdb show` en hipervisores Linux. | Regenerar la dirección MAC en el hypervisor o reemplazar la tarjeta de red física duplicada. | Si se apaga la máquina equivocada, se detiene un servicio en producción. |
 | **9** | **Servidor DHCP Duplicado (Rogue DHCP)** | Dos servidores DHCP (Nodo 306 y Router de Oficina) responden peticiones en el mismo segmento de broadcast. | Clientes de oficina reciben IPs del clúster (sin internet); nodos del clúster reciben IPs de la oficina (sin PXE). | `tcpdump -i <iface> -n -e "port 67 or port 68"` muestra respuestas de dos IPs distintas. | 1. Segmentar en VLANs separadas.<br>2. Habilitar **DHCP Snooping** en los switches. | Si se activa DHCP Snooping sin declarar el puerto del DHCP oficial como `trusted`, nadie recibirá IP. |
 | **10** | **VLAN No Permitida en Trunk (*Pruning Excesivo*)** | El troncal tiene configurado `allowed vlan 10,20`, pero se necesita pasar tráfico de la VLAN 100. | Tráfico local en cada switch funciona bien, pero los servidores no pueden hablar entre switches. | `show interfaces trunk` muestra en la sección *Vlans in spanning tree forwarding* que la VLAN 100 no está. | Agregar la VLAN al troncal: `switchport trunk allowed vlan add 100`. | Si se escribe `switchport trunk allowed vlan 100` (sin la palabra `add`), se borran las VLANs 10 y 20 del trunk. |
@@ -256,7 +256,7 @@ Un ingeniero senior sabe que el 70% del éxito en redes no reside en los comando
    * La memoria interna de logs de un switch suele almacenar solo entre 50 y 100 líneas. Si ocurre una tormenta de broadcast durante la noche, para la mañana siguiente los logs del origen de la falla ya se habrán sobrescrito.
    * Configura el switch para enviar sus registros a un servidor Syslog central (por ejemplo, en el nodo 306):
      ```text
-     Switch(config)# logging host 10.0.1.30
+     Switch(config)# logging host 10.100.29.30
      Switch(config)# logging trap warnings
      ```
 
@@ -286,8 +286,8 @@ flowchart TD
         ROUTER_OFI["Router Oficina (192.168.21.1)"] ---|Acceso VLAN 10| SW_CORE["Switch de Oficina (VLAN 10)"]
         SW_CORE ---|PCs y Celulares de Oficina| USERS["Red de Oficina (192.168.21.0/24)"]
         SW_CORE ===|Troncal LACP 2 Gbps (VLAN 10, 100)| SW_CLUSTER["Switch Clúster (Rack)"]
-        SW_CLUSTER ---|Puerto 15 (Acceso VLAN 100)| N306["Nodo 306 (10.0.1.30)"]
-        SW_CLUSTER ---|Puertos 16-24 (Acceso VLAN 100)| SERVERS["8 Servidores Clúster (10.0.1.111 - 10.0.1.118)"]
+        SW_CLUSTER ---|Puerto 15 (Acceso VLAN 100)| N306["Nodo 306 (10.100.29.30)"]
+        SW_CLUSTER ---|Puertos 16-24 (Acceso VLAN 100)| SERVERS["8 Servidores Clúster (10.100.29.111 - 10.100.29.118)"]
     end
 ```
 
@@ -298,7 +298,7 @@ La gran pregunta técnica: **Si ya aislamos la red en la VLAN 100, ¿sigue siend
 #### Respuesta Técnica: El Principio de "Defensa en Profundidad" (*Defense in Depth*)
 1. **La VLAN 100 es la Barrera Perimetral**: Con la VLAN activa, el tráfico broadcast de las PCs y celulares de oficina físicamente **no puede ingresar** a la interfaz del nodo 306.
 2. **`dhcp-ignore` es el Cerrojo Interno**: ¿Qué ocurre si un día se corta la energía, el switch se reinicia con la configuración de fábrica (perdiendo las VLANs), o un técnico conecta por error un cable de la oficina en el puerto del nodo 306?
-   * Si quitaste `dhcp-ignore`, el nodo 306 entregará IPs `10.0.1.x` a todos los dispositivos de la empresa, **derribando la oficina de nuevo**.
+   * Si quitaste `dhcp-ignore`, el nodo 306 entregará IPs `10.100.29.x` a todos los dispositivos de la empresa, **derribando la oficina de nuevo**.
    * Si mantienes `dhcp-ignore`, aunque el cable esté mezclado, `dnsmasq` verificará la MAC y **descartará la solicitud**, evitando el colapso.
 
 #### La Configuración Definitiva y Elegante de `dnsmasq` (`/etc/dnsmasq.conf`):
@@ -310,23 +310,23 @@ interface=enp2s0
 bind-interfaces
 
 # 2. Desactivar respuestas DNS en interfaces no deseadas:
-listen-address=127.0.0.1,10.0.1.30
+listen-address=127.0.0.1,10.100.29.30
 
 # 3. Rango Estático Exclusivo para el Clúster:
 # Al no haber rango dinámico, NINGÚN equipo desconocido puede obtener IP
-dhcp-range=10.0.1.0,static,255.255.255.0,24h
+dhcp-range=10.100.29.0,static,255.255.255.0,24h
 
 # 4. Declaración de Nodos del Clúster (por MAC fija):
-dhcp-host=64:00:6a:2a:62:a4,10.0.1.111,minipc321,infinite
-dhcp-host=64:00:6a:2a:62:42,10.0.1.112,minipc322,infinite
+dhcp-host=64:00:6a:2a:62:a4,10.100.29.111,minipc321,infinite
+dhcp-host=64:00:6a:2a:62:42,10.100.29.112,minipc322,infinite
 # ... resto de los 8 nodos
 
 # 5. Ignorar activamente cualquier cliente desconocido (Doble capa de seguridad):
 dhcp-ignore=tag:!known
 
 # 6. Opciones de Red para el Clúster:
-dhcp-option=option:router,10.0.1.30
-dhcp-option=option:dns-server,10.0.1.30,8.8.8.8
+dhcp-option=option:router,10.100.29.30
+dhcp-option=option:dns-server,10.100.29.30,8.8.8.8
 dhcp-option=option:domain-name,lab.local
 
 # 7. Servicios PXE / TFTP:
@@ -386,7 +386,7 @@ Para certificar que la red es 100% estable y nunca más colisionará con la ofic
 Desde tu laptop de oficina (ej. IP `192.168.21.38`):
 ```bash
 # Inyectar una petición DHCP de prueba simulando un cliente nuevo:
-sudo dhcping -c 192.168.21.38 -s 10.0.1.30 -h 00:11:22:33:44:55
+sudo dhcping -c 192.168.21.38 -s 10.100.29.30 -h 00:11:22:33:44:55
 ```
 * **Resultado Esperado**: `Timeout` o `No response from server`. El nodo 306 **no debe responder** a ningún host situado en la red de oficina.
 
@@ -397,7 +397,7 @@ sudo tcpdump -i enp2s0 -nn -e "port 67 or port 68"
 * **Salida Esperada durante el Booteo del Nodo 321**:
   ```text
   14:02:10.123 IP 0.0.0.0.68 > 255.255.255.255.67: BOOTP/DHCP, Request from 64:00:6a:2a:62:a4
-  14:02:10.124 IP 10.0.1.30.67 > 10.0.1.111.68: BOOTP/DHCP, Reply, Length 300
+  14:02:10.124 IP 10.100.29.30.67 > 10.100.29.111.68: BOOTP/DHCP, Reply, Length 300
   ```
   *(Únicamente deben aparecer transacciones del nodo 321 hacia el 306; cero tramas provenientes de IPs `192.168.21.x`)*.
 
@@ -505,7 +505,7 @@ sudo bridge vlan add dev enp3s0 vid 100
 # 5. Activar la interfaz del puente y subinterfaz de gestión en el host
 sudo ip link set br0 up
 sudo ip link add link br0 name br0.100 type vlan id 100
-sudo ip addr add 10.0.1.30/24 dev br0.100
+sudo ip addr add 10.100.29.30/24 dev br0.100
 sudo ip link set br0.100 up
 ```
 

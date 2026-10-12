@@ -27,6 +27,7 @@
    - 4.1 [Matriz de Compatibilidad Oficial y Mitigación de Conflictos](#41-matriz-de-compatibilidad-oficial-y-mitigación-de-conflictos)
    - 4.2 [Estrategia de Ejecución de Servicios en Debian 13](#42-estrategia-de-ejecución-de-servicios-en-debian-13)
 5. [Fases Cronológicas de Instalación Paso a Paso](#5-fases-cronológicas-de-instalación-paso-a-paso)
+   - [5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh`)](#50-orquestación-remota-desde-laptop-ejecutar-desde-laptopsh)
    - [Fase 1: Preparación Base del Sistema Operativo en Debian 13](#fase-1-preparación-base-del-sistema-operativo-en-debian-13)
    - [Fase 2: Bastion Host (Seguridad Perimetral, SSH ProxyJump y nftables)](#fase-2-bastion-host-seguridad-perimetral-ssh-proxyjump-y-nftables)
    - [Fase 3: Sonatype Nexus 3 con Backend PostgreSQL 16 y Tuning de Disco](#fase-3-sonatype-nexus-3-con-backend-postgresql-16-y-tuning-de-disco)
@@ -54,7 +55,7 @@
 El objetivo cardinal de esta infraestructura es construir una plataforma de cómputo en el borde (**Edge Computing**) de alta resiliencia sobre **8 servidores físicos bare-metal**. Toda la plataforma utiliza **Debian GNU/Linux 13 (Trixie)** como sistema operativo base, eliminando hipervisores (KVM, Proxmox, VMware) para otorgar acceso directo al hardware, reducir a cero el *overhead* de virtualización y optimizar el rendimiento de red y almacenamiento NVMe.
 
 El ciclo de aprovisionamiento es **completamente desatendido (Zero-Touch)** y masivo por red privada:
-1. El servidor se conecta al switch de la red privada L2 (`10.0.1.0/24`) y recibe corriente eléctrica (por comando de encendido remoto Redfish/IPMI/Wake-on-LAN o encendido físico).
+1. El servidor se conecta al switch de la red privada L2 (`10.100.29.0/24`) y recibe corriente eléctrica (por comando de encendido remoto Redfish/IPMI/Wake-on-LAN o encendido físico).
 2. Arranca por red mediante **PXE/iPXE**, donde el servidor DHCP (`dnsmasq`) le asigna su dirección IP definitiva según su **dirección MAC física registrada**.
 3. Carga en memoria RAM el ramdisk efímero de **Ironic Python Agent (IPA)** vía HTTP (`:8089`).
 4. IPA formatea el disco local de 128 GB y graba por streaming una imagen comprimida **Debian 13 (`.qcow2`)** pre-compilada con **HashiCorp Packer** o **Glance**.
@@ -69,11 +70,11 @@ El ciclo de aprovisionamiento es **completamente desatendido (Zero-Touch)** y ma
 
 | Componente | Nodo Físico Anfitrión | Recursos que Comparte con la Red Interna |
 | :--- | :--- | :--- |
-| **Bastion Host** | Nodo ID 314 (`10.0.1.10`) | • Punto único de salto SSH ProxyJump (Puerto TCP `2222`).<br>• Proxy Egress Squid para salida auditada a WAN (Puerto TCP `3128`).<br>• Servidor de sincronización horaria Chrony NTP (Puerto UDP `123`).<br>• Cortafuegos perimetral `nftables`. |
-| **Sonatype Nexus 3** | Nodo ID 315 (`10.0.1.20`) | • Proxy y Caché de paquetes Debian APT (`:8081/repository/debian-proxy/`).<br>• Docker Hub Proxy & Registro OCI Privado (`:8082` pull / `:8083` push).<br>• Proxies para npm (`:8081`) y PyPI (`:8081`).<br>• Base de datos relacional PostgreSQL 16 interna (`:5432`). |
-| **PXE / Glance / Ironic** | Nodo ID 306 (`10.0.1.30`) | • Concesiones DHCP estáticas por MAC y dinámicas efímeras (`dnsmasq`).<br>• Entrega de bootloader TFTP iPXE (Puerto UDP `69`).<br>• Servidor HTTP de imágenes Nginx / Glance (Puerto TCP `8089`).<br>• Orquestador de hardware Ironic API (Puerto TCP `6385`). |
-| **K8s Control Plane (HA)**| Nodos ID 269, 280, 320 (`10.0.1.101..103`)| • Kubernetes API Server balanceado (Puerto TCP `6443`).<br>• Quórum de base de datos distribuida etcd (Puertos TCP `2379:2380`).<br>• API de supervisión RKE2 (Puerto TCP `9345`). |
-| **K8s Workers** | Nodos ID 321, 279 (`10.0.1.111..112`)| • Ejecución de pods de aplicaciones contenerizadas.<br>• Enrutamiento L7 perimetral mediante Ingress Controller NGINX (`80/443`).<br>• Datapath de red pod-a-pod gestionado por Cilium con eBPF. |
+| **Bastion Host** | Nodo ID 314 (`10.100.29.10`) | • Punto único de salto SSH ProxyJump (Puerto TCP `2222`).<br>• Proxy Egress Squid para salida auditada a WAN (Puerto TCP `3128`).<br>• Servidor de sincronización horaria Chrony NTP (Puerto UDP `123`).<br>• Cortafuegos perimetral `nftables`. |
+| **Sonatype Nexus 3** | Nodo ID 315 (`10.100.29.20`) | • Proxy y Caché de paquetes Debian APT (`:8081/repository/debian-proxy/`).<br>• Docker Hub Proxy & Registro OCI Privado (`:8082` pull / `:8083` push).<br>• Proxies para npm (`:8081`) y PyPI (`:8081`).<br>• Base de datos relacional PostgreSQL 16 interna (`:5432`). |
+| **PXE / Glance / Ironic** | Nodo ID 306 (`10.100.29.30`) | • Concesiones DHCP estáticas por MAC y dinámicas efímeras (`dnsmasq`).<br>• Entrega de bootloader TFTP iPXE (Puerto UDP `69`).<br>• Servidor HTTP de imágenes Nginx / Glance (Puerto TCP `8089`).<br>• Orquestador de hardware Ironic API (Puerto TCP `6385`). |
+| **K8s Control Plane (HA)**| Nodos ID 269, 280, 320 (`10.100.29.101..103`)| • Kubernetes API Server balanceado (Puerto TCP `6443`).<br>• Quórum de base de datos distribuida etcd (Puertos TCP `2379:2380`).<br>• API de supervisión RKE2 (Puerto TCP `9345`). |
+| **K8s Workers** | Nodos ID 321, 279 (`10.100.29.111..112`)| • Ejecución de pods de aplicaciones contenerizadas.<br>• Enrutamiento L7 perimetral mediante Ingress Controller NGINX (`80/443`).<br>• Datapath de red pod-a-pod gestionado por Cilium con eBPF. |
 
 ---
 
@@ -88,17 +89,17 @@ flowchart TB
         N314["ID: 314 | bastion
 MAC: 64:00:6a:2a:60:62
 RAM: 8 GB | Disco: 128 GB
-IP: 10.0.1.10
+IP: 10.100.29.10
 Rol: Bastion Host / Squid / Chrony"]
         N315["ID: 315 | nexus-repo
 MAC: 64:00:6a:2a:5f:99
 RAM: 16 GB | Disco: 128 GB
-IP: 10.0.1.20
+IP: 10.100.29.20
 Rol: Nexus 3 OSS + PostgreSQL 16"]
         N306["ID: 306 | pxe-controller
 MAC: 64:00:6a:2a:62:42
 RAM: 16 GB | Disco: 128 GB
-IP: 10.0.1.30
+IP: 10.100.29.30
 Rol: PXE / Glance / Ironic / dnsmasq"]
     end
 
@@ -107,17 +108,17 @@ Rol: PXE / Glance / Ironic / dnsmasq"]
         N269["ID: 269 | k8s-cp-01
 MAC: 64:00:6a:2a:5f:f9
 RAM: 16 GB | Disco: 128 GB
-IP: 10.0.1.101
+IP: 10.100.29.101
 Rol: Control Plane 01 (etcd líder)"]
         N280["ID: 280 | k8s-cp-02
 MAC: 64:00:6a:2a:60:63
 RAM: 16 GB | Disco: 128 GB
-IP: 10.0.1.102
+IP: 10.100.29.102
 Rol: Control Plane 02 (etcd miembro)"]
         N320["ID: 320 | k8s-cp-03
 MAC: 64:00:6a:2a:2c:75
 RAM: 16 GB | Disco: 128 GB
-IP: 10.0.1.103
+IP: 10.100.29.103
 Rol: Control Plane 03 (etcd miembro)"]
     end
 
@@ -126,12 +127,12 @@ Rol: Control Plane 03 (etcd miembro)"]
         N321["ID: 321 | k8s-worker-01
 MAC: 64:00:6a:2a:62:a4
 RAM: 8 GB | Disco: 128 GB
-IP: 10.0.1.111
+IP: 10.100.29.111
 Rol: Worker 01 (containerd / Ingress)"]
         N279["ID: 279 | k8s-worker-02
 MAC: 64:00:6a:2a:2f:cb
 RAM: 8 GB | Disco: 128 GB
-IP: 10.0.1.112
+IP: 10.100.29.112
 Rol: Worker 02 (containerd / Ingress)"]
     end
 
@@ -164,13 +165,13 @@ flowchart TB
     subgraph BASTION ["🛡️ NODO 314: BASTION HOST"]
         NIC_WAN["eth0: <IP_BASTION_WAN>
 (Acceso WAN)"]
-        NIC_LAN["eth1: 10.0.1.10/24
+        NIC_LAN["eth1: 10.100.29.10/24
 (Gateway LAN interna)"]
         SQUID["Squid Proxy (:3128)"]
         CHRONY["Chrony NTP (:123)"]
     end
 
-    subgraph SWITCH ["🔌 SWITCH FÍSICO L2 DEDICADO - SUBRED PRIVADA 10.0.1.0/24 (Broadcast Domain Único)"]
+    subgraph SWITCH ["🔌 SWITCH FÍSICO L2 DEDICADO - SUBRED PRIVADA 10.100.29.0/24 (Broadcast Domain Único)"]
         PORT1["Puerto 1
 (Bastion)"]
         PORT2["Puerto 2
@@ -190,26 +191,26 @@ flowchart TB
     end
 
     subgraph SERVICES ["🚀 SERVICIOS DE APROVISIONAMIENTO Y REPOSITORIOS"]
-        NEXUS["Nodo 315: Nexus 3 (10.0.1.20)
+        NEXUS["Nodo 315: Nexus 3 (10.100.29.20)
 • APT Cache :8081
 • Docker Registry :8082
 • PostgreSQL :5432"]
-        PXE["Nodo 306: PXE / Ironic (10.0.1.30)
+        PXE["Nodo 306: PXE / Ironic (10.100.29.30)
 • DHCP/TFTP dnsmasq :67/:69
 • HTTP Nginx :8089 (Glance)
 • Ironic API :6385"]
     end
 
     subgraph K8S_NODES ["☸️ NODOS BARE-METAL KUBERNETES"]
-        CP1["Nodo 269: k8s-cp-01 (10.0.1.101)
+        CP1["Nodo 269: k8s-cp-01 (10.100.29.101)
 etcd Líder / API :6443"]
-        CP2["Nodo 280: k8s-cp-02 (10.0.1.102)
+        CP2["Nodo 280: k8s-cp-02 (10.100.29.102)
 etcd Peer / API :6443"]
-        CP3["Nodo 320: k8s-cp-03 (10.0.1.103)
+        CP3["Nodo 320: k8s-cp-03 (10.100.29.103)
 etcd Peer / API :6443"]
-        W1["Nodo 321: k8s-worker-01 (10.0.1.111)
+        W1["Nodo 321: k8s-worker-01 (10.100.29.111)
 Workloads / Ingress :80/:443"]
-        W2["Nodo 279: k8s-worker-02 (10.0.1.112)
+        W2["Nodo 279: k8s-worker-02 (10.100.29.112)
 Workloads / Ingress :80/:443"]
     end
 
@@ -231,7 +232,7 @@ Workloads / Ingress :80/:443"]
 ```
 
 **Explicación simple del diagrama:**  
-Este esquema muestra la separación estricta de redes. El único equipo con presencia en dos redes (dual-homed) es el Bastion Host (Nodo 314), que conecta con el exterior a través de su interfaz WAN y actúa como pasarela controlada. Todos los demás 7 servidores están confinados en una red física aislada L2 (`10.0.1.0/24`) mediante un switch dedicado. Ningún nodo interno tiene salida directa a Internet; obtienen su dirección IP, archivos de arranque PXE e imágenes del servidor PXE (`10.0.1.30`), descargan paquetes de software de Nexus (`10.0.1.20`), y únicamente acceden a la WAN para servicios auditados a través del proxy Squid del Bastión.
+Este esquema muestra la separación estricta de redes. El único equipo con presencia en dos redes (dual-homed) es el Bastion Host (Nodo 314), que conecta con el exterior a través de su interfaz WAN y actúa como pasarela controlada. Todos los demás 7 servidores están confinados en una red física aislada L2 (`10.100.29.0/24`) mediante un switch dedicado. Ningún nodo interno tiene salida directa a Internet; obtienen su dirección IP, archivos de arranque PXE e imágenes del servidor PXE (`10.100.29.30`), descargan paquetes de software de Nexus (`10.100.29.20`), y únicamente acceden a la WAN para servicios auditados a través del proxy Squid del Bastión.
 
 ---
 
@@ -484,14 +485,14 @@ La siguiente tabla refleja los **datos de hardware reales** del proyecto, con la
 
 | ID | MAC Normalizada | RAM | Disco | Hostname | IP | Rol Arquitectónico | Justificación de una Línea |
 | :---: | :---: | :---: | :---: | :--- | :--- | :--- | :--- |
-| **314** | `64:00:6a:2a:60:62` | 8 GB | 128 GB | `bastion.<DOMINIO>` | WAN: `<IP_BASTION_WAN>`<br>LAN: `10.0.1.10` | Bastion Host, Gateway, Squid, Chrony | Los servicios de pasarela SSH, proxy Squid y sincronización NTP consumen menos de 1.2 GB de memoria RAM en reposo. |
-| **315** | `64:00:6a:2a:5f:99` | 16 GB | 128 GB | `nexus-repo.<DOMINIO>` | LAN: `10.0.1.20` | Sonatype Nexus 3 OSS + PostgreSQL 16 DB | La JVM de Nexus, PostgreSQL 16 y la caché de entrada/salida para transferencias a 1 Gbps requieren más de 8 GB para operar sin OOM. |
-| **306** | `64:00:6a:2a:62:42` | 16 GB | 128 GB | `pxe-controller.<DOMINIO>` | LAN: `10.0.1.30` | Provisión PXE (dnsmasq), Glance HTTP, Ironic | Debe ejecutar concurrentemente Ironic API, Nginx y la máquina virtual QEMU para compilación de imágenes con Packer. |
-| **269** | `64:00:6a:2a:5f:f9` | 16 GB | 128 GB | `k8s-cp-01.<DOMINIO>` | LAN: `10.0.1.101` | K8s Control Plane 01 (etcd líder / API Server) | Aloja el nodo líder de etcd y el API Server, requiriendo retención en RAM para transacciones Raft con latencia < 10 ms. |
-| **280** | `64:00:6a:2a:60:63` | 16 GB | 128 GB | `k8s-cp-02.<DOMINIO>` | LAN: `10.0.1.102` | K8s Control Plane 02 (etcd miembro / API Server)| Miembro con voto en el quórum Raft de etcd de 3 nodos y componente de alta disponibilidad de kube-apiserver. |
-| **320** | `64:00:6a:2a:2c:75` | 16 GB | 128 GB | `k8s-cp-03.<DOMINIO>` | LAN: `10.0.1.103` | K8s Control Plane 03 (etcd miembro / API Server)| Tercer miembro del quórum Raft de etcd indispensable para tolerancia a fallos de 1 nodo sin degradación de servicio. |
-| **321** | `64:00:6a:2a:62:a4` | 8 GB | 128 GB | `k8s-worker-01.<DOMINIO>` | LAN: `10.0.1.111` | K8s Worker Node 01 (containerd / Ingress) | Nodo dedicado exclusivamente a cargas útiles de pods, disponiendo de ~5.5 GB de RAM libres sin sobrecarga de gestión. |
-| **279** | `64:00:6a:2a:2f:cb` | 8 GB | 128 GB | `k8s-worker-02.<DOMINIO>` | LAN: `10.0.1.112` | K8s Worker Node 02 (containerd / Ingress) | Segundo nodo de cómputo para distribución de pods contenerizados de usuario y réplicas de alta disponibilidad. |
+| **314** | `64:00:6a:2a:60:62` | 8 GB | 128 GB | `bastion.<DOMINIO>` | WAN: `<IP_BASTION_WAN>`<br>LAN: `10.100.29.10` | Bastion Host, Gateway, Squid, Chrony | Los servicios de pasarela SSH, proxy Squid y sincronización NTP consumen menos de 1.2 GB de memoria RAM en reposo. |
+| **315** | `64:00:6a:2a:5f:99` | 16 GB | 128 GB | `nexus-repo.<DOMINIO>` | LAN: `10.100.29.20` | Sonatype Nexus 3 OSS + PostgreSQL 16 DB | La JVM de Nexus, PostgreSQL 16 y la caché de entrada/salida para transferencias a 1 Gbps requieren más de 8 GB para operar sin OOM. |
+| **306** | `64:00:6a:2a:62:42` | 16 GB | 128 GB | `pxe-controller.<DOMINIO>` | LAN: `10.100.29.30` | Provisión PXE (dnsmasq), Glance HTTP, Ironic | Debe ejecutar concurrentemente Ironic API, Nginx y la máquina virtual QEMU para compilación de imágenes con Packer. |
+| **269** | `64:00:6a:2a:5f:f9` | 16 GB | 128 GB | `k8s-cp-01.<DOMINIO>` | LAN: `10.100.29.101` | K8s Control Plane 01 (etcd líder / API Server) | Aloja el nodo líder de etcd y el API Server, requiriendo retención en RAM para transacciones Raft con latencia < 10 ms. |
+| **280** | `64:00:6a:2a:60:63` | 16 GB | 128 GB | `k8s-cp-02.<DOMINIO>` | LAN: `10.100.29.102` | K8s Control Plane 02 (etcd miembro / API Server)| Miembro con voto en el quórum Raft de etcd de 3 nodos y componente de alta disponibilidad de kube-apiserver. |
+| **320** | `64:00:6a:2a:2c:75` | 16 GB | 128 GB | `k8s-cp-03.<DOMINIO>` | LAN: `10.100.29.103` | K8s Control Plane 03 (etcd miembro / API Server)| Tercer miembro del quórum Raft de etcd indispensable para tolerancia a fallos de 1 nodo sin degradación de servicio. |
+| **321** | `64:00:6a:2a:62:a4` | 8 GB | 128 GB | `k8s-worker-01.<DOMINIO>` | LAN: `10.100.29.111` | K8s Worker Node 01 (containerd / Ingress) | Nodo dedicado exclusivamente a cargas útiles de pods, disponiendo de ~5.5 GB de RAM libres sin sobrecarga de gestión. |
+| **279** | `64:00:6a:2a:2f:cb` | 8 GB | 128 GB | `k8s-worker-02.<DOMINIO>` | LAN: `10.100.29.112` | K8s Worker Node 02 (containerd / Ingress) | Segundo nodo de cómputo para distribución de pods contenerizados de usuario y réplicas de alta disponibilidad. |
 
 > [!NOTE]
 > **Identificadores de Chasis (314, 315, etc.) [POR CONFIRMAR]**:  
@@ -605,6 +606,38 @@ A continuación se analizan los cuatro métodos estándar para aprovisionar serv
 
 ## 5. Fases Cronológicas de Instalación Paso a Paso
 
+### 5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh`)
+
+> [!TIP]
+> **Modo Operativo Recomendado**: No es necesario iniciar sesión manualmente en cada uno de los servidores ni copiar archivos a mano con memorias USB. Todo el ciclo de aprovisionamiento, sincronización de código y ejecución de fases se orquesta desde la **laptop de administración conectada por Wi-Fi** a través del script maestro `./ejecutar-desde-laptop.sh`.
+
+#### Flujo Operativo y Comandos Principales
+```bash
+# 1. Auditar conectividad y verificar qué nodos están encendidos y alcanzables
+./ejecutar-desde-laptop.sh --check
+
+# 2. Sincronizar el repositorio de scripts hacia /tmp/infra-scripts en los nodos remotos
+./ejecutar-desde-laptop.sh --sync
+
+# 3. Ejecutar fases modulares de instalación:
+./ejecutar-desde-laptop.sh --fase 1    # 01-base-servidores.sh (Flota completa)
+./ejecutar-desde-laptop.sh --fase 2    # 02-bastion.sh (Nodo 314 - Bastion Host)
+./ejecutar-desde-laptop.sh --fase 3    # 03-nexus.sh (Nodo 315 - Sonatype Nexus 3)
+./ejecutar-desde-laptop.sh --fase 4    # 04-clientes-nexus.sh (Configurar mirrors APT)
+./ejecutar-desde-laptop.sh --fase 5    # 05-pxe-dhcp-tftp.sh (Nodo 306 - PXE/TFTP/dnsmasq)
+./ejecutar-desde-laptop.sh --fase 6    # 06-openstack-glance-bifrost.sh (Glance / Ironic)
+./ejecutar-desde-laptop.sh --fase 7    # 07-cloud-init.sh (Cloud-Init y ConfigDrive)
+./ejecutar-desde-laptop.sh --fase 8    # 08-kubernetes.sh (Clúster RKE2 + Cilium)
+./ejecutar-desde-laptop.sh --fase 9    # 09-verificacion.sh (Auditoría final)
+
+# 4. Auditoría de salud general del clúster en tiempo real
+./ejecutar-desde-laptop.sh --health
+```
+
+#### Parámetros Avanzados
+- `--dry-run`: Simula todas las conexiones SSH y despliegue de comandos sin alterar el estado de los nodos.
+- `--all`: Ejecuta el pipeline completo de principio a fin de manera secuencial e idempotente.
+
 ---
 
 ### FASE 1: Preparación Base del Sistema Operativo en Debian 13
@@ -625,16 +658,16 @@ sudo tee /etc/hosts << 'EOF'
 127.0.1.1 <HOSTNAME_LOCAL>.<DOMINIO> <HOSTNAME_LOCAL>
 
 # Infraestructura de Servicios
-10.0.1.10  bastion.lab.local bastion
-10.0.1.20  nexus-repo.lab.local nexus-repo
-10.0.1.30  pxe-controller.lab.local pxe-controller
+10.100.29.10  bastion.lab.local bastion
+10.100.29.20  nexus-repo.lab.local nexus-repo
+10.100.29.30  pxe-controller.lab.local pxe-controller
 
 # Clúster Kubernetes
-10.0.1.101 k8s-cp-01.lab.local k8s-cp-01
-10.0.1.102 k8s-cp-02.lab.local k8s-cp-02
-10.0.1.103 k8s-cp-03.lab.local k8s-cp-03
-10.0.1.111 k8s-worker-01.lab.local k8s-worker-01
-10.0.1.112 k8s-worker-02.lab.local k8s-worker-02
+10.100.29.101 k8s-cp-01.lab.local k8s-cp-01
+10.100.29.102 k8s-cp-02.lab.local k8s-cp-02
+10.100.29.103 k8s-cp-03.lab.local k8s-cp-03
+10.100.29.111 k8s-worker-01.lab.local k8s-worker-01
+10.100.29.112 k8s-worker-02.lab.local k8s-worker-02
 EOF
 ```
 
@@ -647,8 +680,8 @@ Name=eth0
 
 [Network]
 Address=<IP_LOCAL>/24
-Gateway=10.0.1.10
-DNS=10.0.1.10
+Gateway=10.100.29.10
+DNS=10.100.29.10
 EOF
 
 sudo systemctl enable --now systemd-networkd
@@ -657,7 +690,7 @@ sudo systemctl restart systemd-networkd
 
 > [!WARNING]
 > **Salvaguarda para el Bastion (Nodo 314)**:  
-> En el Bastión, la interfaz WAN recibe IP y Gateway del router perimetral. En la interfaz `eth1` (`10.0.1.10/24`) **NO se debe definir Gateway** para no generar conflictos de enrutamiento predeterminado (*default route conflict*).
+> En el Bastión, la interfaz WAN recibe IP y Gateway del router perimetral. En la interfaz `eth1` (`10.100.29.10/24`) **NO se debe definir Gateway** para no generar conflictos de enrutamiento predeterminado (*default route conflict*).
 
 #### 1.3 Configuración de Hora NTP de Alta Precisión
 ```bash
@@ -666,7 +699,7 @@ sudo timedatectl set-timezone UTC
 sudo apt update && sudo apt install -y chrony
 
 # [NODOS 2 AL 8] ✅ Obligatorio: Sincronizar contra el Bastión
-sudo sed -i '1i server 10.0.1.10 iburst' /etc/chrony/chrony.conf
+sudo sed -i '1i server 10.100.29.10 iburst' /etc/chrony/chrony.conf
 sudo systemctl restart chrony
 ```
 
@@ -684,14 +717,14 @@ sudo chmod 0440 /etc/sudoers.d/99-<USUARIO_ADMIN>
 ip -brief addr show
 chronyc tracking
 ```
-* **Resultado Esperado**: IP asignada en `10.0.1.0/24` y estado `Leap status: Normal`.
+* **Resultado Esperado**: IP asignada en `10.100.29.0/24` y estado `Leap status: Normal`.
 
 ---
 
 ### FASE 2: Bastion Host (Seguridad Perimetral, SSH ProxyJump y nftables)
 
-* **Objetivo**: Asegurar el Nodo 314 (`10.0.1.10`) con OpenSSH en puerto `2222`, Squid Proxy Egress en `:3128` y cortafuegos `nftables`.
-* **Requisitos Previos**: Nodo 314 con interfaz WAN operativa e interfaz LAN en `10.0.1.10`.
+* **Objetivo**: Asegurar el Nodo 314 (`10.100.29.10`) con OpenSSH en puerto `2222`, Squid Proxy Egress en `:3128` y cortafuegos `nftables`.
+* **Requisitos Previos**: Nodo 314 con interfaz WAN operativa e interfaz LAN en `10.100.29.10`.
 
 #### 2.1 Generación de Llaves SSH Ed25519 e Inyección
 Desde la estación DevOps del operador:
@@ -738,9 +771,9 @@ EOF
 # [BASTION] ✅ Obligatorio: Instalar y asegurar Squid
 sudo apt update && sudo apt install -y squid
 sudo tee /etc/squid/squid.conf << 'EOF'
-http_port 10.0.1.10:3128
+http_port 10.100.29.10:3128
 
-acl localnet src 10.0.1.0/24
+acl localnet src 10.100.29.0/24
 acl SSL_ports port 443
 acl Safe_ports port 80
 acl Safe_ports port 443
@@ -804,8 +837,8 @@ ssh -p 2222 -i ~/.ssh/id_ed25519_bastion debian@<IP_BASTION_WAN> "echo 'Bastion 
 
 ### FASE 3: Sonatype Nexus 3 con Backend PostgreSQL 16 y Tuning de Disco
 
-* **Objetivo**: Desplegar Sonatype Nexus 3 en el Nodo 315 (`10.0.1.20`) utilizando **PostgreSQL 16** como base de datos transaccional, afinamiento JVM en 4 GB y políticas de limpieza para mitigar el límite de 128 GB de disco.
-* **Requisitos Previos**: Nodo 315 con Debian 13 e IP `10.0.1.20`.
+* **Objetivo**: Desplegar Sonatype Nexus 3 en el Nodo 315 (`10.100.29.20`) utilizando **PostgreSQL 16** como base de datos transaccional, afinamiento JVM en 4 GB y políticas de limpieza para mitigar el límite de 128 GB de disco.
+* **Requisitos Previos**: Nodo 315 con Debian 13 e IP `10.100.29.20`.
 
 #### 3.1 Instalar PostgreSQL 16
 ```bash
@@ -895,7 +928,7 @@ sudo systemctl enable --now nexus
 ```
 
 #### 3.6 Configuración de Repositorios y Mitigación de Disco en Nexus (GUI)
-Una vez iniciado el servicio (esperar ~90 segundos), acceder a `http://10.0.1.20:8081`:
+Una vez iniciado el servicio (esperar ~90 segundos), acceder a `http://10.100.29.20:8081`:
 1. Obtener clave de administrador:  
    `sudo cat /opt/sonatype/sonatype-work/nexus3/admin.password`
 2. Crear repositorios requeridos:
@@ -927,8 +960,8 @@ curl -I http://localhost:8081/service/rest/v1/status
 ```bash
 # [ALL NODES EXCEPTO BASTION Y NEXUS] ✅ Obligatorio: Redirigir sources.list
 sudo tee /etc/apt/sources.list << 'EOF'
-deb http://10.0.1.20:8081/repository/debian-proxy/ trixie main contrib non-free non-free-firmware
-deb http://10.0.1.20:8081/repository/debian-proxy/ trixie-updates main contrib non-free non-free-firmware
+deb http://10.100.29.20:8081/repository/debian-proxy/ trixie main contrib non-free non-free-firmware
+deb http://10.100.29.20:8081/repository/debian-proxy/ trixie-updates main contrib non-free non-free-firmware
 EOF
 
 sudo apt update
@@ -942,12 +975,12 @@ sudo tee /etc/rancher/rke2/registries.yaml << 'EOF'
 mirrors:
   "docker.io":
     endpoint:
-      - "http://10.0.1.20:8082"
-  "10.0.1.20:8082":
+      - "http://10.100.29.20:8082"
+  "10.100.29.20:8082":
     endpoint:
-      - "http://10.0.1.20:8082"
+      - "http://10.100.29.20:8082"
 configs:
-  "10.0.1.20:8082":
+  "10.100.29.20:8082":
     tls:
       insecure_skip_verify: true
 EOF
@@ -957,9 +990,9 @@ EOF
 ```bash
 # [ALL NODES] ✅ Obligatorio: Excluir subredes del clúster en /etc/environment
 sudo tee -a /etc/environment << 'EOF'
-http_proxy="http://10.0.1.10:3128"
-https_proxy="http://10.0.1.10:3128"
-no_proxy="localhost,127.0.0.1,10.0.1.0/24,10.42.0.0/16,10.43.0.0/16,.svc,.cluster.local"
+http_proxy="http://10.100.29.10:3128"
+https_proxy="http://10.100.29.10:3128"
+no_proxy="localhost,127.0.0.1,10.100.29.0/24,10.42.0.0/16,10.43.0.0/16,.svc,.cluster.local"
 EOF
 ```
 
@@ -968,14 +1001,14 @@ EOF
 # [NODO 306] Probar descarga desde caché local
 sudo apt update && sudo apt install -y jq
 ```
-* **Resultado Esperado**: Paquetes descargados a velocidad LAN gigabit desde `10.0.1.20:8081`.
+* **Resultado Esperado**: Paquetes descargados a velocidad LAN gigabit desde `10.100.29.20:8081`.
 
 ---
 
 ### FASE 5: Servicios de Arranque por Red PXE / iPXE con Reservas por MAC
 
-* **Objetivo**: Configurar en el Nodo 306 (`10.0.1.30`) el servidor `dnsmasq` con **reservas estáticas por dirección MAC** para los 8 servidores físicos, asegurando que cada nodo reciba su IP determinista desde el booteo de red.
-* **Requisitos Previos**: Nodo 306 con IP `10.0.1.30/24`.
+* **Objetivo**: Configurar en el Nodo 306 (`10.100.29.30`) el servidor `dnsmasq` con **reservas estáticas por dirección MAC** para los 8 servidores físicos, asegurando que cada nodo reciba su IP determinista desde el booteo de red.
+* **Requisitos Previos**: Nodo 306 con IP `10.100.29.30/24`.
 
 #### 5.1 Configuración de `dnsmasq.conf` con Mapeo Real por MAC
 Instalar y configurar `dnsmasq` en el Nodo 306:
@@ -990,38 +1023,38 @@ interface=eth0
 bind-interfaces
 
 # Gateway y DNS predeterminado (Bastión)
-dhcp-option=3,10.0.1.10
-dhcp-option=6,10.0.1.10
+dhcp-option=3,10.100.29.10
+dhcp-option=6,10.100.29.10
 
 # Rango dinámico efímero para nodos desconocidos durante inspección
-dhcp-range=10.0.1.50,10.0.1.99,255.255.255.0,1h
+dhcp-range=10.100.29.50,10.100.29.99,255.255.255.0,1h
 
 # ==============================================================================
 # RESERVAS ESTÁTICAS DE IP POR DIRECCIÓN MAC (INVENTARIO REAL)
 # ==============================================================================
 # Nodo 1: Bastion Host (ID 314)
-dhcp-host=64:00:6a:2a:60:62,10.0.1.10,bastion,infinite
+dhcp-host=64:00:6a:2a:60:62,10.100.29.10,bastion,infinite
 
 # Nodo 2: Sonatype Nexus (ID 315)
-dhcp-host=64:00:6a:2a:5f:99,10.0.1.20,nexus-repo,infinite
+dhcp-host=64:00:6a:2a:5f:99,10.100.29.20,nexus-repo,infinite
 
 # Nodo 3: PXE / Ironic Controller (ID 306)
-dhcp-host=64:00:6a:2a:62:42,10.0.1.30,pxe-controller,infinite
+dhcp-host=64:00:6a:2a:62:42,10.100.29.30,pxe-controller,infinite
 
 # Nodo 4: K8s Control Plane 01 (ID 269)
-dhcp-host=64:00:6a:2a:5f:f9,10.0.1.101,k8s-cp-01,infinite
+dhcp-host=64:00:6a:2a:5f:f9,10.100.29.101,k8s-cp-01,infinite
 
 # Nodo 5: K8s Control Plane 02 (ID 280)
-dhcp-host=64:00:6a:2a:60:63,10.0.1.102,k8s-cp-02,infinite
+dhcp-host=64:00:6a:2a:60:63,10.100.29.102,k8s-cp-02,infinite
 
 # Nodo 6: K8s Control Plane 03 (ID 320)
-dhcp-host=64:00:6a:2a:2c:75,10.0.1.103,k8s-cp-03,infinite
+dhcp-host=64:00:6a:2a:2c:75,10.100.29.103,k8s-cp-03,infinite
 
 # Nodo 7: K8s Worker Node 01 (ID 321)
-dhcp-host=64:00:6a:2a:62:a4,10.0.1.111,k8s-worker-01,infinite
+dhcp-host=64:00:6a:2a:62:a4,10.100.29.111,k8s-worker-01,infinite
 
 # Nodo 8: K8s Worker Node 02 (ID 279)
-dhcp-host=64:00:6a:2a:2f:cb,10.0.1.112,k8s-worker-02,infinite
+dhcp-host=64:00:6a:2a:2f:cb,10.100.29.112,k8s-worker-02,infinite
 
 # Servidor TFTP Integrado
 enable-tftp
@@ -1050,8 +1083,8 @@ sudo tee /tftpboot/boot.ipxe << 'EOF'
 echo ==========================================================
 echo   Aprovisionamiento Bare-Metal: Servidores 128GB NVMe
 echo ==========================================================
-kernel http://10.0.1.30:8089/ipa/ipa.kernel ipa-api-url=http://10.0.1.30:6385 boot=live console=tty0 initrd=ipa.initramfs
-initrd http://10.0.1.30:8089/ipa/ipa.initramfs
+kernel http://10.100.29.30:8089/ipa/ipa.kernel ipa-api-url=http://10.100.29.30:6385 boot=live console=tty0 initrd=ipa.initramfs
+initrd http://10.100.29.30:8089/ipa/ipa.initramfs
 boot
 EOF
 
@@ -1077,7 +1110,7 @@ sudo systemctl restart dnsmasq
 ```bash
 # [PXE] Comprobar escucha de sockets DHCP y TFTP
 sudo ss -u -a '( sport = :67 or sport = :69 )'
-curl -I http://10.0.1.30:8089/boot.ipxe
+curl -I http://10.100.29.30:8089/boot.ipxe
 ```
 * **Resultado Esperado**: Sockets UDP activos y Nginx retornando `HTTP/1.1 200 OK`.
 
@@ -1085,7 +1118,7 @@ curl -I http://10.0.1.30:8089/boot.ipxe
 
 ### FASE 6: OpenStack Glance e Ironic Standalone para Servidores Físicos
 
-* **Objetivo**: Desplegar Ironic Standalone y Glance en el Nodo 306 (`10.0.1.30`) para orquestar el hardware físico, registrar el inventario completo de los 8 nodos por dirección MAC y distribuir imágenes inmutables.
+* **Objetivo**: Desplegar Ironic Standalone y Glance en el Nodo 306 (`10.100.29.30`) para orquestar el hardware físico, registrar el inventario completo de los 8 nodos por dirección MAC y distribuir imágenes inmutables.
 * **Requisitos Previos**: Podman instalado en el Nodo 306.
 
 #### 6.1 Desplegar Ironic Standalone con Podman
@@ -1094,7 +1127,7 @@ curl -I http://10.0.1.30:8089/boot.ipxe
 sudo apt update && sudo apt install -y podman
 
 # [PXE] ✅ Obligatorio: Levantar Ironic Standalone
-sudo podman run -d --name ironic-conductor   --net=host   --privileged   --restart=always   -v /httpboot:/httpboot:shared   -v /tftpboot:/tftpboot:shared   -v /var/lib/ironic:/var/lib/ironic:rw   -e HTTP_PORT=8089   -e IRONIC_IP=10.0.1.30   -e OS_AUTH_TYPE=none   quay.io/metal3-io/ironic:latest
+sudo podman run -d --name ironic-conductor   --net=host   --privileged   --restart=always   -v /httpboot:/httpboot:shared   -v /tftpboot:/tftpboot:shared   -v /var/lib/ironic:/var/lib/ironic:rw   -e HTTP_PORT=8089   -e IRONIC_IP=10.100.29.30   -e OS_AUTH_TYPE=none   quay.io/metal3-io/ironic:latest
 ```
 
 #### 6.2 Descarga del Ramdisk IPA Oficial
@@ -1144,15 +1177,15 @@ nodes:
   - name: "bastion"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:60:62"  # ID 314
-    ipv4_address: "10.0.1.10"
+    ipv4_address: "10.100.29.10"
     properties:
       cpus: 4
       memory_mb: 8192
@@ -1162,15 +1195,15 @@ nodes:
   - name: "nexus-repo"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:5f:99"  # ID 315
-    ipv4_address: "10.0.1.20"
+    ipv4_address: "10.100.29.20"
     properties:
       cpus: 4
       memory_mb: 16384
@@ -1180,15 +1213,15 @@ nodes:
   - name: "pxe-controller"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:62:42"  # ID 306
-    ipv4_address: "10.0.1.30"
+    ipv4_address: "10.100.29.30"
     properties:
       cpus: 4
       memory_mb: 16384
@@ -1201,15 +1234,15 @@ nodes:
   - name: "k8s-cp-01"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:5f:f9"  # ID 269
-    ipv4_address: "10.0.1.101"
+    ipv4_address: "10.100.29.101"
     properties:
       cpus: 4
       memory_mb: 16384
@@ -1219,15 +1252,15 @@ nodes:
   - name: "k8s-cp-02"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:60:63"  # ID 280
-    ipv4_address: "10.0.1.102"
+    ipv4_address: "10.100.29.102"
     properties:
       cpus: 4
       memory_mb: 16384
@@ -1237,15 +1270,15 @@ nodes:
   - name: "k8s-cp-03"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:2c:75"  # ID 320
-    ipv4_address: "10.0.1.103"
+    ipv4_address: "10.100.29.103"
     properties:
       cpus: 4
       memory_mb: 16384
@@ -1258,15 +1291,15 @@ nodes:
   - name: "k8s-worker-01"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:62:a4"  # ID 321
-    ipv4_address: "10.0.1.111"
+    ipv4_address: "10.100.29.111"
     properties:
       cpus: 4
       memory_mb: 8192
@@ -1276,15 +1309,15 @@ nodes:
   - name: "k8s-worker-02"
     driver: "manual-management"
     driver_info:
-      deploy_kernel: "http://10.0.1.30:8089/ipa/ipa.kernel"
-      deploy_ramdisk: "http://10.0.1.30:8089/ipa/ipa.initramfs"
+      deploy_kernel: "http://10.100.29.30:8089/ipa/ipa.kernel"
+      deploy_ramdisk: "http://10.100.29.30:8089/ipa/ipa.initramfs"
     instance_info:
-      image_source: "http://10.0.1.30:8089/images/debian-baremetal.qcow2"
+      image_source: "http://10.100.29.30:8089/images/debian-baremetal.qcow2"
       image_checksum: "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
       root_gb: 110
     nics:
       - mac: "64:00:6a:2a:2f:cb"  # ID 279
-    ipv4_address: "10.0.1.112"
+    ipv4_address: "10.100.29.112"
     properties:
       cpus: 4
       memory_mb: 8192
@@ -1296,7 +1329,7 @@ nodes:
 ```bash
 # [PXE] Configurar CLI sin autenticación hacia el contenedor local
 export OS_AUTH_TYPE=none
-export OS_ENDPOINT=http://10.0.1.30:6385
+export OS_ENDPOINT=http://10.100.29.30:6385
 
 # Enrolar nodos desde el archivo baremetal.yml
 baremetal create /opt/ironic/baremetal.yml
@@ -1331,7 +1364,7 @@ packer {
 
 variable "nexus_ip" {
   type    = string
-  default = "10.0.1.20"
+  default = "10.100.29.20"
 }
 
 source "qemu" "debian_baremetal" {
@@ -1405,13 +1438,13 @@ La partición `config-2` es un volumen VFAT de 64 MB con etiqueta `config-2` que
       "id": "private-lan",
       "type": "ipv4",
       "link": "eth0",
-      "ip_address": "10.0.1.101",
+      "ip_address": "10.100.29.101",
       "netmask": "255.255.255.0",
-      "gateway": "10.0.1.10"
+      "gateway": "10.100.29.10"
     }
   ],
   "services": [
-    { "type": "dns", "address": "10.0.1.10" }
+    { "type": "dns", "address": "10.100.29.10" }
   ]
 }
 ```
@@ -1496,12 +1529,12 @@ Guardar en el Nodo 306 (`/opt/infra/scripts/deploy_all_nodes.sh`):
 #!/usr/bin/env bash
 # ==============================================================================
 # SCRIPT MAESTRO: DESPLIEGUE MASIVO "UN SOLO BOTÓN" POR RED PRIVADA
-# Ubicación: /opt/infra/scripts/deploy_all_nodes.sh en pxe-controller (10.0.1.30)
+# Ubicación: /opt/infra/scripts/deploy_all_nodes.sh en pxe-controller (10.100.29.30)
 # ==============================================================================
 set -euo pipefail
 
 export OS_AUTH_TYPE=none
-export OS_ENDPOINT=http://10.0.1.30:6385
+export OS_ENDPOINT=http://10.100.29.30:6385
 
 RED='[0;31m'
 GREEN='[0;32m'
@@ -1516,18 +1549,18 @@ echo -e "${BLUE}================================================================
 # Declaración de la flota objetivo para provisión por red (Nodos K8s)
 TARGET_NODES=("k8s-cp-01" "k8s-cp-02" "k8s-cp-03" "k8s-worker-01" "k8s-worker-02")
 TARGET_MACS=("64:00:6a:2a:5f:f9" "64:00:6a:2a:60:63" "64:00:6a:2a:2c:75" "64:00:6a:2a:62:a4" "64:00:6a:2a:2f:cb")
-TARGET_IPS=("10.0.1.101" "10.0.1.102" "10.0.1.103" "10.0.1.111" "10.0.1.112")
+TARGET_IPS=("10.100.29.101" "10.100.29.102" "10.100.29.103" "10.100.29.111" "10.100.29.112")
 
 # 1. Comprobación de Servicios Base
-echo -e "${YELLOW}[1/5] Verificando servicios de aprovisionamiento en 10.0.1.30...${NC}"
+echo -e "${YELLOW}[1/5] Verificando servicios de aprovisionamiento en 10.100.29.30...${NC}"
 curl -s -o /dev/null -w "%{http_code}
-" http://10.0.1.30:8089/boot.ipxe | grep 200 >/dev/null || {
+" http://10.100.29.30:8089/boot.ipxe | grep 200 >/dev/null || {
     echo -e "${RED}[ERROR] Nginx HTTP :8089 no responde.${NC}"; exit 1;
 }
 systemctl is-active dnsmasq >/dev/null || {
     echo -e "${RED}[ERROR] dnsmasq no está activo.${NC}"; exit 1;
 }
-curl -s http://10.0.1.30:6385/v1/nodes >/dev/null || {
+curl -s http://10.100.29.30:6385/v1/nodes >/dev/null || {
     echo -e "${RED}[ERROR] Ironic API :6385 no responde.${NC}"; exit 1;
 }
 echo -e "${GREEN}[+] Servicios de red y catálogo OK.${NC}"
@@ -1646,13 +1679,13 @@ Para equipos que gestionen la infraestructura mediante Ansible:
   hosts: localhost
   gather_facts: false
   vars:
-    ironic_endpoint: "http://10.0.1.30:6385"
+    ironic_endpoint: "http://10.100.29.30:6385"
     fleet:
-      - { name: "k8s-cp-01", mac: "64:00:6a:2a:5f:f9", ip: "10.0.1.101" }
-      - { name: "k8s-cp-02", mac: "64:00:6a:2a:60:63", ip: "10.0.1.102" }
-      - { name: "k8s-cp-03", mac: "64:00:6a:2a:2c:75", ip: "10.0.1.103" }
-      - { name: "k8s-worker-01", mac: "64:00:6a:2a:62:a4", ip: "10.0.1.111" }
-      - { name: "k8s-worker-02", mac: "64:00:6a:2a:2f:cb", ip: "10.0.1.112" }
+      - { name: "k8s-cp-01", mac: "64:00:6a:2a:5f:f9", ip: "10.100.29.101" }
+      - { name: "k8s-cp-02", mac: "64:00:6a:2a:60:63", ip: "10.100.29.102" }
+      - { name: "k8s-cp-03", mac: "64:00:6a:2a:2c:75", ip: "10.100.29.103" }
+      - { name: "k8s-worker-01", mac: "64:00:6a:2a:62:a4", ip: "10.100.29.111" }
+      - { name: "k8s-worker-02", mac: "64:00:6a:2a:2f:cb", ip: "10.100.29.112" }
 
   tasks:
     - name: Emitir Wake-on-LAN a cada interfaz física
@@ -1693,7 +1726,7 @@ sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
 write-kubeconfig-mode: "0644"
 tls-san:
-  - "10.0.1.101"
+  - "10.100.29.101"
   - "k8s-cp-01.lab.local"
   - "k8s-api.lab.local"
 
@@ -1720,11 +1753,11 @@ sudo systemctl enable --now rke2-server.service
 # [CONTROL-PLANE-02 y 03] ✅ Obligatorio: Configurar y arrancar
 sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
-server: https://10.0.1.101:9345
+server: https://10.100.29.101:9345
 token: "ClusterUltraSeguroToken2026!"
 write-kubeconfig-mode: "0644"
 tls-san:
-  - "10.0.1.102"
+  - "10.100.29.102"
   - "k8s-api.lab.local"
 cni: cilium
 disable-kube-proxy: true
@@ -1742,7 +1775,7 @@ sudo systemctl enable --now rke2-server.service
 # [WORKER-01 y 02] ✅ Obligatorio: Configurar agente y arrancar
 sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << EOF
-server: https://10.0.1.101:9345
+server: https://10.100.29.101:9345
 token: "ClusterUltraSeguroToken2026!"
 node-name: "$(hostname -s)"
 kubelet-arg:
@@ -1758,8 +1791,8 @@ sudo systemctl enable --now rke2-agent.service
 ```bash
 # [BASTION] ✅ Obligatorio: Extraer kubeconfig desde el Control Plane 1
 mkdir -p ~/.kube
-ssh -i ~/.ssh/id_ed25519_nodes debian@10.0.1.101 "sudo cat /etc/rancher/rke2/rke2.yaml" > ~/.kube/config
-sed -i 's/127.0.0.1/10.0.1.101/g' ~/.kube/config
+ssh -i ~/.ssh/id_ed25519_nodes debian@10.100.29.101 "sudo cat /etc/rancher/rke2/rke2.yaml" > ~/.kube/config
+sed -i 's/127.0.0.1/10.100.29.101/g' ~/.kube/config
 chmod 0600 ~/.kube/config
 sudo apt install -y kubectl
 ```
@@ -1783,7 +1816,7 @@ Si un servidor físico sufre corrupción o reemplazo de disco NVMe:
 ```bash
 # [PXE] 1. Colocar el nodo en estado de mantenimiento o desinstalar
 export OS_AUTH_TYPE=none
-export OS_ENDPOINT=http://10.0.1.30:6385
+export OS_ENDPOINT=http://10.100.29.30:6385
 
 # Retirar carga del nodo en Kubernetes desde el Bastión
 kubectl drain k8s-worker-02 --ignore-daemonsets --delete-emptydir-data
@@ -1883,12 +1916,12 @@ Para actualizar RKE2 de una versión menor a otra (ej. `v1.30.2` a `v1.30.4`):
 #### 11.1 Prueba de Datapath Cilium y Balanceo de Carga
 ```bash
 # [BASTION] Desplegar 4 réplicas de Nginx en los workers
-kubectl create deployment test-app --image=10.0.1.20:8082/nginx:alpine --replicas=4
+kubectl create deployment test-app --image=10.100.29.20:8082/nginx:alpine --replicas=4
 kubectl expose deployment test-app --port=80 --target-port=80
 
 # Obtener IP del servicio y realizar curl desde contenedor efímero
 SERVICE_IP=$(kubectl get svc test-app -o jsonpath='{.spec.clusterIP}')
-kubectl run curl-test --image=10.0.1.20:8082/curlimages/curl --rm -it --restart=Never -- curl -I http://${SERVICE_IP}
+kubectl run curl-test --image=10.100.29.20:8082/curlimages/curl --rm -it --restart=Never -- curl -I http://${SERVICE_IP}
 ```
 * **Resultado Esperado**: Código HTTP `200 OK` demostrando que Cilium enruta el tráfico entre los nodos sin requerir `kube-proxy`.
 
@@ -1896,7 +1929,7 @@ kubectl run curl-test --image=10.0.1.20:8082/curlimages/curl --rm -it --restart=
 Desde la estación DevOps externa:
 ```bash
 # [ESTACIÓN DEVOPS] Saltar directamente a un nodo interno sin pasar manualmente por el Bastión
-ssh debian@10.0.1.101 "hostname && uptime"
+ssh debian@10.100.29.101 "hostname && uptime"
 ```
 * **Resultado Esperado**: Comando ejecutado transparentemente a través del túnel SSH del puerto 2222.
 
@@ -1906,17 +1939,17 @@ ssh debian@10.0.1.101 "hostname && uptime"
 
 | Origen | Destino | Puerto | Protocolo | Servicio / Función |
 | :--- | :--- | :--- | :--- | :--- |
-| WAN (DevOps) | Bastión (`10.0.1.10`) | **2222** | TCP | OpenSSH Server Perimetral (Punto de inicio ProxyJump) |
-| Nodos (10.0.1.0/24) | Bastión (`10.0.1.10`) | **3128** | TCP | Squid Proxy Egress (Salida controlada a WAN) |
-| Nodos (10.0.1.0/24) | Bastión (`10.0.1.10`) | **123** | UDP | Chrony NTP (Sincronización horaria para Raft/TLS) |
-| Nodos (10.0.1.0/24) | Nexus (`10.0.1.20`) | **8081** | TCP | Sonatype Nexus Web UI y Repositorio APT debian-proxy |
-| Nodos (10.0.1.0/24) | Nexus (`10.0.1.20`) | **8082** | TCP | Docker Group Registry (Descarga de imágenes OCI) |
-| CI/CD Pipelines | Nexus (`10.0.1.20`) | **8083** | TCP | Docker Hosted Registry (Publicación privada de imágenes)|
-| Nexus (`10.0.1.20`)| PostgreSQL (`127.0.0.1`)| **5432** | TCP | PostgreSQL 16 (Motor de metadatos transaccional) |
-| Tarjetas PXE | PXE (`10.0.1.30`) | **67 / 68**| UDP | dnsmasq DHCP (Concesiones de red por MAC) |
-| Tarjetas PXE | PXE (`10.0.1.30`) | **69** | UDP | TFTP Bootloader (Entrega de ipxe.efi / undionly.kpxe) |
-| Nodos en Boot | PXE (`10.0.1.30`) | **8089** | TCP | Glance / Nginx HTTP (Streaming de kernel IPA e imágenes)|
-| Agente IPA | Ironic (`10.0.1.30`) | **6385** | TCP | Ironic REST API (Heartbeat y callbacks de despliegue) |
+| WAN (DevOps) | Bastión (`10.100.29.10`) | **2222** | TCP | OpenSSH Server Perimetral (Punto de inicio ProxyJump) |
+| Nodos (10.100.29.0/24) | Bastión (`10.100.29.10`) | **3128** | TCP | Squid Proxy Egress (Salida controlada a WAN) |
+| Nodos (10.100.29.0/24) | Bastión (`10.100.29.10`) | **123** | UDP | Chrony NTP (Sincronización horaria para Raft/TLS) |
+| Nodos (10.100.29.0/24) | Nexus (`10.100.29.20`) | **8081** | TCP | Sonatype Nexus Web UI y Repositorio APT debian-proxy |
+| Nodos (10.100.29.0/24) | Nexus (`10.100.29.20`) | **8082** | TCP | Docker Group Registry (Descarga de imágenes OCI) |
+| CI/CD Pipelines | Nexus (`10.100.29.20`) | **8083** | TCP | Docker Hosted Registry (Publicación privada de imágenes)|
+| Nexus (`10.100.29.20`)| PostgreSQL (`127.0.0.1`)| **5432** | TCP | PostgreSQL 16 (Motor de metadatos transaccional) |
+| Tarjetas PXE | PXE (`10.100.29.30`) | **67 / 68**| UDP | dnsmasq DHCP (Concesiones de red por MAC) |
+| Tarjetas PXE | PXE (`10.100.29.30`) | **69** | UDP | TFTP Bootloader (Entrega de ipxe.efi / undionly.kpxe) |
+| Nodos en Boot | PXE (`10.100.29.30`) | **8089** | TCP | Glance / Nginx HTTP (Streaming de kernel IPA e imágenes)|
+| Agente IPA | Ironic (`10.100.29.30`) | **6385** | TCP | Ironic REST API (Heartbeat y callbacks de despliegue) |
 | Nodos K8s | Control Plane | **6443** | TCP | Kubernetes API Server (Endpoint principal de K8s) |
 | Nodos K8s | Control Plane | **9345** | TCP | RKE2 Supervisor API (Registro y renovación de TLS) |
 | Control Planes | Control Planes | **2379-2380**| TCP | etcd Client / Peer (Consenso de base distribuida Raft) |
@@ -2032,7 +2065,7 @@ echo "   AUDITORÍA DE SALUD: FLOTA BARE-METAL Y KUBERNETES HA   "
 echo "=========================================================="
 
 echo "--> [1/4] Verificando Conectividad con los 8 Nodos..."
-NODES=("10.0.1.10" "10.0.1.20" "10.0.1.30" "10.0.1.101" "10.0.1.102" "10.0.1.103" "10.0.1.111" "10.0.1.112")
+NODES=("10.100.29.10" "10.100.29.20" "10.100.29.30" "10.100.29.101" "10.100.29.102" "10.100.29.103" "10.100.29.111" "10.100.29.112")
 for ip in "${NODES[@]}"; do
     if ping -c 1 -W 1 "$ip" > /dev/null 2>&1; then
         echo " [+] $ip : ONLINE"
@@ -2043,7 +2076,7 @@ done
 
 echo "--> [2/4] Verificando Sonatype Nexus y PostgreSQL..."
 curl -s -o /dev/null -w "%{http_code}
-" http://10.0.1.20:8081/service/rest/v1/status | grep 200 && echo " [+] Nexus 3 Core: SALUDABLE"
+" http://10.100.29.20:8081/service/rest/v1/status | grep 200 && echo " [+] Nexus 3 Core: SALUDABLE"
 
 echo "--> [3/4] Estado del Quórum etcd y Nodos Kubernetes..."
 export KUBECONFIG=~/.kube/config
@@ -2061,10 +2094,10 @@ done
 ## 10. Guía Exhaustiva de Resolución de Problemas (Troubleshooting)
 
 ### Caso 1: Error `HTTP 403 Forbidden` en `apt update` o `cloud-init`
-* **Síntoma**: Los nodos recién instalados fallan al descargar paquetes desde `http://10.0.1.20:8081/repository/debian-proxy/`.
+* **Síntoma**: Los nodos recién instalados fallan al descargar paquetes desde `http://10.100.29.20:8081/repository/debian-proxy/`.
 * **Causa**: Sonatype Nexus se inicializó con el **Anonymous Access desmarcado**.
-* **Diagnóstico**: `curl -I http://10.0.1.20:8081/repository/debian-proxy/` retorna `403 Forbidden`.
-* **Solución**: Ingresar a Nexus Web UI (`http://10.0.1.20:8081`) como `admin` → **Administration (⚙️) → Security → Anonymous** → Marcar **"Allow anonymous users to access the server"** y Guardar.
+* **Diagnóstico**: `curl -I http://10.100.29.20:8081/repository/debian-proxy/` retorna `403 Forbidden`.
+* **Solución**: Ingresar a Nexus Web UI (`http://10.100.29.20:8081`) como `admin` → **Administration (⚙️) → Security → Anonymous** → Marcar **"Allow anonymous users to access the server"** y Guardar.
 * **Verificación**: El comando `curl -I` devuelve `HTTP/1.1 200 OK`.
 
 ---
@@ -2119,13 +2152,13 @@ done
 ========================================================================================
 ESTADO FINAL: CLÚSTER BARE-METAL EDGE 8 NODOS OPERATIVO
 ========================================================================================
-NODO 314 (10.0.1.10)  : BASTION GATEWAY & SQUID PROXY        [8 GB RAM / 128 GB] -> ONLINE
-NODO 315 (10.0.1.20)  : SONATYPE NEXUS 3 & POSTGRESQL 16      [16 GB RAM / 128 GB] -> ONLINE
-NODO 306 (10.0.1.30)  : PXE CONTROLLER & IRONIC STANDALONE   [16 GB RAM / 128 GB] -> ONLINE
-NODO 269 (10.0.1.101) : K8S CONTROL PLANE 01 (ETCD LÍDER)    [16 GB RAM / 128 GB] -> READY
-NODO 280 (10.0.1.102) : K8S CONTROL PLANE 02 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
-NODO 320 (10.0.1.103) : K8S CONTROL PLANE 03 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
-NODO 321 (10.0.1.111) : K8S WORKER NODE 01 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
-NODO 279 (10.0.1.112) : K8S WORKER NODE 02 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
+NODO 314 (10.100.29.10)  : BASTION GATEWAY & SQUID PROXY        [8 GB RAM / 128 GB] -> ONLINE
+NODO 315 (10.100.29.20)  : SONATYPE NEXUS 3 & POSTGRESQL 16      [16 GB RAM / 128 GB] -> ONLINE
+NODO 306 (10.100.29.30)  : PXE CONTROLLER & IRONIC STANDALONE   [16 GB RAM / 128 GB] -> ONLINE
+NODO 269 (10.100.29.101) : K8S CONTROL PLANE 01 (ETCD LÍDER)    [16 GB RAM / 128 GB] -> READY
+NODO 280 (10.100.29.102) : K8S CONTROL PLANE 02 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
+NODO 320 (10.100.29.103) : K8S CONTROL PLANE 03 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
+NODO 321 (10.100.29.111) : K8S WORKER NODE 01 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
+NODO 279 (10.100.29.112) : K8S WORKER NODE 02 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
 ========================================================================================
 ```
