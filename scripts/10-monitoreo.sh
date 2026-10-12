@@ -143,8 +143,9 @@ targets = []
 with open(nodes_csv, mode="r") as f:
     reader = csv.DictReader(f)
     for row in reader:
+        node_ip = row["ip"]
         targets.append({
-            "targets": [f"{row[\"ip\"]}:9100"],
+            "targets": [f"{node_ip}:9100"],
             "labels": {
                 "node_id": row["id"],
                 "instance": row["hostname"],

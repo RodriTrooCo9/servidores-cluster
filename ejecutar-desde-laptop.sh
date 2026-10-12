@@ -123,8 +123,17 @@ run_remote_script() {
         return 0
     fi
 
+    # Comprobar conectividad previa
+    if ! ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${target_alias}" "true" 2>/dev/null; then
+        log_warn "Nodo [${target_alias}] no alcanzable por SSH. Omitiendo ${script_name}."
+        return 0
+    fi
+
     local remote_cmd="if [ -f /tmp/infra-scripts/scripts/${script_name} ]; then sudo /tmp/infra-scripts/scripts/${script_name} ${args}; else sudo /tmp/infra-scripts/${script_name} ${args}; fi"
-    ssh -t -o ConnectTimeout=5 "${target_alias}" "${remote_cmd}"
+    ssh -o ConnectTimeout=5 "${target_alias}" "${remote_cmd}" < /dev/null || {
+        log_warn "Aviso: la ejecución en [${target_alias}] devolvió código distinto de cero."
+        return 0
+    }
 }
 
 cmd_fase() {
