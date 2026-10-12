@@ -35,6 +35,7 @@ Comandos Principales:
                           7 -> 07-cloud-init.sh (Cloud-Init y ConfigDrive - Nodo 306)
                           8 -> 08-kubernetes.sh (Control Planes y Workers)
                           9 -> 09-verificacion.sh (Validación final)
+                          10 -> 10-monitoreo.sh (Prometheus, Grafana, Alertmanager, Node Exporter)
   --health              Ejecutar auditoría de salud del clúster (healthcheck.sh)
   --all                 Ejecutar todas las fases de manera ordenada y secuencial
   --dry-run             Simular las órdenes remotas sin ejecutarlas
@@ -193,8 +194,19 @@ cmd_fase() {
             log_info "FASE 9: Validación Integral del Clúster..."
             run_remote_script "bastion" "09-verificacion.sh" ""
             ;;
+        10)
+            log_info "FASE 10: Despliegue de Suite de Monitoreo (Node Exporter, Prometheus, Grafana)..."
+            cmd_sync
+            # 1. Desplegar Node Exporter en los nodos de la flota
+            while IFS=',' read -r id mac hostname ip role ram disk bmc; do
+                [[ "${id}" == "id" ]] && continue
+                local target
+                target="$(get_node_ssh_alias "${id}" "${hostname}")"
+                run_remote_script "${target}" "10-monitoreo.sh" "-y"
+            done < "${NODES_CSV}"
+            ;;
         *)
-            log_error "Fase desconocida: ${fase}. Fases disponibles: 1, 2, 3, 4, 5, 6, 7, 8, 9."
+            log_error "Fase desconocida: ${fase}. Fases disponibles: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10."
             exit 1
             ;;
     esac

@@ -25,6 +25,7 @@ infra-scripts/
 │   ├── estructura.md                  # Este manual de operación y trazabilidad
 │   ├── manual_maestro_infraestructura_pxe_openstack.md # Manual técnico exhaustivo
 │   ├── arranque_e_instalacion_por_red_pxe.md # Guía e investigación técnica de arranque por red PXE
+│   ├── monitoreo_prometheus_grafana.md # Manual Maestro de Monitoreo (Prometheus, Grafana, Alertmanager)
 │   ├── redes/                         # Arquitectura y seguridad de redes
 │   │   ├── aislamiento_red_oficina.md # Topología As-Built y blindaje de la red corporativa
 │   │   ├── redes.md                   # Plan maestro de direccionamiento L2/L3
@@ -51,6 +52,7 @@ infra-scripts/
 │   ├── 07-cloud-init.sh               # Fase 7: Plantillas Cloud-Init, ConfigDrive y NoCloud
 │   ├── 08-kubernetes.sh               # Fase 8: Clúster RKE2 HA + Cilium eBPF
 │   ├── 09-verificacion.sh             # Fase 9: Validación integral de conectividad y K8s
+│   ├── 10-monitoreo.sh                # Fase 10: Suite de Monitoreo (Node Exporter, Prometheus, Grafana)
 │   ├── deploy-masivo.sh               # Despliegue masivo bare-metal "un solo botón"
 │   └── healthcheck.sh                 # Auditoría de estado y tabla visual de métricas
 │
@@ -62,7 +64,8 @@ infra-scripts/
     ├── rollback-05-pxe-dhcp-tftp.sh
     ├── rollback-06-openstack-glance-bifrost.sh
     ├── rollback-07-cloud-init.sh
-    └── rollback-08-kubernetes.sh
+    ├── rollback-08-kubernetes.sh
+    └── rollback-10-monitoreo.sh
 ```
 
 ---
