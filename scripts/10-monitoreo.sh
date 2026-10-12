@@ -28,7 +28,7 @@ echo -e "${COLOR_BLUE}   FASE 10: STACK DE MONITOREO CENTRALIZADO (PROMETHEUS/GR
 echo -e "${COLOR_BLUE}==================================================================${COLOR_NC}"
 
 CURRENT_HOSTNAME="$(hostname -s)"
-CURRENT_IP="$(ip -br addr | awk '{print $3}' | cut -d/ -f1 | grep '10.100.29.' | head -n1 || echo "")"
+CURRENT_IP="$(ip -o -4 addr show | grep '10.100.29.' | awk '{print $4}' | cut -d/ -f1 | head -n1 || echo "")"
 
 VERSION_NODE_EXPORTER="1.8.2"
 VERSION_PROMETHEUS="2.54.1"
@@ -348,7 +348,7 @@ EOF
 install_node_exporter
 
 # Si el host actual es el Nodo 306, desplegar la suite central
-if [[ "${CURRENT_IP}" == "10.100.29.30" || "${CURRENT_HOSTNAME}" =~ pxe ]]; then
+if [[ "${CURRENT_IP}" == "10.100.29.30" || "${CURRENT_HOSTNAME}" =~ pxe ]] || ip -o link show | grep -qi "64:00:6a:2a:62:42" || ip -o -4 addr show | grep -q "10.100.29.30"; then
     install_monitoring_server
 fi
 
