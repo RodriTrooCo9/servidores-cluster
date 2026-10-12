@@ -31,6 +31,8 @@ Comandos Principales:
                           3 -> 03-nexus.sh (Nexus OSS - Nodo 315)
                           4 -> 04-clientes-nexus.sh (Clientes APT hacia Nexus)
                           5 -> 05-pxe-dhcp-tftp.sh (Servidor PXE - Nodo 306)
+                          6 -> 06-openstack-glance-bifrost.sh (OpenStack Glance - Nodo 306)
+                          7 -> 07-cloud-init.sh (Cloud-Init y ConfigDrive - Nodo 306)
                           8 -> 08-kubernetes.sh (Control Planes y Workers)
                           9 -> 09-verificacion.sh (Validación final)
   --health              Ejecutar auditoría de salud del clúster (healthcheck.sh)
@@ -162,6 +164,16 @@ cmd_fase() {
             cmd_sync
             run_remote_script "pxe-controller" "05-pxe-dhcp-tftp.sh" "-y"
             ;;
+        6)
+            log_info "FASE 6: Configurar OpenStack Glance y Catálogo de Imágenes en Nodo 306..."
+            cmd_sync
+            run_remote_script "pxe-controller" "06-openstack-glance-bifrost.sh" "-y"
+            ;;
+        7)
+            log_info "FASE 7: Generar Plantillas Cloud-Init, ConfigDrive y Packer en Nodo 306..."
+            cmd_sync
+            run_remote_script "pxe-controller" "07-cloud-init.sh" "-y"
+            ;;
         8)
             log_info "FASE 8: Despliegue de Kubernetes HA (RKE2 + Cilium)..."
             cmd_sync
@@ -181,7 +193,7 @@ cmd_fase() {
             run_remote_script "bastion" "09-verificacion.sh" ""
             ;;
         *)
-            log_error "Fase desconocida: ${fase}. Fases disponibles: 1, 2, 3, 4, 5, 8, 9."
+            log_error "Fase desconocida: ${fase}. Fases disponibles: 1, 2, 3, 4, 5, 6, 7, 8, 9."
             exit 1
             ;;
     esac

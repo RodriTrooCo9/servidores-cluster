@@ -104,7 +104,7 @@ CONFIGDRIVE_GEN="/opt/infra/scripts/generate_configdrive.sh"
 backup_file "${CONFIGDRIVE_GEN}"
 
 if [[ "${DRY_RUN}" = false ]]; then
-    cat > "${CONFIGDRIVE_GEN}" << 'EOF'
+    cat > "${CONFIGDRIVE_GEN}" << 'GEN_EOF'
 #!/usr/bin/env bash
 # Generador de imágenes VFAT ConfigDrive (config-2) para inyección Zero-Touch
 set -euo pipefail
@@ -145,14 +145,22 @@ if [[ "${FOUND}" = false ]]; then
     exit 1
 fi
 
-# Leer llave SSH si existe
+# Leer llave SSH real si existe
 SSH_PUB_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC43z9+r9u5eWadminKeyClusterNodes admin-cluster-nodes"
-if [[ -f "$HOME/.ssh/id_ed25519_nodes.pub" ]]; then
-    SSH_PUB_KEY="$(cat "$HOME/.ssh/id_ed25519_nodes.pub")"
-fi
+for keyfile in "/home/n306/.ssh/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/authorized_keys" "$HOME/.ssh/id_ed25519_nodes.pub"; do
+    if [[ -f "${keyfile}" ]]; then
+        SSH_PUB_KEY="$(head -n1 "${keyfile}")"
+        break
+    fi
+done
+
+GATEWAY_IP="${INTERNAL_GATEWAY:-10.100.29.30}"
+DNS_IP="${INTERNAL_DNS:-192.168.26.120}"
+NETMASK_VAL="${INTERNAL_NETMASK:-255.255.255.0}"
+NEXUS_ENDPOINT="${NEXUS_IP:-10.100.29.20}"
 
 # 1. meta_data.json
-cat > "${OUTPUT_DIR}/openstack/latest/meta_data.json" << JSON
+cat > "${OUTPUT_DIR}/openstack/latest/meta_data.json" << JSON_EOF
 {
   "uuid": "node-${NODE_NAME}-baremetal",
   "hostname": "${NODE_NAME}.lab.local",
@@ -161,10 +169,10 @@ cat > "${OUTPUT_DIR}/openstack/latest/meta_data.json" << JSON
     "admin": "${SSH_PUB_KEY}"
   }
 }
-JSON
+JSON_EOF
 
 # 2. network_data.json
-cat > "${OUTPUT_DIR}/openstack/latest/network_data.json" << JSON
+cat > "${OUTPUT_DIR}/openstack/latest/network_data.json" << JSON_EOF
 {
   "links": [
     { "id": "eth0", "type": "phy", "ethernet_mac_address": "${NODE_MAC}" }
@@ -175,27 +183,45 @@ cat > "${OUTPUT_DIR}/openstack/latest/network_data.json" << JSON
       "type": "ipv4",
       "link": "eth0",
       "ip_address": "${NODE_IP}",
-      "netmask": "255.255.255.0",
-      "gateway": "10.0.1.10"
+      "netmask": "${NETMASK_VAL}",
+      "gateway": "${GATEWAY_IP}"
     }
   ],
   "services": [
-    { "type": "dns", "address": "10.0.1.10" }
+    { "type": "dns", "address": "${DNS_IP}" }
   ]
 }
-JSON
+JSON_EOF
 
 # 3. user_data (#cloud-config)
-cat > "${OUTPUT_DIR}/openstack/latest/user_data" << 'YML'
+cat > "${OUTPUT_DIR}/openstack/latest/user_data" << YML_EOF
 #cloud-config
 manage_etc_hosts: true
 package_update: true
+users:
+  - default
+  - name: debian
+    gecos: Debian Admin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo, adm
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: \$6\$rounds=4096\$labsalt\$y8Z.1wD.o0K/6G7w89X5r4Xyv1jYnZk4G1
+    ssh_authorized_keys:
+      - "${SSH_PUB_KEY}"
+
 packages:
   - curl
   - iptables
   - apparmor
   - socat
   - conntrack
+  - openssh-server
+
+apt:
+  sources:
+    nexus:
+      source: "deb http://${NEXUS_ENDPOINT}:8081/repository/debian-proxy/ trixie main contrib non-free non-free-firmware"
 
 write_files:
   - path: /etc/modules-load.d/k8s.conf
@@ -215,13 +241,35 @@ runcmd:
   - modprobe br_netfilter
   - sysctl --system
   - systemctl restart ssh
-YML
+YML_EOF
 
-# Crear imagen VFAT de 64 MB con etiqueta config-2
+# 4. Crear estructura compatible NoCloud para HTTP (/httpboot/cloud-init/)
+HTTP_NOCLOUD="/httpboot/cloud-init/${NODE_NAME}"
+mkdir -p "${HTTP_NOCLOUD}"
+cp "${OUTPUT_DIR}/openstack/latest/user_data" "${HTTP_NOCLOUD}/user-data"
+cat > "${HTTP_NOCLOUD}/meta-data" << META_EOF
+instance-id: i-${NODE_NAME}
+local-hostname: ${NODE_NAME}
+META_EOF
+cat > "${HTTP_NOCLOUD}/network-config" << NET_EOF
+version: 2
+ethernets:
+  eth0:
+    match:
+      macaddress: "${NODE_MAC}"
+    addresses:
+      - ${NODE_IP}/24
+    gateway4: ${GATEWAY_IP}
+    nameservers:
+      addresses: [${DNS_IP}]
+NET_EOF
+
+# 5. Crear imagen VFAT de 64 MB con etiqueta config-2
 ISO_IMG="/opt/infra/configdrive/${NODE_NAME}-configdrive.iso"
 mkisofs -R -V config-2 -o "${ISO_IMG}" "${OUTPUT_DIR}" >/dev/null 2>&1 || genisoimage -R -V config-2 -o "${ISO_IMG}" "${OUTPUT_DIR}"
 echo "ConfigDrive generado con éxito: ${ISO_IMG}"
-EOF
+echo "NoCloud HTTP listo en: ${HTTP_NOCLOUD}"
+GEN_EOF
     chmod +x "${CONFIGDRIVE_GEN}"
 fi
 log_success "Script generador de ConfigDrive listo en ${CONFIGDRIVE_GEN}."
@@ -239,11 +287,17 @@ fi
 apt_install genisoimage 2>/dev/null || true
 
 if [[ -f "${CONFIGDRIVE_GEN}" ]]; then
-    "${CONFIGDRIVE_GEN}" "k8s-cp-01"
+    log_info "Generando ConfigDrives y metadatos NoCloud para todos los nodos del clúster..."
+    while IFS=',' read -r id mac hostname ip role ram disk bmc; do
+        [[ "${id}" == "id" ]] && continue
+        log_info "Compilando cloud-init para nodo [${hostname}] (ID: ${id})..."
+        "${CONFIGDRIVE_GEN}" "${hostname}" || true
+    done < "${NODES_CSV}"
+
     if [[ -f "/opt/infra/configdrive/k8s-cp-01-configdrive.iso" ]]; then
-        log_success "Volumen config-2 generado y validado correctamente."
+        log_success "Volúmenes config-2 y endpoints HTTP generados y validados correctamente."
     else
-        log_warn "El script generó los archivos JSON pero no pudo compilar el archivo ISO (genisoimage requerido)."
+        log_warn "El script generó los archivos JSON pero no pudo compilar el archivo ISO."
     fi
 fi
 
