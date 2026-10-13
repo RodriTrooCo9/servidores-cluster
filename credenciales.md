@@ -136,6 +136,7 @@ Todos los servicios web y paneles de administración están disponibles en las s
 
 | Servicio | Nodo | IP / Puerto | URL WiFi (Oficina) | URL Switch Clúster | Credenciales |
 | :--- | :---: | :---: | :--- | :--- | :---: |
+| **Consola Web SSH (Remota)** | `pxe-controller` | `:7681` | [http://192.168.29.25:7681](http://192.168.29.25:7681) | [http://10.100.29.30:7681](http://10.100.29.30:7681) | `n306` / `306` *(o root)* |
 | **Grafana Dashboards** | `pxe-controller` | `:3000` | [http://192.168.29.25:3000](http://192.168.29.25:3000) | [http://10.100.29.30:3000](http://10.100.29.30:3000) | `admin` / `admin` |
 | **Prometheus TSDB** | `pxe-controller` | `:9090` | [http://192.168.29.25:9090](http://192.168.29.25:9090) | [http://10.100.29.30:9090](http://10.100.29.30:9090) | *(Sin auth)* |
 | **Alertmanager** | `pxe-controller` | `:9093` | [http://192.168.29.25:9093](http://192.168.29.25:9093) | [http://10.100.29.30:9093](http://10.100.29.30:9093) | *(Sin auth)* |
