@@ -134,13 +134,19 @@ Si conectas físicamente la laptop externa con un cable Ethernet a un puerto lib
 
 Todos los servicios web y paneles de administración están disponibles en las siguientes rutas:
 
-| Servicio | Nodo | IP / Puerto | URL |
-| :--- | :---: | :---: | :--- |
-| **Grafana Dashboards** | `pxe-controller` | `10.100.29.30:3000` | [http://10.100.29.30:3000](http://10.100.29.30:3000) |
-| **Prometheus TSDB** | `pxe-controller` | `10.100.29.30:9090` | [http://10.100.29.30:9090](http://10.100.29.30:9090) |
-| **Alertmanager** | `pxe-controller` | `10.100.29.30:9093` | [http://10.100.29.30:9093](http://10.100.29.30:9093) |
-| **Blackbox Exporter** | `pxe-controller` | `10.100.29.30:9115` | [http://10.100.29.30:9115](http://10.100.29.30:9115) |
-| **Sonatype Nexus OSS** | `nexus-repo` | `10.100.29.20:8081` | [http://10.100.29.20:8081](http://10.100.29.20:8081) |
-| **HTTP Bootloader** | `pxe-controller` | `10.100.29.30:8089` | [http://10.100.29.30:8089](http://10.100.29.30:8089) |
-| **OpenStack Ironic** | `pxe-controller` | `10.100.29.30:6385` | [http://10.100.29.30:6385](http://10.100.29.30:6385) |
-| **Node Exporter (Métricas)** | *Todos los nodos* | `10.100.29.X:9100` | `http://10.100.29.X:9100/metrics` |
+| Servicio | Nodo | IP / Puerto | URL WiFi (Oficina) | URL Switch Clúster | Credenciales |
+| :--- | :---: | :---: | :--- | :--- | :---: |
+| **Grafana Dashboards** | `pxe-controller` | `:3000` | [http://192.168.29.25:3000](http://192.168.29.25:3000) | [http://10.100.29.30:3000](http://10.100.29.30:3000) | `admin` / `admin` |
+| **Prometheus TSDB** | `pxe-controller` | `:9090` | [http://192.168.29.25:9090](http://192.168.29.25:9090) | [http://10.100.29.30:9090](http://10.100.29.30:9090) | *(Sin auth)* |
+| **Alertmanager** | `pxe-controller` | `:9093` | [http://192.168.29.25:9093](http://192.168.29.25:9093) | [http://10.100.29.30:9093](http://10.100.29.30:9093) | *(Sin auth)* |
+| **Blackbox Exporter** | `pxe-controller` | `:9115` | [http://192.168.29.25:9115](http://192.168.29.25:9115) | [http://10.100.29.30:9115](http://10.100.29.30:9115) | *(Sin auth)* |
+| **Sonatype Nexus OSS** | `nexus-repo` | `:8081` | *(Vía Switch o Proxy)* | [http://10.100.29.20:8081](http://10.100.29.20:8081) | `admin` / *(Token en disco)* |
+| **HTTP Bootloader** | `pxe-controller` | `:8089` | [http://192.168.29.25:8089](http://192.168.29.25:8089) | [http://10.100.29.30:8089](http://10.100.29.30:8089) | *(Sin auth)* |
+| **OpenStack Ironic** | `pxe-controller` | `:6385` | [http://192.168.29.25:6385](http://192.168.29.25:6385) | [http://10.100.29.30:6385](http://10.100.29.30:6385) | *(API v1)* |
+| **Node Exporter (Métricas)** | *Todos los nodos* | `:9100` | *(Ver cada nodo)* | `http://10.100.29.X:9100/metrics` | *(Métricas en vivo)* |
+
+### Dashboards preconfigurados en Grafana:
+1. **Flota Bare-Metal - Vista General (8 Nodos):**
+   `http://192.168.29.25:3000/d/baremetal-fleet-overview/flota-bare-metal-vista-general-8-nodos`
+2. **Node Exporter Full (Gráficos exhaustivos por nodo con selector):**
+   `http://192.168.29.25:3000/d/rYdddlPWk/node-exporter-full`
