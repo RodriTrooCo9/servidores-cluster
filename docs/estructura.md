@@ -11,6 +11,7 @@
 ```text
 infra-scripts/
 ├── README.md                          # Guía Maestra de Arquitectura y Despliegue
+├── todo.md                            # Control de Tareas y Auditoría del Proyecto
 ├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto desde Laptop (SSH Jump Host)
 ├── .gitignore                         # Exclusión de claves, certificados, respaldos e ISOs
 │
@@ -34,6 +35,10 @@ infra-scripts/
 │   │   ├── blindaje-red-oficina.md    # Protocolo de contención Rogue DHCP y reglas NAT
 │   │   └── recuperacion-desastres.md  # Procedimientos ante caídas de nodos y etcd
 │   └── openstack/                     # Decisiones de diseño y arquitectura bare-metal
+│       ├── Configurar el arranque por red.md # Auditoría integral y memoria técnica de red/PXE
+│       ├── Implementar PXE.md         # Guía práctica paso a paso de despliegue PXE/iPXE
+│       ├── plan_maestro_instalacion_ipxe.md # Plan Maestro de compilación y despliegue iPXE Custom
+│       ├── arranque por red_ipxe.md   # Caso hipotético y experimento iPXE custom compilado
 │       ├── glance_ironic_bifrost_arquitectura_comparativa.md
 │       ├── OpenStack Glance, Formatos de Disco e Ironic Bare-Metal.md
 │       └── Diferencias entre un entorno de desarrollo y uno de producción.md
@@ -53,6 +58,7 @@ infra-scripts/
 │   ├── 08-kubernetes.sh               # Fase 8: Clúster RKE2 HA + Cilium eBPF
 │   ├── 09-verificacion.sh             # Fase 9: Validación integral de conectividad y K8s
 │   ├── 10-monitoreo.sh                # Fase 10: Suite de Monitoreo (Node Exporter, Prometheus, Grafana)
+│   ├── compilar-ipxe-custom.sh        # Compilación modular de iPXE Custom (Staging y Cero Afectación)
 │   ├── deploy-masivo.sh               # Despliegue masivo bare-metal "un solo botón"
 │   └── healthcheck.sh                 # Auditoría de estado y tabla visual de métricas
 │
@@ -65,7 +71,8 @@ infra-scripts/
     ├── rollback-06-openstack-glance-bifrost.sh
     ├── rollback-07-cloud-init.sh
     ├── rollback-08-kubernetes.sh
-    └── rollback-10-monitoreo.sh
+    ├── rollback-10-monitoreo.sh
+    └── rollback-compilar-ipxe-custom.sh # Reversión atómica de binarios iPXE a versiones originales
 ```
 
 ---

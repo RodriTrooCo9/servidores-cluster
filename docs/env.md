@@ -137,3 +137,6 @@ Todo el clúster se administra desde la laptop con un solo comando:
 ./ejecutar-desde-laptop.sh --fase 8     # Desplegar / actualizar Kubernetes RKE2
 ./ejecutar-desde-laptop.sh --health     # Auditoría integral de salud
 ```
+
+
+* saber la version de la bios `sudo dmidecode -s bios-version` 
