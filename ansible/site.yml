@@ -1,12 +1,18 @@
 ---
 # ==============================================================================
 # Playbook Maestro: site.yml
-# Orquestador integral para la infraestructura Bare-Metal
+# Orquestador integral para la infraestructura Bare-Metal Edge
 #
-# Uso por fases:
+# Uso por fases / tags:
 #   ansible-playbook site.yml --tags ping
 #   ansible-playbook site.yml --tags info
 #   ansible-playbook site.yml --tags base
+#   ansible-playbook site.yml --tags bastion
+#   ansible-playbook site.yml --tags nexus
+#   ansible-playbook site.yml --tags pxe
+#   ansible-playbook site.yml --tags ironic
+#   ansible-playbook site.yml --tags k8s
+#   ansible-playbook site.yml --tags monitoring
 #   ansible-playbook site.yml --tags healthcheck
 # ==============================================================================
 
@@ -21,14 +27,54 @@
     - info
     - facts
 
-- name: "[Fase 2] Configuración Base del Sistema Operativo"
+- name: "[Fase 2] Configuración Base del Sistema Operativo (common)"
   import_playbook: playbooks/02_base_config.yml
   tags:
     - base
     - config
+    - common
 
-- name: "[Fase 3] Auditoría de Salud y Puertos"
-  import_playbook: playbooks/03_healthcheck.yml
+- name: "[Fase 3] Bastion Host, Seguridad Perimetral y Proxy Egress"
+  import_playbook: playbooks/03_bastion.yml
+  tags:
+    - bastion
+    - perimeter
+
+- name: "[Fase 4] Sonatype Nexus 3 OSS y PostgreSQL 16"
+  import_playbook: playbooks/04_nexus.yml
+  tags:
+    - nexus
+    - repo
+
+- name: "[Fase 5] Servidor PXE, DHCP dnsmasq, TFTP e HTTPBoot"
+  import_playbook: playbooks/05_pxe_controller.yml
+  tags:
+    - pxe
+    - dhcp
+    - tftp
+
+- name: "[Fase 6] OpenStack Ironic Standalone y Gestión Bare-Metal"
+  import_playbook: playbooks/06_ironic_deploy.yml
+  tags:
+    - ironic
+    - baremetal
+
+- name: "[Fase 7] Clúster Kubernetes HA (RKE2 + Cilium eBPF)"
+  import_playbook: playbooks/07_kubernetes_ha.yml
+  tags:
+    - k8s
+    - rke2
+    - cilium
+
+- name: "[Fase 8] Suite de Monitoreo (Prometheus, Grafana, Node Exporter)"
+  import_playbook: playbooks/08_monitoring.yml
+  tags:
+    - monitoring
+    - prometheus
+    - grafana
+
+- name: "[Fase 9] Auditoría de Salud y Validación Integral de Puertos"
+  import_playbook: playbooks/09_healthcheck.yml
   tags:
     - healthcheck
     - check

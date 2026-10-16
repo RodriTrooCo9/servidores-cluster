@@ -1,0 +1,11 @@
+---
+# ==============================================================================
+# Playbook: 08_monitoring.yml
+# Objetivo: Desplegar Node Exporter en toda la flota y Prometheus/Grafana en Nodo 306
+# Invoca: Rol 'monitoring'
+# ==============================================================================
+- name: "Suite de Monitoreo Centralizado (Prometheus, Grafana, Node Exporter)"
+  hosts: baremetal
+  become: true
+  roles:
+    - monitoring

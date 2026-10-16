@@ -1,0 +1,99 @@
+---
+# ==============================================================================
+# Playbook: 03_healthcheck.yml
+# Objetivo: Auditoría integral de puertos y servicios esenciales en la flota
+# ==============================================================================
+- name: "Healthcheck: Conectividad y Métricas en la Flota"
+  hosts: baremetal
+  tasks:
+    - name: "Verificar disponibilidad del puerto Node Exporter (9100)"
+      ansible.builtin.wait_for:
+        port: 9100
+        timeout: 3
+        state: started
+      ignore_errors: true
+      register: exporter_check
+
+    - name: "Reportar estado de métricas"
+      ansible.builtin.debug:
+        msg: "Node Exporter en {{ inventory_hostname }} ({{ ansible_host }}): {{ 'ACTIVO (OK)' if exporter_check is not failed else 'NO DETECTADO' }}"
+
+- name: "Healthcheck: Servicios Perimetrales en Bastion (Nodo 314)"
+  hosts: bastion
+  tasks:
+    - name: "Comprobar servicios críticos en Bastion"
+      ansible.builtin.wait_for:
+        port: "{{ item.port }}"
+        timeout: 3
+        state: started
+      loop:
+        - { name: "OpenSSH Perimetral", port: "{{ bastion_ssh_port }}" }
+        - { name: "Squid Proxy Egress", port: "{{ squid_port }}" }
+      ignore_errors: true
+      register: bastion_services
+
+    - name: "Reportar estado de Bastion"
+      ansible.builtin.debug:
+        msg: "Servicio {{ item.item.name }} (Puerto {{ item.item.port }}): {{ 'ONLINE' if item is not failed else 'OFFLINE' }}"
+      loop: "{{ bastion_services.results }}"
+
+- name: "Healthcheck: Nexus OSS en Nodo 315"
+  hosts: nexus
+  tasks:
+    - name: "Comprobar puerto 8081 de Nexus y 5432 de PostgreSQL"
+      ansible.builtin.wait_for:
+        port: "{{ item.port }}"
+        timeout: 3
+        state: started
+      loop:
+        - { name: "Nexus 3 Web UI / APT Proxy", port: "{{ nexus_port }}" }
+        - { name: "Nexus Docker Group Pull", port: "{{ nexus_docker_group_port }}" }
+        - { name: "PostgreSQL Database", port: "{{ postgres_port }}" }
+      ignore_errors: true
+      register: nexus_services
+
+    - name: "Reportar estado de Nexus"
+      ansible.builtin.debug:
+        msg: "Servicio {{ item.item.name }} (Puerto {{ item.item.port }}): {{ 'ONLINE' if item is not failed else 'OFFLINE' }}"
+      loop: "{{ nexus_services.results }}"
+
+- name: "Healthcheck: Servicios Centrales en Nodo 306 (PXE/Router)"
+  hosts: pxe_controller
+  tasks:
+    - name: "Comprobar servicios críticos en Nodo 306"
+      ansible.builtin.wait_for:
+        port: "{{ item.port }}"
+        timeout: 3
+        state: started
+      loop:
+        - { name: "DNS/DHCP dnsmasq", port: 53 }
+        - { name: "HTTPBoot Nginx", port: "{{ pxe_httpboot_port }}" }
+        - { name: "Ironic Standalone API", port: "{{ ironic_api_port }}" }
+        - { name: "Prometheus TSDB", port: "{{ prometheus_port }}" }
+        - { name: "Grafana Web", port: "{{ grafana_port }}" }
+      ignore_errors: true
+      register: core_services
+
+    - name: "Reportar estado de servicios en Nodo 306"
+      ansible.builtin.debug:
+        msg: "Servicio {{ item.item.name }} (Puerto {{ item.item.port }}): {{ 'ONLINE' if item is not failed else 'OFFLINE' }}"
+      loop: "{{ core_services.results }}"
+
+- name: "Healthcheck: Clúster Kubernetes HA"
+  hosts: k8s_control_plane
+  tasks:
+    - name: "Comprobar API Server de Kubernetes (6443) y Supervisor (9345)"
+      ansible.builtin.wait_for:
+        port: "{{ item.port }}"
+        timeout: 3
+        state: started
+      loop:
+        - { name: "Kube-API Server", port: "{{ k8s_api_port }}" }
+        - { name: "RKE2 Supervisor", port: "{{ k8s_supervisor_port }}" }
+      ignore_errors: true
+      register: k8s_services
+
+    - name: "Reportar estado de APIs de Kubernetes"
+      ansible.builtin.debug:
+        msg: "Control Plane {{ inventory_hostname }}: {{ item.item.name }} (Puerto {{ item.item.port }}): {{ 'ONLINE' if item is not failed else 'OFFLINE' }}"
+      loop: "{{ k8s_services.results }}"

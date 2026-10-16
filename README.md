@@ -86,9 +86,35 @@ El repositorio mantiene una separación estricta entre la **documentación técn
 ```text
 infra-scripts/
 ├── README.md                          # Guía Maestra de Arquitectura y Despliegue
-├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto desde Laptop (SSH Jump Host)
+├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto (Motor Ansible Core)
 ├── .gitignore                         # Exclusión de claves, certificados, respaldos e ISOs
 ├── todo.md                            # Control de Tareas y Auditoría del Proyecto
+│
+├── ansible/                           # MOTOR DE ORQUESTACIÓN DECLARATIVO E IDEMPOTENTE
+│   ├── ansible.cfg                    # Optimización SSH, forks=8, pipelining y ControlPersist
+│   ├── inventory/
+│   │   ├── hosts.yml                  # Inventario estructurado en YAML de los 8 nodos físicos
+│   │   └── group_vars/all/vars.yml    # Variables maestras del clúster (IPs, subredes, puertos)
+│   ├── roles/                         # ROLES MODULARES DE ANSIBLE
+│   │   ├── common/                    # Base OS, /etc/hosts, networkd, Swap, Chrony, APT Nexus
+│   │   ├── bastion/                   # Bastion Host, SSH hardening :22, Squid :3128, nftables NAT
+│   │   ├── nexus/                     # PostgreSQL 16 + Sonatype Nexus 3 OSS (Tuning 4GB RAM)
+│   │   ├── pxe_controller/            # dnsmasq con reservas MAC dinámicas, TFTP, Nginx :8089
+│   │   ├── ironic/                    # OpenStack Ironic Standalone en Podman y baremetal.yaml
+│   │   ├── rke2_ha/                   # Clúster Kubernetes HA (3 CPs + 2 Workers) con Cilium eBPF
+│   │   └── monitoring/                # Prometheus TSDB, Grafana y Node Exporter en la flota
+│   ├── playbooks/                     # PLAYBOOKS EJECUTABLES POR FASE O COMPONENTE
+│   │   ├── 00_ping.yml                # Validación de conectividad SSH paralela
+│   │   ├── 01_system_summary.yml      # Telemetría de hardware (RAM, Disco, CPU, Kernel)
+│   │   ├── 02_base_config.yml         # Homologación del SO (invoca rol common)
+│   │   ├── 03_bastion.yml             # Despliegue perimetral en Nodo 314
+│   │   ├── 04_nexus.yml               # Despliegue de Nexus y PostgreSQL en Nodo 315
+│   │   ├── 05_pxe_controller.yml      # Servicios PXE, dnsmasq e iPXE en Nodo 306
+│   │   ├── 06_ironic_deploy.yml       # OpenStack Ironic Standalone en Nodo 306
+│   │   ├── 07_kubernetes_ha.yml       # Clúster Kubernetes HA RKE2 + Cilium
+│   │   ├── 08_monitoring.yml          # Suite de Monitoreo Centralizado
+│   │   └── 09_healthcheck.yml         # Auditoría integral de puertos y servicios
+│   └── site.yml                       # Orquestador maestro integral (soporta tags)
 │
 ├── config/                            # Parámetros, variables y catálogo de red
 │   ├── env                            # Variables maestras activas del clúster (chmod 600)
@@ -103,51 +129,19 @@ infra-scripts/
 │   ├── arranque_e_instalacion_por_red_pxe.md # Guía e investigación técnica de arranque por red PXE
 │   ├── monitoreo_prometheus_grafana.md # Manual Maestro de Monitoreo (Prometheus, Grafana, Alertmanager)
 │   ├── redes/                         # Arquitectura y seguridad de redes
-│   │   ├── aislamiento_red_oficina.md # Topología As-Built y blindaje de la red corporativa
-│   │   ├── redes.md                   # Plan maestro de direccionamiento L2/L3
-│   │   └── conflictos_vlan_manual.md  # Matriz de riesgos y mitigación de VLANs
 │   ├── runbooks/                      # Procedimientos operativos estándar (SOP)
-│   │   ├── blindaje-red-oficina.md    # Protocolo de contención Rogue DHCP y reglas NAT
-│   │   └── recuperacion-desastres.md  # Procedimientos ante caídas de nodos y etcd
 │   └── openstack/                     # Decisiones de diseño y arquitectura bare-metal
-│       ├── Configurar el arranque por red.md # Auditoría integral y memoria técnica de red/PXE
-│       ├── Implementar PXE.md         # Guía práctica paso a paso de despliegue PXE/iPXE
-│       ├── plan_maestro_instalacion_ipxe.md # Plan Maestro de compilación y despliegue iPXE Custom
-│       ├── arranque por red_ipxe.md   # Caso hipotético y experimento iPXE custom compilado
-│       ├── glance_ironic_bifrost_arquitectura_comparativa.md
-│       ├── OpenStack Glance, Formatos de Disco e Ironic Bare-Metal.md
-│       └── Diferencias entre un entorno de desarrollo y uno de producción.md
 │
 ├── lib/                               # Biblioteca compartida
 │   └── common.sh                      # Logging, comprobaciones, traps y carga de configuración
 │
-├── scripts/                           # SCRIPTS EJECUTABLES DE APROVISIONAMIENTO (.sh)
-│   ├── 00-preflight.sh                # Fase 0: Validación de requisitos y variables
-│   ├── 01-base-servidores.sh          # Fase 1: Hostname, red estática, Chrony y sudoers
-│   ├── 02-bastion.sh                  # Fase 2: Bastion Host, SSH :2222, Squid y nftables
-│   ├── 03-nexus.sh                    # Fase 3: Sonatype Nexus 3 OSS + PostgreSQL 17
-│   ├── 04-clientes-nexus.sh           # Fase 4: Redirección APT hacia el proxy de Nexus
-│   ├── 05-pxe-dhcp-tftp.sh            # Fase 5: Servidor PXE, dnsmasq amarrado y Nginx :8089
-│   ├── 06-openstack-glance-bifrost.sh # Fase 6: Ironic Standalone en Podman y ramdisk IPA
-│   ├── 07-cloud-init.sh               # Fase 7: Plantillas Cloud-Init, ConfigDrive y NoCloud
-│   ├── 08-kubernetes.sh               # Fase 8: Clúster RKE2 HA + Cilium eBPF
-│   ├── 09-verificacion.sh             # Fase 9: Validación integral de conectividad y K8s
-│   ├── 10-monitoreo.sh                # Fase 10: Suite de Monitoreo (Node Exporter, Prometheus, Grafana)
-│   ├── compilar-ipxe-custom.sh        # Compilación modular de iPXE Custom (Staging y Cero Afectación)
-│   ├── deploy-masivo.sh               # Despliegue masivo bare-metal "un solo botón"
-│   └── healthcheck.sh                 # Auditoría de estado y tabla visual de métricas
-│
-└── rollback/                          # Scripts de reversión por fase
-    ├── rollback-01-base-servidores.sh
-    ├── rollback-02-bastion.sh
-    ├── rollback-03-nexus.sh
-    ├── rollback-04-clientes-nexus.sh
-    ├── rollback-05-pxe-dhcp-tftp.sh
-    ├── rollback-06-openstack-glance-bifrost.sh
-    ├── rollback-07-cloud-init.sh
-    ├── rollback-08-kubernetes.sh
-    ├── rollback-10-monitoreo.sh
-    └── rollback-compilar-ipxe-custom.sh # Reversión atómica de binarios iPXE a versiones originales
+└── scripts/                           # SCRIPTS UTILITARIOS COMPLEMENTARIOS (.sh / .py)
+    ├── 00-preflight.sh                # Auditoría previa de compatibilidad y hardware en Debian 13
+    ├── 07-cloud-init.sh               # Compilación de plantillas Packer HCL y ConfigDrive
+    ├── 09-verificacion.sh             # Validación interactiva integral de 14 pruebas
+    ├── bootstrap_node.py              # Inyección de claves y bootstrap de emergencia
+    ├── compilar-ipxe-custom.sh        # Compilación modular de binarios iPXE embebidos
+    └── healthcheck.sh                 # Auditoría de estado en vivo y tabla visual en consola
 ```
 
 ---

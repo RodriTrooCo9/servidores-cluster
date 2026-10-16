@@ -1,0 +1,11 @@
+---
+# ==============================================================================
+# Playbook: 04_nexus.yml
+# Objetivo: Desplegar Sonatype Nexus 3 OSS y PostgreSQL 16 (Nodo 315)
+# Invoca: Rol 'nexus'
+# ==============================================================================
+- name: "Despliegue del Servidor de Paquetes Sonatype Nexus 3 y PostgreSQL"
+  hosts: nexus
+  become: true
+  roles:
+    - nexus

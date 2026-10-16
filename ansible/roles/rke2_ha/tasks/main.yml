@@ -1,0 +1,124 @@
+---
+# ==============================================================================
+# Role: rke2_ha - Clúster Kubernetes HA con RKE2 y Cilium eBPF
+# Reemplaza completamente scripts/08-kubernetes.sh
+# ==============================================================================
+
+- name: "Crear directorio de configuración /etc/rancher/rke2"
+  ansible.builtin.file:
+    path: /etc/rancher/rke2
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Desplegar configuración de mirrors de registros Nexus en containerd"
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/rke2/registries.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Desplegar configuración de RKE2 Server en el nodo Líder (nodo-269)"
+  ansible.builtin.template:
+    src: rke2-leader-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    owner: root
+    group: root
+    mode: '0600'
+  when: k8s_leader | default(false)
+
+- name: "Desplegar configuración de RKE2 Server en nodos Control Plane secundarios"
+  ansible.builtin.template:
+    src: rke2-cp-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    owner: root
+    group: root
+    mode: '0600'
+  when: inventory_hostname in groups['k8s_control_plane'] and not (k8s_leader | default(false))
+
+- name: "Desplegar configuración de RKE2 Agent en nodos Workers"
+  ansible.builtin.template:
+    src: rke2-worker-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    owner: root
+    group: root
+    mode: '0600'
+  when: inventory_hostname in groups['k8s_workers']
+
+- name: "Descargar e instalar binarios oficiales de RKE2"
+  ansible.builtin.shell: >
+    curl -sfL https://get.rke2.io |
+    INSTALL_RKE2_VERSION="{{ rke2_version }}"
+    INSTALL_RKE2_TYPE="{{ 'agent' if inventory_hostname in groups['k8s_workers'] else 'server' }}"
+    sh -
+  args:
+    creates: "{{ '/usr/local/bin/rke2' if inventory_hostname in groups['k8s_workers'] else '/usr/local/bin/rke2' }}"
+
+- name: "Habilitar e iniciar servicio rke2-server en Control Plane Líder"
+  ansible.builtin.systemd:
+    name: rke2-server
+    state: started
+    enabled: true
+  when: k8s_leader | default(false)
+
+- name: "Esperar a que el API Server y Supervisor del Líder estén disponibles (puerto 9345)"
+  ansible.builtin.wait_for:
+    host: "{{ k8s_leader_ip }}"
+    port: "{{ k8s_supervisor_port }}"
+    timeout: 180
+    state: started
+  when: not (k8s_leader | default(false))
+
+- name: "Habilitar e iniciar servicio rke2-server en Control Planes secundarios"
+  ansible.builtin.systemd:
+    name: rke2-server
+    state: started
+    enabled: true
+  when: inventory_hostname in groups['k8s_control_plane'] and not (k8s_leader | default(false))
+
+- name: "Habilitar e iniciar servicio rke2-agent en Workers"
+  ansible.builtin.systemd:
+    name: rke2-agent
+    state: started
+    enabled: true
+  when: inventory_hostname in groups['k8s_workers']
+
+- name: "Configurar acceso kubeconfig para root y usuario admin en el Líder"
+  when: k8s_leader | default(false)
+  block:
+    - name: "Crear directorio ~/.kube"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ admin_user if 'home' in item else 'root' }}"
+        group: "{{ admin_user if 'home' in item else 'root' }}"
+        mode: '0700'
+      loop:
+        - /root/.kube
+        - "/home/{{ admin_user }}/.kube"
+
+    - name: "Copiar kubeconfig de RKE2"
+      ansible.builtin.copy:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: /root/.kube/config
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: "Ajustar endpoint del API Server en kubeconfig a la IP del líder"
+      ansible.builtin.replace:
+        path: /root/.kube/config
+        regexp: '127\.0\.0\.1'
+        replace: "{{ k8s_leader_ip }}"
+
+    - name: "Copiar kubeconfig ajustado al usuario admin"
+      ansible.builtin.copy:
+        src: /root/.kube/config
+        dest: "/home/{{ admin_user }}/.kube/config"
+        remote_src: true
+        owner: "{{ admin_user }}"
+        group: "{{ admin_user }}"
+        mode: '0600'

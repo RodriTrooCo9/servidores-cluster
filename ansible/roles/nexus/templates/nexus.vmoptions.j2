@@ -1,0 +1,14 @@
+-Xms{{ nexus_jvm_heap_mb }}m
+-Xmx{{ nexus_jvm_heap_mb }}m
+-XX:MaxDirectMemorySize=2048m
+-XX:+UnlockDiagnosticVMOptions
+-XX:+LogVMOutput
+-XX:LogFile=/opt/sonatype/data/log/jvm.log
+-Djava.net.preferIPv4Stack=true
+-Dkaraf.home=.
+-Dkaraf.base=.
+-Dkaraf.etc=etc/karaf
+-Djava.util.logging.config.file=etc/karaf/java.util.logging.properties
+-Dkaraf.data=/opt/sonatype/data
+-Dkaraf.log=/opt/sonatype/data/log
+-Djava.io.tmpdir=/opt/sonatype/data/tmp

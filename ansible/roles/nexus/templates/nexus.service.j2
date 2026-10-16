@@ -1,0 +1,17 @@
+[Unit]
+Description=Sonatype Nexus 3 OSS Repository Server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=forking
+LimitNOFILE=65536
+User=nexus
+Group=nexus
+ExecStart=/opt/sonatype/nexus/bin/nexus start
+ExecStop=/opt/sonatype/nexus/bin/nexus stop
+Restart=on-abort
+TimeoutSec=600
+
+[Install]
+WantedBy=multi-user.target

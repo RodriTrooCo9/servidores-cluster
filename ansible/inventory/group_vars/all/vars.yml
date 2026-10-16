@@ -18,20 +18,83 @@ ansible_ssh_common_args: >-
   -o ConnectTimeout=5
 
 # ==============================================================================
-# Direccionamiento y Servicios Compartidos
+# Parámetros de Dominio, Usuario y Sistema Base
+# ==============================================================================
+cluster_domain: "lab.local"
+admin_user: "debian"
+system_timezone: "UTC"
+
+# ==============================================================================
+# Direccionamiento y Topología de Red L2 (Subred Aislada 10.100.29.0/24)
 # ==============================================================================
 cluster_subnet: "10.100.29.0/24"
-cluster_gateway: "10.100.29.30"
-cluster_dns: "10.100.29.30"
-cluster_domain: "cl.local"
+cluster_netmask: "255.255.255.0"
+cluster_gateway: "10.100.29.10"                 # Bastion actúa como Gateway L3 para el clúster
+cluster_dns: "192.168.26.120"                   # DNS Corporativo
 
-# Endpoints de Servicios
+dhcp_range_start: "10.100.29.50"
+dhcp_range_end: "10.100.29.99"
+dhcp_lease_time: "1h"
+
+# ==============================================================================
+# Nodo 314: Bastion Host y Seguridad Perimetral
+# ==============================================================================
 bastion_ip: "10.100.29.10"
+bastion_lan_iface: "enp2s0"
+bastion_wan_ip: "10.101.29.10"
+bastion_wan_iface: "enp2s0"
+bastion_wan_gateway: "10.100.29.30"
+bastion_wan_dns: "192.168.26.120"
+admin_allowed_ips: "10.101.29.0/24, 10.100.29.0/24, 192.168.28.0/23"
+bastion_ssh_port: 22
+squid_port: 3128
+chrony_ntp_port: 123
+
+# ==============================================================================
+# Nodo 315: Sonatype Nexus 3 OSS y PostgreSQL 16
+# ==============================================================================
 nexus_ip: "10.100.29.20"
 nexus_port: 8081
-pxe_ip: "10.100.29.30"
-pxe_httpboot_port: 8089
+nexus_docker_group_port: 8082
+nexus_docker_hosted_port: 8083
+postgres_port: 5432
+postgres_nexus_db: "nexus"
+postgres_nexus_user: "nexus"
+postgres_nexus_password: "NexusPgSecret2026_lab!"
+nexus_jvm_heap_mb: 4096
+nexus_blobstore_quota_gb: 60
 
-# Parámetros Kubernetes RKE2
-k8s_api_port: 9345
+# ==============================================================================
+# Nodo 306: PXE Controller, Glance HTTP e Ironic Standalone
+# ==============================================================================
+pxe_ip: "10.100.29.30"
+pxe_wifi_ip: "192.168.29.25"
+pxe_iface: "enp2s0"
+tftp_port: 69
+pxe_httpboot_port: 8089
+ironic_api_port: 6385
+ironic_image_name: "debian-baremetal.qcow2"
+ironic_image_checksum: "882f7e771159404e9a59fb270883aebfc0e587c17911a5da2f18072d905c86b6"
+
+# ==============================================================================
+# Clúster Kubernetes (RKE2 + Cilium eBPF)
+# ==============================================================================
 k8s_leader_ip: "10.100.29.101"
+k8s_supervisor_port: 9345
+k8s_api_port: 6443
+rke2_version: "v1.30.2+rke2r1"
+rke2_cluster_token: "cluster-agetic"
+rke2_cni: "cilium"
+etcd_quota_backend_bytes: "4294967296"           # 4 GB
+etcd_compaction_retention: "1"
+
+# ==============================================================================
+# Suite de Monitoreo Centralizado
+# ==============================================================================
+node_exporter_port: 9100
+prometheus_port: 9090
+grafana_port: 3000
+alertmanager_port: 9093
+node_exporter_version: "1.8.2"
+prometheus_version: "2.54.1"
+alertmanager_version: "0.27.0"

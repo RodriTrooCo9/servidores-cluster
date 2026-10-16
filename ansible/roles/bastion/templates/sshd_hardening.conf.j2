@@ -1,0 +1,11 @@
+Port {{ bastion_ssh_port }}
+AddressFamily inet
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+X11Forwarding no
+MaxAuthTries 3
+ClientAliveInterval 300
+ClientAliveCountMax 2
+AllowUsers {{ admin_user }} aget-ic

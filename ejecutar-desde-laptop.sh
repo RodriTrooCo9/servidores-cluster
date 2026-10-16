@@ -1,219 +1,125 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # SCRIPT DE ORQUESTACIÓN REMOTA DESDE LAPTOP (ejecutar-desde-laptop.sh)
-# Objetivo: Conectarse por SSH a la flota y ejecutar la instalación de servicios
-#           de forma modular, segura y desatendida desde tu estación de trabajo.
+# Motor Modernizado: Orquestación Ansible Core (Paralelo, Seguro e Idempotente)
 # ==============================================================================
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ANSIBLE_DIR="${SCRIPT_DIR}/ansible"
+INVENTORY="${ANSIBLE_DIR}/inventory/hosts.yml"
+SITE_PLAYBOOK="${ANSIBLE_DIR}/site.yml"
+
 # shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh"
+if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
 
-load_config
+load_config 2>/dev/null || true
 
-# Colores y banners
+DRY_RUN_ARG=""
+USE_LEGACY=false
+
 echo -e "${COLOR_BLUE}==================================================================${COLOR_NC}"
-echo -e "${COLOR_BLUE}   ORQUESTADOR DEVOPS: DESPLIEGUE REMOTO POR SSH DESDE LAPTOP    ${COLOR_NC}"
+echo -e "${COLOR_BLUE}   ORQUESTADOR DEVOPS: DESPLIEGUE REMOTO CON ANSIBLE CORE        ${COLOR_NC}"
 echo -e "${COLOR_BLUE}==================================================================${COLOR_NC}"
 
 show_help() {
     cat << EOF
 Uso: $0 [COMANDO / FASE] [OPCIONES]
 
-Comandos Principales:
-  --check               Auditar conectividad SSH y ping a todos los nodos
-  --sync                Sincronizar scripts hacia /tmp/infra-scripts en los nodos
-  --fase <num>          Ejecutar una fase específica en los nodos correspondientes:
-                          1 -> 01-base-servidores.sh (Todos los nodos)
-                          2 -> 02-bastion.sh (Bastión - Nodo 314)
-                          3 -> 03-nexus.sh (Nexus OSS - Nodo 315)
-                          4 -> 04-clientes-nexus.sh (Clientes APT hacia Nexus)
-                          5 -> 05-pxe-dhcp-tftp.sh (Servidor PXE - Nodo 306)
-                          6 -> 06-openstack-glance-bifrost.sh (OpenStack Glance - Nodo 306)
-                          7 -> 07-cloud-init.sh (Cloud-Init y ConfigDrive - Nodo 306)
-                          8 -> 08-kubernetes.sh (Control Planes y Workers)
-                          9 -> 09-verificacion.sh (Validación final)
-                          10 -> 10-monitoreo.sh (Prometheus, Grafana, Alertmanager, Node Exporter)
-  --health              Ejecutar auditoría de salud del clúster (healthcheck.sh)
+Comandos Principales (Motor Ansible Core):
+  --check               Auditar conectividad SSH y ping paralelo a todos los 8 nodos
+  --fase <num>          Ejecutar una fase específica mediante roles de Ansible:
+                          1 -> Configuración Base OS (roles/common en toda la flota)
+                          2 -> Bastión Gateway, SSH :22, Squid y nftables (roles/bastion)
+                          3 -> Sonatype Nexus 3 OSS y PostgreSQL 16 (roles/nexus)
+                          4 -> Clientes APT apuntando a Nexus local (roles/common)
+                          5 -> Servidor PXE, DHCP dnsmasq e iPXE HTTP (roles/pxe_controller)
+                          6 -> OpenStack Ironic Standalone y Gestión Bare-Metal (roles/ironic)
+                          8 -> Clúster Kubernetes HA con RKE2 y Cilium eBPF (roles/rke2_ha)
+                          9 -> Auditoría integral de puertos y servicios (playbooks/09_healthcheck.yml)
+                          10 -> Suite de Monitoreo Prometheus, Grafana y Node Exporter (roles/monitoring)
+  --health              Ejecutar auditoría de salud visual rápida en vivo
   --all                 Ejecutar todas las fases de manera ordenada y secuencial
-  --dry-run             Simular las órdenes remotas sin ejecutarlas
+  --dry-run             Simular ejecución con verificación Ansible (--check --diff)
+  --legacy              Forzar ejecución mediante scripts Bash secuenciales antiguos
   -h, --help            Mostrar esta ayuda
 
 Ejemplos:
   $0 --check
-  $0 --sync
-  $0 --fase 2
+  $0 --fase 1
   $0 --fase 8
   $0 --all
+  $0 --all --dry-run
 EOF
 }
 
-# Obtener usuario y alias de SSH configurado
-get_node_ssh_alias() {
-    local node_id="$1"
-    local hostname="$2"
-    case "${node_id}" in
-        314) echo "bastion" ;;
-        315) echo "nexus-repo" ;;
-        306) echo "pxe-controller" ;;
-        269) echo "cp-01" ;;
-        280) echo "cp-02" ;;
-        320) echo "cp-03" ;;
-        321) echo "worker-01" ;;
-        279) echo "worker-02" ;;
-        *)   echo "${hostname}" ;;
-    esac
+run_ansible() {
+    local playbook="$1"
+    shift
+    local extra_args=("$@")
+    
+    cd "${ANSIBLE_DIR}"
+    log_info "Ejecutando: ansible-playbook -i ${INVENTORY} ${playbook} ${extra_args[*]} ${DRY_RUN_ARG}"
+    ansible-playbook -i "${INVENTORY}" "${playbook}" "${extra_args[@]}" ${DRY_RUN_ARG}
 }
 
 cmd_check() {
-    log_info "Verificando acceso SSH y estado de la flota bare-metal..."
-    printf "+------+-----------------+---------------+--------+------------+-------------------------+\n"
-    printf "| %-4s | %-15s | %-13s | %-6s | %-10s | %-23s |\n" "ID" "HOSTNAME" "IP" "PING" "SSH (SSHD)" "ROL"
-    printf "+------+-----------------+---------------+--------+------------+-------------------------+\n"
-
-    while IFS=',' read -u 9 -r id mac hostname ip role ram disk bmc; do
-        [[ "${id}" == "id" ]] && continue
-        local alias_name
-        alias_name="$(get_node_ssh_alias "${id}" "${hostname}")"
-
-        local ping_res="${COLOR_RED}FAIL${COLOR_NC}"
-        if ssh -n -o BatchMode=yes -o ConnectTimeout=2 n306-wifi "ping -c 1 -W 1 ${ip}" >/dev/null 2>&1; then
-            ping_res="${COLOR_GREEN}OK${COLOR_NC}  "
-        fi
-
-        local ssh_res="${COLOR_RED}DOWN${COLOR_NC}      "
-        if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "uptime" >/dev/null 2>&1; then
-            ssh_res="${COLOR_GREEN}CONECTADO${COLOR_NC} "
-        fi
-
-        printf "| %-4s | %-15s | %-13s | %b | %b | %-23s |\n" \
-            "${id}" "${hostname}" "${ip}" "${ping_res}" "${ssh_res}" "${role:0:23}"
-    done 9< "${NODES_CSV}"
-    printf "+------+-----------------+---------------+--------+------------+-------------------------+\n"
-}
-
-cmd_sync() {
-    log_info "Sincronizando directorio infra-scripts a los nodos en línea..."
-    while IFS=',' read -r id mac hostname ip role ram disk bmc; do
-        [[ "${id}" == "id" ]] && continue
-        local alias_name
-        alias_name="$(get_node_ssh_alias "${id}" "${hostname}")"
-
-        log_info "Sincronizando hacia [${hostname}] (${alias_name})..."
-        if ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${alias_name}" "mkdir -p /tmp/infra-scripts" 2>/dev/null; then
-            scp -r -q -o BatchMode=yes -o ConnectTimeout=5 "${SCRIPT_DIR}/"* "${alias_name}:/tmp/infra-scripts/"
-            ssh -n "${alias_name}" "chmod +x /tmp/infra-scripts/*.sh /tmp/infra-scripts/scripts/*.sh 2>/dev/null || true"
-            log_success "Sincronizado exitosamente en ${hostname}."
-        else
-            log_warn "Nodo ${hostname} (${alias_name}) no accesible por SSH. Omitiendo sync."
-        fi
-    done < "${NODES_CSV}"
-}
-
-run_remote_script() {
-    local target_alias="$1"
-    local script_name="$2"
-    local args="${3:--y}"
-
-    log_info "--> Ejecutando ${script_name} en [${target_alias}]..."
-    if [[ "${DRY_RUN}" = true ]]; then
-        echo -e "${COLOR_CYAN}[DRY-RUN] ssh ${target_alias} 'sudo /tmp/infra-scripts/scripts/${script_name} ${args}'${COLOR_NC}"
-        return 0
+    log_info "Verificando conectividad y autenticación SSH en paralelo (8 nodos)..."
+    cd "${ANSIBLE_DIR}"
+    if ansible baremetal -i "${INVENTORY}" -m ping; then
+        log_success "Todos los nodos bare-metal respondieron exitosamente."
+    else
+        log_warn "Algunos nodos físicos no respondieron (comportamiento normal si están apagados a la espera de PXE o mantenimiento)."
     fi
-
-    # Comprobar conectividad previa
-    if ! ssh -n -o BatchMode=yes -o ConnectTimeout=3 -o StrictHostKeyChecking=no "${target_alias}" "true" 2>/dev/null; then
-        log_warn "Nodo [${target_alias}] no alcanzable por SSH. Omitiendo ${script_name}."
-        return 0
-    fi
-
-    local remote_cmd="if [ -f /tmp/infra-scripts/scripts/${script_name} ]; then sudo /tmp/infra-scripts/scripts/${script_name} ${args}; else sudo /tmp/infra-scripts/${script_name} ${args}; fi"
-    ssh -o ConnectTimeout=5 "${target_alias}" "${remote_cmd}" < /dev/null || {
-        log_warn "Aviso: la ejecución en [${target_alias}] devolvió código distinto de cero."
-        return 0
-    }
 }
 
 cmd_fase() {
     local fase="$1"
     case "${fase}" in
         1)
-            log_info "FASE 1: Preparación Base del Sistema Operativo en todos los nodos..."
-            cmd_sync
-            while IFS=',' read -r id mac hostname ip role ram disk bmc; do
-                [[ "${id}" == "id" ]] && continue
-                local target
-                target="$(get_node_ssh_alias "${id}" "${hostname}")"
-                run_remote_script "${target}" "01-base-servidores.sh" "-y"
-            done < "${NODES_CSV}"
+            log_info "FASE 1: Configuración Base del Sistema Operativo en la flota..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "base,common"
             ;;
         2)
-            log_info "FASE 2: Configuración de Bastion Gateway, NAT y Firewall..."
-            cmd_sync
-            run_remote_script "bastion" "02-bastion.sh" "-y"
+            log_info "FASE 2: Configuración de Bastion Gateway, NAT y Firewall nftables..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "bastion"
             ;;
         3)
             log_info "FASE 3: Despliegue de Nexus OSS y PostgreSQL 16..."
-            cmd_sync
-            run_remote_script "nexus-repo" "03-nexus.sh" "-y"
+            run_ansible "${SITE_PLAYBOOK}" --tags "nexus"
             ;;
         4)
-            log_info "FASE 4: Apuntar Clientes APT y Containerd a Nexus..."
-            cmd_sync
-            while IFS=',' read -r id mac hostname ip role ram disk bmc; do
-                [[ "${id}" == "id" ]] && continue
-                [[ "${id}" =~ ^(314|315)$ ]] && continue # Omitir Bastión y Nexus
-                local target
-                target="$(get_node_ssh_alias "${id}" "${hostname}")"
-                run_remote_script "${target}" "04-clientes-nexus.sh" "-y"
-            done < "${NODES_CSV}"
+            log_info "FASE 4: Apuntar Clientes APT hacia Nexus Local..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "common" --limit "baremetal:!bastion:!nexus"
             ;;
         5)
-            log_info "FASE 5: Configurar Servidor PXE / TFTP en Nodo 306..."
-            cmd_sync
-            run_remote_script "pxe-controller" "05-pxe-dhcp-tftp.sh" "-y"
+            log_info "FASE 5: Configurar Servidor PXE / TFTP / dnsmasq en Nodo 306..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "pxe"
             ;;
         6)
-            log_info "FASE 6: Configurar OpenStack Glance y Catálogo de Imágenes en Nodo 306..."
-            cmd_sync
-            run_remote_script "pxe-controller" "06-openstack-glance-bifrost.sh" "-y"
+            log_info "FASE 6: Configurar OpenStack Ironic Standalone en Nodo 306..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "ironic"
             ;;
         7)
             log_info "FASE 7: Generar Plantillas Cloud-Init, ConfigDrive y Packer en Nodo 306..."
-            cmd_sync
-            run_remote_script "pxe-controller" "07-cloud-init.sh" "-y"
+            if [[ -f "${SCRIPT_DIR}/scripts/07-cloud-init.sh" ]]; then
+                bash "${SCRIPT_DIR}/scripts/07-cloud-init.sh" -y
+            fi
             ;;
         8)
-            log_info "FASE 8: Despliegue de Kubernetes HA (RKE2 + Cilium)..."
-            cmd_sync
-            # 1. Líder
-            run_remote_script "cp-01" "08-kubernetes.sh" "-y"
-            # 2. Otros Control Planes
-            run_remote_script "cp-02" "08-kubernetes.sh" "-y"
-            run_remote_script "cp-03" "08-kubernetes.sh" "-y"
-            # 3. Workers
-            run_remote_script "worker-01" "08-kubernetes.sh" "-y"
-            run_remote_script "worker-02" "08-kubernetes.sh" "-y"
-            # 4. Extraer cliente en Bastión
-            run_remote_script "bastion" "08-kubernetes.sh" "-y"
+            log_info "FASE 8: Despliegue de Kubernetes HA (RKE2 + Cilium eBPF)..."
+            run_ansible "${SITE_PLAYBOOK}" --tags "k8s"
             ;;
         9)
             log_info "FASE 9: Validación Integral del Clúster..."
-            cmd_sync
-            run_remote_script "bastion" "09-verificacion.sh" ""
+            run_ansible "${SITE_PLAYBOOK}" --tags "healthcheck"
             ;;
         10)
             log_info "FASE 10: Despliegue de Suite de Monitoreo (Node Exporter, Prometheus, Grafana)..."
-            cmd_sync
-            # 1. Desplegar Node Exporter en los nodos de la flota
-            while IFS=',' read -r id mac hostname ip role ram disk bmc; do
-                [[ "${id}" == "id" ]] && continue
-                local target
-                target="$(get_node_ssh_alias "${id}" "${hostname}")"
-                run_remote_script "${target}" "10-monitoreo.sh" "-y"
-            done < "${NODES_CSV}"
+            run_ansible "${SITE_PLAYBOOK}" --tags "monitoring"
             ;;
         *)
             log_error "Fase desconocida: ${fase}. Fases disponibles: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10."
@@ -234,10 +140,6 @@ while [[ $# -gt 0 ]]; do
             cmd_check
             shift
             ;;
-        --sync)
-            cmd_sync
-            shift
-            ;;
         --fase)
             cmd_fase "$2"
             shift 2
@@ -251,25 +153,20 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --all)
-            log_info "Iniciando despliegue de la flota completa..."
+            log_info "Iniciando orquestación de la flota completa mediante Ansible Core..."
             cmd_check
-            confirm_action "¿Desea iniciar el despliegue secuencial de todas las fases?"
-            cmd_fase 1
-            cmd_fase 2
-            cmd_fase 3
-            cmd_fase 4
-            cmd_fase 5
-            cmd_fase 8
-            cmd_fase 9
-            if [[ -f "${SCRIPT_DIR}/scripts/healthcheck.sh" ]]; then
-                "${SCRIPT_DIR}/scripts/healthcheck.sh"
-            else
-                "${SCRIPT_DIR}/healthcheck.sh"
-            fi
+            confirm_action "¿Desea iniciar el despliegue secuencial de todas las fases con Ansible?"
+            run_ansible "${SITE_PLAYBOOK}"
             shift
             ;;
         --dry-run)
-            DRY_RUN=true
+            DRY_RUN_ARG="--check --diff"
+            log_warn "Modo Dry-Run activado (--check --diff en Ansible)."
+            shift
+            ;;
+        --legacy)
+            USE_LEGACY=true
+            log_warn "Modo Legacy activado. Usando scripts imperativos secuenciales."
             shift
             ;;
         -h|--help)

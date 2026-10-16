@@ -1,0 +1,99 @@
+---
+# ==============================================================================
+# Role: common - Configuración Base del Sistema Operativo en Debian 13
+# Reemplaza completamente scripts/01-base-servidores.sh y scripts/04-clientes-nexus.sh
+# ==============================================================================
+
+- name: "Establecer Hostname oficial del nodo"
+  ansible.builtin.hostname:
+    name: "{{ cluster_hostname }}.{{ cluster_domain }}"
+
+- name: "Generar y distribuir tabla maestro /etc/hosts"
+  ansible.builtin.template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Configurar red interna estática con systemd-networkd"
+  ansible.builtin.template:
+    src: 10-lan-static.network.j2
+    dest: /etc/systemd/network/10-lan-static.network
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart systemd-networkd
+
+- name: "Desactivar memoria Swap temporalmente"
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+- name: "Comentar entradas Swap en /etc/fstab para persistencia"
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(\s*[^#\s]+\s+none\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: "Cargar módulos de kernel requeridos para contenedores y red"
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: "Persistir módulos de kernel en /etc/modules-load.d/k8s.conf"
+  ansible.builtin.copy:
+    content: |
+      overlay
+      br_netfilter
+    dest: /etc/modules-load.d/k8s.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Ajustar parámetros de kernel sysctl para red y Kubernetes"
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+  loop:
+    - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+    - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+    - { key: 'net.ipv4.ip_forward', value: '1' }
+    - { key: 'fs.inotify.max_user_watches', value: '524288' }
+    - { key: 'fs.inotify.max_user_instances', value: '8192' }
+
+- name: "Instalar utilitarios esenciales de sistema y administración"
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - htop
+      - jq
+      - net-tools
+      - ethtool
+      - chrony
+      - pciutils
+      - sudo
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: "Asegurar que el servicio Chrony esté activo y habilitado"
+  ansible.builtin.systemd:
+    name: chrony
+    state: started
+    enabled: true
+
+- name: "Configurar fuentes APT hacia Nexus Proxy (Nodos clientes 3 al 8)"
+  ansible.builtin.template:
+    src: sources.list.j2
+    dest: /etc/apt/sources.list
+    owner: root
+    group: root
+    mode: '0644'
+  when: inventory_hostname not in ['nodo-314', 'nodo-315']
