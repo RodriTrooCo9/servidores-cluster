@@ -29,7 +29,7 @@ system_timezone: "UTC"
 # ==============================================================================
 cluster_subnet: "10.100.29.0/24"
 cluster_netmask: "255.255.255.0"
-cluster_gateway: "10.100.29.10"                 # Bastion actúa como Gateway L3 para el clúster
+cluster_gateway: "10.100.29.30"                 # Nodo 306 actúa como Gateway NAT L3 para el clúster
 cluster_dns: "192.168.26.120"                   # DNS Corporativo
 
 dhcp_range_start: "10.100.29.50"

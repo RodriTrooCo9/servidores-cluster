@@ -10,13 +10,10 @@
       - postgresql
       - postgresql-contrib
       - python3-psycopg2
-      - openjdk-17-jdk-headless
       - wget
       - tar
       - curl
     state: present
-    update_cache: yes
-    cache_valid_time: 3600
 
 - name: "Asegurar que el servicio PostgreSQL esté activo"
   ansible.builtin.systemd:

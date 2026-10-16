@@ -13,8 +13,6 @@
       - wget
       - curl
     state: present
-    update_cache: yes
-    cache_valid_time: 3600
 
 - name: "Crear estructura de directorios para TFTP e HTTPBoot"
   ansible.builtin.file:
