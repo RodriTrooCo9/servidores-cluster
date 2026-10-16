@@ -1,0 +1,37 @@
+---
+# ==============================================================================
+# Variables Globales de Conexión y Red para la Flota Bare-Metal
+# ==============================================================================
+
+# Llave SSH utilizada para la autenticación
+ansible_ssh_private_key_file: "~/.ssh/id_ed25519"
+
+# Elevación de privilegios (Sudo NOPASSWD homologado en todos los nodos)
+ansible_become: true
+ansible_become_method: sudo
+
+# Parámetros SSH: ProxyJump a través del Nodo 306 para acceso transparente desde WiFi
+ansible_ssh_common_args: >-
+  -o ProxyJump=n306@192.168.29.25
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
+  -o ConnectTimeout=5
+
+# ==============================================================================
+# Direccionamiento y Servicios Compartidos
+# ==============================================================================
+cluster_subnet: "10.100.29.0/24"
+cluster_gateway: "10.100.29.30"
+cluster_dns: "10.100.29.30"
+cluster_domain: "cl.local"
+
+# Endpoints de Servicios
+bastion_ip: "10.100.29.10"
+nexus_ip: "10.100.29.20"
+nexus_port: 8081
+pxe_ip: "10.100.29.30"
+pxe_httpboot_port: 8089
+
+# Parámetros Kubernetes RKE2
+k8s_api_port: 9345
+k8s_leader_ip: "10.100.29.101"

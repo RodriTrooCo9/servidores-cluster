@@ -1,0 +1,69 @@
+---
+# ==============================================================================
+# Playbook: 02_base_config.yml
+# Objetivo: Homologar configuración base del sistema (Swap, Sysctl, Paquetes, NTP)
+# ==============================================================================
+- name: "Configuración Base e Inmutabilidad de Nodos Bare-Metal"
+  hosts: baremetal
+  become: true
+  tasks:
+    - name: "Desactivar memoria Swap temporalmente"
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+
+    - name: "Eliminar particiones Swap de /etc/fstab para persistencia"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\s*[^#\s]+\s+none\s+swap\s+.*)$'
+        replace: '# \1'
+
+    - name: "Cargar módulos de kernel requeridos para contenedores y red"
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: "Persistir módulos de kernel en /etc/modules-load.d/k8s.conf"
+      ansible.builtin.copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/k8s.conf
+        mode: '0644'
+
+    - name: "Ajustar parámetros de kernel sysctl para red y Kubernetes"
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: true
+        sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+      loop:
+        - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+        - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+        - { key: 'net.ipv4.ip_forward', value: '1' }
+        - { key: 'fs.inotify.max_user_watches', value: '524288' }
+        - { key: 'fs.inotify.max_user_instances', value: '8192' }
+
+    - name: "Instalar paquetes utilitarios esenciales de administración"
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+          - htop
+          - jq
+          - net-tools
+          - ethtool
+          - chrony
+          - pciutils
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: "Asegurar que el servicio de sincronización horaria Chrony esté activo"
+      ansible.builtin.systemd:
+        name: chrony
+        state: started
+        enabled: true

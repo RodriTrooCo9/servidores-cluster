@@ -14,6 +14,11 @@ config/env
 *.pfx
 vault_*.yml
 admin.password
+.vault_pass*
+ansible/.vault_pass*
+ansible/keys/*
+!ansible/keys/.gitkeep
+!ansible/keys/README.md
 
 # Configuración de clúster y certificados
 rke2.yaml

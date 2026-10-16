@@ -1,0 +1,16 @@
+---
+# ==============================================================================
+# Playbook: 00_ping.yml
+# Objetivo: Validar conectividad SSH simultánea (8 forks) con toda la flota
+# ==============================================================================
+- name: "Validación de Conectividad SSH y Python en la Flota Bare-Metal"
+  hosts: baremetal
+  gather_facts: false
+  tasks:
+    - name: "Probar ping de Ansible en cada nodo"
+      ansible.builtin.ping:
+      register: ping_result
+
+    - name: "Confirmar estado de conexión"
+      ansible.builtin.debug:
+        msg: "Nodo {{ inventory_hostname }} (ID: {{ node_id | default('N/A') }}) responde correctamente."

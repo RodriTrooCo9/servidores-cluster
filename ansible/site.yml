@@ -1,0 +1,34 @@
+---
+# ==============================================================================
+# Playbook Maestro: site.yml
+# Orquestador integral para la infraestructura Bare-Metal
+#
+# Uso por fases:
+#   ansible-playbook site.yml --tags ping
+#   ansible-playbook site.yml --tags info
+#   ansible-playbook site.yml --tags base
+#   ansible-playbook site.yml --tags healthcheck
+# ==============================================================================
+
+- name: "[Fase 0] Comprobación de Conectividad SSH"
+  import_playbook: playbooks/00_ping.yml
+  tags:
+    - ping
+
+- name: "[Fase 1] Telemetría y Resumen de Sistema"
+  import_playbook: playbooks/01_system_summary.yml
+  tags:
+    - info
+    - facts
+
+- name: "[Fase 2] Configuración Base del Sistema Operativo"
+  import_playbook: playbooks/02_base_config.yml
+  tags:
+    - base
+    - config
+
+- name: "[Fase 3] Auditoría de Salud y Puertos"
+  import_playbook: playbooks/03_healthcheck.yml
+  tags:
+    - healthcheck
+    - check

@@ -1,0 +1,21 @@
+---
+# ==============================================================================
+# Plantilla de Variables Cifradas con Ansible Vault (vault.yml)
+#
+# Para crear el archivo cifrado real:
+#   ansible-vault create inventory/group_vars/all/vault.yml
+#
+# Para editarlo posteriormente:
+#   ansible-vault edit inventory/group_vars/all/vault.yml
+# ==============================================================================
+
+# Credenciales de acceso de emergencia / contingencia
+vault_sudo_password: "CambiarPorPasswordSegura"
+vault_rke2_token: "K10a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0::server:secrettokenbaremetal"
+
+# Nexus Registry Admin Credentials
+vault_nexus_admin_password: "NexusPasswordSegura123!"
+
+# Tokens de API y Monitoreo
+vault_grafana_admin_password: "GrafanaAdminPassword123!"
+vault_alertmanager_webhook_url: "https://hooks.slack.com/services/XXXXX/YYYYY/ZZZZZ"

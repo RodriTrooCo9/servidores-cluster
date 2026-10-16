@@ -28,6 +28,7 @@ echo -e "${COLOR_BLUE}==========================================================
 
 KUBECONFIG_PATH="${KUBECONFIG:-/root/.kube/config}"
 [[ -f "$HOME/.kube/config" ]] && KUBECONFIG_PATH="$HOME/.kube/config"
+[[ ! -f "${KUBECONFIG_PATH}" && -f "/etc/rancher/rke2/rke2.yaml" ]] && KUBECONFIG_PATH="/etc/rancher/rke2/rke2.yaml"
 
 TOTAL_TESTS=0
 PASSED_TESTS=0
@@ -80,26 +81,28 @@ if command -v kubectl >/dev/null 2>&1 && [[ -f "${KUBECONFIG_PATH}" ]]; then
     run_test "Kubernetes API Server responde en :6443" kubectl get nodes
     
     READY_NODES=$(kubectl get nodes --no-headers 2>/dev/null | grep -c "Ready" || echo "0")
-    run_test "Los 5 nodos K8s están en estado Ready (${READY_NODES}/5)" [[ "${READY_NODES}" -ge 5 ]]
+    run_test "Nodos K8s en estado Ready (${READY_NODES}/7)" test "${READY_NODES}" -ge 5
 
     # Prueba de Datapath Cilium
     log_info "Ejecutando prueba de despliegue y datapath pod-a-pod de Cilium..."
     if [[ "${DRY_RUN}" = false ]]; then
         kubectl delete deployment test-datapath --ignore-not-found >/dev/null 2>&1 || true
         kubectl delete service test-datapath --ignore-not-found >/dev/null 2>&1 || true
+        kubectl delete pod curl-probe --ignore-not-found >/dev/null 2>&1 || true
 
-        if kubectl create deployment test-datapath --image="${NEXUS_IP}:${NEXUS_DOCKER_GROUP_PORT}/nginx:alpine" --replicas=2 2>/dev/null || \
-           kubectl create deployment test-datapath --image="nginx:alpine" --replicas=2; then
+        if kubectl create deployment test-datapath --image="nginx:alpine" --replicas=2; then
             
             kubectl expose deployment test-datapath --port=80 --target-port=80 >/dev/null 2>&1 || true
-            sleep 5
+            kubectl rollout status deployment/test-datapath --timeout=60s >/dev/null 2>&1 || sleep 5
             SVC_IP=$(kubectl get svc test-datapath -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
             if [[ -n "${SVC_IP}" ]]; then
-                run_test "Balanceo de servicio Cilium eBPF a ${SVC_IP}" kubectl run curl-probe --image="curlimages/curl" --rm -i --restart=Never --command -- curl -s -I "http://${SVC_IP}"
+                kubectl delete pod curl-probe --ignore-not-found >/dev/null 2>&1 || true
+                run_test "Balanceo de servicio Cilium eBPF a ${SVC_IP}" kubectl run curl-probe --image="curlimages/curl" --rm -i --restart=Never --command -- curl -s -f -I "http://${SVC_IP}"
             fi
             # Limpieza
             kubectl delete deployment test-datapath >/dev/null 2>&1 || true
             kubectl delete service test-datapath >/dev/null 2>&1 || true
+            kubectl delete pod curl-probe --ignore-not-found >/dev/null 2>&1 || true
         fi
     fi
 else

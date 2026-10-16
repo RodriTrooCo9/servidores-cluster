@@ -201,6 +201,7 @@ cmd_fase() {
             ;;
         9)
             log_info "FASE 9: Validación Integral del Clúster..."
+            cmd_sync
             run_remote_script "bastion" "09-verificacion.sh" ""
             ;;
         10)
