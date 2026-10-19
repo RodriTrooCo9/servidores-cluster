@@ -309,15 +309,15 @@ Este esquema muestra la separación estricta de redes. El único equipo con pres
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as 💻 Ingeniero DevOps / Operador
-    participant Script as 📜 Script deploy_all_nodes.sh
-    participant Ironic as 🚀 Ironic API / dnsmasq (:6385/:67)
-    participant Node as 🖥️ Servidor Bare-Metal Físico
-    participant IPA as 🧠 Ironic Python Agent (RAM)
-    participant Glance as 📦 Glance / Nginx (:8089)
-    participant NVMe as 💽 NVMe Local (128 GB)
-    participant Nexus as 📦 Sonatype Nexus (:8081/:8082)
-    participant K8s as ☸️ RKE2 Cluster Orchestrator
+    actor Admin as Ingeniero DevOps / Operador
+    participant Script as  Script deploy_all_nodes.sh
+    participant Ironic as Ironic API / dnsmasq (:6385/:67)
+    participant Node as  Servidor Bare-Metal Físico
+    participant IPA as  Ironic Python Agent (RAM)
+    participant Glance as  Glance / Nginx (:8089)
+    participant NVMe as  NVMe Local (128 GB)
+    participant Nexus as Sonatype Nexus (:8081/:8082)
+    participant K8s as RKE2 Cluster Orchestrator
 
     Admin->>Script: Ejecuta ./deploy_all_nodes.sh --all
     Note over Script: Lee baremetal.yml y mapeo de 8 MACs físicas
