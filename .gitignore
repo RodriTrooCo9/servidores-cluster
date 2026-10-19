@@ -1,5 +1,7 @@
 # Archivos de entorno con credenciales reales
 config/env
+/ansible.cfg
+/inventory
 
 # Respaldo automático de configuraciones
 *.bak.*
@@ -24,6 +26,8 @@ ansible/keys/*
 rke2.yaml
 kubeconfig
 *.kubeconfig
+*openrc*
+clouds.yaml
 
 # Archivos de logs de ejecución
 /var/log/infra-setup/
@@ -34,5 +38,6 @@ kubeconfig
 *.iso
 *.raw
 *.tar.gz
+kolla/config/ironic/
 output-*/
 .vagrant/
