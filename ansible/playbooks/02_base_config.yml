@@ -9,3 +9,5 @@
   become: true
   roles:
     - common
+
+# verifica la red como host swap ys servicios de sincronización de tiempo, antes de ejecutar el playbook completo

@@ -14,6 +14,12 @@
       - tar
       - curl
     state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  register: apt_install_nexus
+  retries: 5
+  delay: 10
+  until: apt_install_nexus is success
 
 - name: "Asegurar que el servicio PostgreSQL esté activo"
   ansible.builtin.systemd:

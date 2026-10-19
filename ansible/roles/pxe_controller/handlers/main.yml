@@ -3,8 +3,11 @@
   ansible.builtin.systemd:
     name: dnsmasq
     state: restarted
+  when: kolla_ironic_active is not defined or kolla_ironic_active.stdout | length == 0
 
 - name: Restart nginx
   ansible.builtin.systemd:
     name: nginx
     state: restarted
+  when: kolla_ironic_active is not defined or kolla_ironic_active.stdout | length == 0
+

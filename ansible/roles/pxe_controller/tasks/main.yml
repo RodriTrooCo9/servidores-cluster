@@ -4,6 +4,19 @@
 # Reemplaza completamente scripts/05-pxe-dhcp-tftp.sh
 # ==============================================================================
 
+- name: "Comprobar si Kolla OpenStack gestiona los servicios de red/boot en Docker"
+  ansible.builtin.command: docker ps -q --filter "name=ironic_dnsmasq"
+  register: kolla_ironic_active
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+
+- name: "Aviso de coexistencia con Kolla OpenStack"
+  ansible.builtin.debug:
+    msg: "Kolla OpenStack (ironic_dnsmasq/ironic_http) está activo en Docker. Se omite el arranque de dnsmasq y nginx locales para evitar colisión de puertos 67, 69 y 8089."
+  when: kolla_ironic_active.stdout | length > 0
+
 - name: "Instalar paquetes del controlador PXE (dnsmasq, ipxe, nginx)"
   ansible.builtin.apt:
     name:
@@ -13,6 +26,13 @@
       - wget
       - curl
     state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  register: apt_install_pxe
+  retries: 5
+  delay: 10
+  until: apt_install_pxe is success
+
 
 - name: "Crear estructura de directorios para TFTP e HTTPBoot"
   ansible.builtin.file:
@@ -79,7 +99,7 @@
     state: absent
   notify: Restart nginx
 
-- name: "Asegurar que dnsmasq y nginx estén activos y habilitados"
+- name: "Asegurar que dnsmasq y nginx estén activos y habilitados (Omitido si Kolla está activo)"
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
@@ -87,3 +107,5 @@
   loop:
     - nginx
     - dnsmasq
+  when: kolla_ironic_active.stdout | length == 0
+

@@ -9,3 +9,6 @@
   become: true
   roles:
     - pxe_controller
+# instala y configura el servidor PXE / iPXE y HTTPBoot Nginx en el nodo 306,
+# para que la flota de nodos internos pueda arrancar por red y descargar imágenes 
+# de instalación de Debian 13, sin necesidad de medios físicos (CD/DVD/USB)

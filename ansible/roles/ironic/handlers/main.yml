@@ -2,8 +2,11 @@
 - name: Reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
+  when: kolla_ironic_active is not defined or kolla_ironic_active.stdout | length == 0
 
 - name: Restart Ironic
   ansible.builtin.systemd:
     name: ironic-conductor
     state: restarted
+  when: kolla_ironic_active is not defined or kolla_ironic_active.stdout | length == 0
+

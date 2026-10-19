@@ -9,3 +9,5 @@
   become: true
   roles:
     - bastion
+# asegura el nodo bastion y despliega el proxy squid y cortafuegos con NAT Masquerade*(mascara de red )
+# para permitir salida a internet a la flota de nodos internos,

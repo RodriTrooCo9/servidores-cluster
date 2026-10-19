@@ -9,3 +9,6 @@
   become: true
   roles:
     - ironic
+
+# desde aquí se puede invocar el rol 'pxe_controller' si es necesario para la configuración de red y servicios PXE
+# esto parace que se remplazo con la version de openstack en la red 

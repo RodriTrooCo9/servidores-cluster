@@ -4,6 +4,19 @@
 # Reemplaza scripts/06-openstack-glance-bifrost.sh y deploy-masivo.sh
 # ==============================================================================
 
+- name: "Comprobar si Kolla OpenStack Ironic está activo en Docker"
+  ansible.builtin.command: docker ps -q --filter "name=ironic_conductor"
+  register: kolla_ironic_active
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+
+- name: "Aviso de coexistencia con Kolla OpenStack Ironic"
+  ansible.builtin.debug:
+    msg: "Kolla OpenStack Ironic está activo en Docker gestionando la flota con Wake-on-LAN. Se omite el despliegue del servicio Standalone en Podman para evitar colisiones en el puerto 6385."
+  when: kolla_ironic_active.stdout | length > 0
+
 - name: "Instalar Podman y paquetes cliente de OpenStack e Ironic"
   ansible.builtin.apt:
     name:
@@ -18,6 +31,8 @@
     update_cache: yes
     cache_valid_time: 3600
   ignore_errors: true
+  when: kolla_ironic_active.stdout | length == 0
+
 
 - name: "Crear estructura de directorios para Ironic y almacenamiento de imágenes"
   ansible.builtin.file:
@@ -67,12 +82,14 @@
   notify:
     - Reload systemd
     - Restart Ironic
+  when: kolla_ironic_active.stdout | length == 0
 
 - name: "Asegurar que el servicio Ironic Conductor esté activo"
   ansible.builtin.systemd:
     name: ironic-conductor
     state: started
     enabled: true
+  when: kolla_ironic_active.stdout | length == 0
 
 - name: "Generar inventario declarativo baremetal.yaml desde Ansible"
   ansible.builtin.template:
@@ -81,6 +98,7 @@
     owner: root
     group: root
     mode: '0644'
+  when: kolla_ironic_active.stdout | length == 0
 
 - name: "Asegurar que la API de Ironic esté respondiendo en el puerto 6385"
   ansible.builtin.wait_for:
@@ -89,6 +107,7 @@
     timeout: 30
     state: started
   ignore_errors: true
+  when: kolla_ironic_active.stdout | length == 0
 
 - name: "Enrolar nodos físicos en OpenStack Ironic Standalone"
   ansible.builtin.command: >
@@ -97,3 +116,5 @@
   register: ironic_enroll
   changed_when: "'Created node' in ironic_enroll.stdout"
   failed_when: false
+  when: kolla_ironic_active.stdout | length == 0
+
