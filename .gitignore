@@ -41,3 +41,5 @@ clouds.yaml
 kolla/config/ironic/
 output-*/
 .vagrant/
+backups/
+*.sql.gz

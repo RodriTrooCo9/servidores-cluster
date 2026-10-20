@@ -78,3 +78,11 @@
   tags:
     - healthcheck
     - check
+
+- name: "[Fase 10] Recuperación ante Desastres (DR), Respaldos y Auto-Sanación"
+  import_playbook: playbooks/10_disaster_recovery.yml
+  tags:
+    - never
+    - dr
+    - recovery
+

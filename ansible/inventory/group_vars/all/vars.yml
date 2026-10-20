@@ -86,7 +86,7 @@ rke2_version: "v1.30.2+rke2r1"
 rke2_cluster_token: "cluster-agetic"
 rke2_cni: "cilium"
 etcd_quota_backend_bytes: "4294967296"           # 4 GB
-etcd_compaction_retention: "1"
+etcd_compaction_retention: "1h"
 
 # ==============================================================================
 # Suite de Monitoreo Centralizado
