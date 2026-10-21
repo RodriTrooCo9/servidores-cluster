@@ -1,0 +1,14 @@
+---
+# ==============================================================================
+# Playbook: 05_pxe_controller.yml
+# Objetivo: Desplegar servidor DHCP (dnsmasq), TFTP iPXE y HTTPBoot Nginx (Nodo 306)
+# Invoca: Rol 'pxe_controller'
+# ==============================================================================
+- name: "Servicios de Arranque por Red PXE / iPXE y Nginx HTTP :8089"
+  hosts: pxe_controller
+  become: true
+  roles:
+    - pxe_controller
+# instala y configura el servidor PXE / iPXE y HTTPBoot Nginx en el nodo 306,
+# para que la flota de nodos internos pueda arrancar por red y descargar imágenes 
+# de instalación de Debian 13, sin necesidad de medios físicos (CD/DVD/USB)

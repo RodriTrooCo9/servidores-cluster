@@ -1,9 +1,0 @@
-id,mac,hostname,ip,role,ram_gb,disk_gb,bmc_ip
-314,64:00:6a:2a:60:62,bastion,10.0.1.10,bastion,8,128,<BMC_IP_314>
-315,64:00:6a:2a:5f:99,nexus-repo,10.0.1.20,nexus,16,128,<BMC_IP_315>
-306,64:00:6a:2a:62:42,pxe-controller,10.0.1.30,pxe,16,128,<BMC_IP_306>
-269,64:00:6a:2a:5f:f9,k8s-cp-01,10.0.1.101,k8s-control-plane-leader,16,128,<BMC_IP_269>
-280,64:00:6a:2a:60:63,k8s-cp-02,10.0.1.102,k8s-control-plane,16,128,<BMC_IP_280>
-320,64:00:6a:2a:2c:75,k8s-cp-03,10.0.1.103,k8s-control-plane,16,128,<BMC_IP_320>
-321,64:00:6a:2a:62:a4,k8s-worker-01,10.0.1.111,k8s-worker,8,128,<BMC_IP_321>
-279,64:00:6a:2a:2f:cb,k8s-worker-02,10.0.1.112,k8s-worker,8,128,<BMC_IP_279>

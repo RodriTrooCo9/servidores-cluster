@@ -1,0 +1,6 @@
+server: https://{{ k8s_leader_ip }}:9345
+token: "{{ rke2_cluster_token }}"
+node-name: "{{ cluster_hostname }}"
+kubelet-arg:
+  - "image-gc-high-threshold=75"
+  - "image-gc-low-threshold=60"

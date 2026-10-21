@@ -1,0 +1,15 @@
+---
+# SOPS configuration file for GitOps secrets management
+creation_rules:
+  # Entorno de laboratorio
+  - path_regex: inventory/lab/.*vault\.ya?ml$
+    age: >-
+      age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8z54pw3hyww5ayysqgvc7
+  # Secretos de OpenStack
+  - path_regex: openstack/secrets/.*\.ya?ml$
+    age: >-
+      age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8z54pw3hyww5ayysqgvc7
+  # Manifiestos secretos de Kubernetes
+  - path_regex: kubernetes/.*secret.*\.ya?ml$
+    age: >-
+      age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8z54pw3hyww5ayysqgvc7

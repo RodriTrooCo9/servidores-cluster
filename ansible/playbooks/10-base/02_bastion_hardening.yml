@@ -1,0 +1,13 @@
+---
+# ==============================================================================
+# Playbook: 03_bastion.yml
+# Objetivo: Desplegar y asegurar Bastion Host (Nodo 314)
+# Invoca: Rol 'bastion' (SSHD :22, Squid :3128, nftables con NAT Masquerade)
+# ==============================================================================
+- name: "Endurecimiento Perimetral y Pasarela en Bastion Host"
+  hosts: bastion
+  become: true
+  roles:
+    - bastion
+# asegura el nodo bastion y despliega el proxy squid y cortafuegos con NAT Masquerade*(mascara de red )
+# para permitir salida a internet a la flota de nodos internos,

@@ -1,0 +1,79 @@
+---
+# ==============================================================================
+# Role: bastion - Endurecimiento Perimetral, Proxy Squid y Cortafuegos nftables
+# Reemplaza completamente scripts/02-bastion.sh
+# ==============================================================================
+
+- name: "Asegurar directorio de drop-ins de SSH"
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Desplegar drop-in de endurecimiento de OpenSSH"
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Reload SSH
+
+- name: "Instalar paquetes de perímetro (Squid, nftables)"
+  ansible.builtin.apt:
+    name:
+      - squid
+      - nftables
+      - iptables
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: "Desplegar configuración de Squid Proxy Egress"
+  ansible.builtin.template:
+    src: squid.conf.j2
+    dest: /etc/squid/squid.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Squid
+
+- name: "Configurar enrutamiento IPv4 y mitigaciones anti-spoofing en kernel"
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/99-bastion-router.conf
+  loop:
+    - { key: 'net.ipv4.ip_forward', value: '1' }
+    - { key: 'net.ipv4.conf.all.rp_filter', value: '1' }
+    - { key: 'net.ipv4.conf.default.rp_filter', value: '1' }
+    - { key: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+    - { key: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.all.send_redirects', value: '0' }
+
+- name: "Desplegar reglas de cortafuegos nftables con NAT Masquerade"
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0755'
+    validate: '/usr/sbin/nft -c -f %s'
+  notify: Restart nftables
+
+- name: "Asegurar que el servicio Squid esté activo y habilitado"
+  ansible.builtin.systemd:
+    name: squid
+    state: started
+    enabled: true
+
+- name: "Asegurar que el servicio nftables esté activo y habilitado"
+  ansible.builtin.systemd:
+    name: nftables
+    state: started
+    enabled: true

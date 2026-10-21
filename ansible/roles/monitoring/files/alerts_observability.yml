@@ -1,0 +1,80 @@
+# ==============================================================================
+# REGLAS DE ALERTA DE PRODUCCIÓN: PROMETHEUS / VICTORIAMETRICS & ALERTMANAGER
+# Ubicación: /etc/prometheus/alerts/alerts_observability.yml
+# ==============================================================================
+groups:
+  - name: openstack_ironic_alerts
+    rules:
+      - alert: OpenStackServiceDown
+        expr: openstack_service_state{state="down"} == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Servicio OpenStack caído en {{ $labels.hostname }}"
+          description: "El servicio {{ $labels.service }} en {{ $labels.hostname }} está reportando estado DOWN."
+
+      - alert: IronicNodeInError
+        expr: openstack_baremetal_nodes_status{provision_state=~"error|clean failed"} > 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nodo Bare-Metal Ironic en estado de error o fallo de cleaning"
+          description: "El nodo {{ $labels.node_uuid }} está en estado {{ $labels.provision_state }}."
+
+      - alert: GlanceStorageFillingUp
+        expr: (node_filesystem_avail_bytes{mountpoint="/var/lib/kolla/glance"} / node_filesystem_size_bytes{mountpoint="/var/lib/kolla/glance"}) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Almacenamiento de Glance > 85% de ocupación"
+          description: "El disco de almacenamiento de imágenes Glance en nodo-306 supera el 85% de capacidad."
+
+      - alert: MariaDBGaleraDegraded
+        expr: mysql_global_status_wsrep_cluster_status != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Clúster MariaDB Galera de Kolla degradado"
+          description: "El clúster MariaDB Galera no se encuentra en estado primario (Primary)."
+
+      - alert: RabbitMQBrokerDegraded
+        expr: rabbitmq_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Broker RabbitMQ de Kolla inalcanzable"
+          description: "RabbitMQ no responde en nodo-306, afectando el bus RPC de OpenStack."
+
+  - name: infrastructure_k8s_alerts
+    rules:
+      - alert: BaremetalNodeDown
+        expr: up{job="node_exporter"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nodo Bare-Metal inalcanzable: {{ $labels.instance }}"
+          description: "El exportador node_exporter en {{ $labels.instance }} ha dejado de emitir métricas."
+
+      - alert: K8sPodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[5m]) * 60 > 2
+        for: 4m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod de Kubernetes en CrashLoopBackOff: {{ $labels.pod }}"
+          description: "El pod {{ $labels.pod }} en namespace {{ $labels.namespace }} se está reiniciando repetidamente."
+
+      - alert: OTelCollectorQueueDroppedRecords
+        expr: rate(otelcol_exporter_enqueue_failed_spans[5m]) > 0 or rate(otelcol_exporter_enqueue_failed_metric_points[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenTelemetry Collector perdiendo registros en cola"
+          description: "La cola del OTel Collector está llena o el backend de almacenamiento está saturado."

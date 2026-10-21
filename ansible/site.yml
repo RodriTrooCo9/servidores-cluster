@@ -1,0 +1,88 @@
+---
+# ==============================================================================
+# Playbook Maestro: site.yml
+# Orquestador integral para la infraestructura Bare-Metal Edge
+#
+# Uso por fases / tags:
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags preflight
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags base
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags services
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags platform
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags observability
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags validation
+# ==============================================================================
+
+- name: "[Fase 00] Preflight: Comprobación de Conectividad SSH"
+  import_playbook: playbooks/00-preflight/00_ping.yml
+  tags:
+    - preflight
+    - ping
+
+- name: "[Fase 00] Preflight: Auditoría de Mapeo de Puertos y Switch"
+  import_playbook: playbooks/00-preflight/01_audit_ports.yml
+  tags:
+    - preflight
+    - audit
+
+- name: "[Fase 00] Preflight: Telemetría y Resumen del Sistema"
+  import_playbook: playbooks/00-preflight/02_system_summary.yml
+  tags:
+    - preflight
+    - facts
+
+- name: "[Fase 10] Base: Configuración del Sistema Operativo Debian 13"
+  import_playbook: playbooks/10-base/01_os_base.yml
+  tags:
+    - base
+    - common
+
+- name: "[Fase 10] Base: Bastion Host, Seguridad Perimetral y Proxy Egress"
+  import_playbook: playbooks/10-base/02_bastion_hardening.yml
+  tags:
+    - base
+    - bastion
+    - perimeter
+
+- name: "[Fase 20] Servicios: Sonatype Nexus 3 OSS y PostgreSQL 16"
+  import_playbook: playbooks/20-services/01_nexus.yml
+  tags:
+    - services
+    - nexus
+
+- name: "[Fase 20] Servicios: Servidor PXE, DHCP dnsmasq y HTTPBoot"
+  import_playbook: playbooks/20-services/02_pxe_controller.yml
+  tags:
+    - services
+    - pxe
+
+- name: "[Fase 20] Servicios: OpenStack Ironic Standalone Bare-Metal"
+  import_playbook: playbooks/20-services/03_ironic_deploy.yml
+  tags:
+    - services
+    - ironic
+
+- name: "[Fase 30] Plataforma: Clúster Kubernetes HA (RKE2 + Cilium eBPF)"
+  import_playbook: playbooks/30-platform/01_rke2_cluster.yml
+  tags:
+    - platform
+    - k8s
+    - rke2
+
+- name: "[Fase 40] Observabilidad: Suite de Monitoreo (Prometheus, Grafana, Node Exporter)"
+  import_playbook: playbooks/40-observability/01_monitoring.yml
+  tags:
+    - observability
+    - monitoring
+
+- name: "[Fase 50] Validación: Auditoría de Salud y Conectividad End-to-End"
+  import_playbook: playbooks/50-validation/01_healthcheck.yml
+  tags:
+    - validation
+    - healthcheck
+
+- name: "[Fase 90] Operaciones: Recuperación ante Desastres (DR) y Respaldos"
+  import_playbook: playbooks/90-operations/01_disaster_recovery.yml
+  tags:
+    - never
+    - operations
+    - dr

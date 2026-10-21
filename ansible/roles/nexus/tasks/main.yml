@@ -1,0 +1,148 @@
+---
+# ==============================================================================
+# Role: nexus - Sonatype Nexus 3 OSS con Backend PostgreSQL
+# Reemplaza completamente scripts/03-nexus.sh
+# ==============================================================================
+
+- name: "Instalar paquetes base de Nexus y PostgreSQL"
+  ansible.builtin.apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - python3-psycopg2
+      - wget
+      - tar
+      - curl
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  register: apt_install_nexus
+  retries: 5
+  delay: 10
+  until: apt_install_nexus is success
+
+- name: "Asegurar que el servicio PostgreSQL esté activo"
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: "Crear usuario de base de datos para Nexus"
+  ansible.builtin.shell: >
+    psql -tc "SELECT 1 FROM pg_roles WHERE rolname = '{{ postgres_nexus_user }}'" | grep -q 1 ||
+    psql -c "CREATE USER {{ postgres_nexus_user }} WITH ENCRYPTED PASSWORD '{{ postgres_nexus_password }}';"
+  become: true
+  become_user: postgres
+  changed_when: false
+  no_log: true
+
+- name: "Crear base de datos para Nexus en PostgreSQL"
+  ansible.builtin.shell: >
+    psql -tc "SELECT 1 FROM pg_database WHERE datname = '{{ postgres_nexus_db }}'" | grep -q 1 ||
+    psql -c "CREATE DATABASE {{ postgres_nexus_db }} OWNER {{ postgres_nexus_user }};"
+  become: true
+  become_user: postgres
+  changed_when: false
+
+- name: "Crear usuario de sistema 'nexus'"
+  ansible.builtin.user:
+    name: nexus
+    system: true
+    shell: /bin/false
+    create_home: false
+    state: present
+
+- name: "Configurar límites del sistema (nofile 65536) para Nexus"
+  ansible.builtin.copy:
+    content: |
+      nexus   soft   nofile   65536
+      nexus   hard   nofile   65536
+    dest: /etc/security/limits.d/99-nexus.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Crear estructura de directorios para Sonatype Nexus"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nexus
+    group: nexus
+    mode: '0755'
+  loop:
+    - /opt/sonatype
+    - /opt/sonatype/data
+    - /opt/sonatype/data/etc
+    - /opt/sonatype/data/log
+    - /opt/sonatype/data/tmp
+
+- name: "Verificar si Nexus 3 ya está instalado en /opt/sonatype/nexus"
+  ansible.builtin.stat:
+    path: /opt/sonatype/nexus/bin/nexus
+  register: nexus_bin
+
+- name: "Descargar e instalar Sonatype Nexus 3 OSS si no está presente"
+  when: not nexus_bin.stat.exists
+  block:
+    - name: "Descargar tarball oficial de Sonatype Nexus 3"
+      ansible.builtin.get_url:
+        url: "https://download.sonatype.com/nexus/3/latest-unix.tar.gz"
+        dest: /tmp/nexus-latest.tar.gz
+        mode: '0644'
+
+    - name: "Extraer archivo de Nexus en /opt/sonatype"
+      ansible.builtin.unarchive:
+        src: /tmp/nexus-latest.tar.gz
+        dest: /opt/sonatype
+        remote_src: true
+        owner: nexus
+        group: nexus
+
+    - name: "Localizar directorio extraído de Nexus"
+      ansible.builtin.find:
+        paths: /opt/sonatype
+        file_type: directory
+        patterns: "nexus-3*"
+      register: extracted_nexus_dir
+
+    - name: "Crear enlace simbólico /opt/sonatype/nexus"
+      ansible.builtin.file:
+        src: "{{ extracted_nexus_dir.files[0].path }}"
+        dest: /opt/sonatype/nexus
+        state: link
+        owner: nexus
+        group: nexus
+      when: extracted_nexus_dir.matched > 0
+
+    - name: "Eliminar tarball temporal de descarga"
+      ansible.builtin.file:
+        path: /tmp/nexus-latest.tar.gz
+        state: absent
+
+- name: "Desplegar configuración JVM vmoptions optimizada"
+  ansible.builtin.template:
+    src: nexus.vmoptions.j2
+    dest: /opt/sonatype/nexus/bin/nexus.vmoptions
+    owner: nexus
+    group: nexus
+    mode: '0644'
+  when: nexus_bin.stat.exists or (extracted_nexus_dir is defined and extracted_nexus_dir.matched > 0)
+  notify: Restart Nexus
+
+- name: "Desplegar unidad systemd de Nexus"
+  ansible.builtin.template:
+    src: nexus.service.j2
+    dest: /etc/systemd/system/nexus.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart Nexus
+
+- name: "Asegurar permisos de propiedad en /opt/sonatype"
+  ansible.builtin.file:
+    path: /opt/sonatype
+    owner: nexus
+    group: nexus
+    recurse: true

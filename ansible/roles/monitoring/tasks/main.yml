@@ -1,0 +1,58 @@
+---
+# ==============================================================================
+# Role: monitoring - Suite de Monitoreo Centralizado (Prometheus, Grafana, Node Exporter)
+# Reemplaza completamente scripts/10-monitoreo.sh
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. NODE EXPORTER EN TODA LA FLOTA BARE-METAL
+# ------------------------------------------------------------------------------
+- name: "Instalar paquete prometheus-node-exporter"
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: "Asegurar que el servicio prometheus-node-exporter esté activo y habilitado"
+  ansible.builtin.systemd:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true
+
+# ------------------------------------------------------------------------------
+# 2. SERVICIOS CENTRALES EN NODO 306 (PROMETHEUS, GRAFANA, ALERTMANAGER)
+# ------------------------------------------------------------------------------
+- name: "Desplegar servidor Prometheus y Grafana en pxe_controller (Nodo 306)"
+  when: inventory_hostname in groups['pxe_controller']
+  block:
+    - name: "Instalar prometheus, alertmanager y grafana"
+      ansible.builtin.apt:
+        name:
+          - prometheus
+          - prometheus-alertmanager
+          - prometheus-blackbox-exporter
+          - grafana
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      ignore_errors: true
+
+    - name: "Desplegar configuración de Prometheus con todos los targets del inventario"
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Prometheus
+
+    - name: "Asegurar que Prometheus y Grafana estén activos y habilitados"
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - prometheus
+        - grafana-server
+      ignore_errors: true

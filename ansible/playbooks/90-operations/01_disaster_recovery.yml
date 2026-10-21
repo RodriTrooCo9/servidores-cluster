@@ -1,0 +1,181 @@
+---
+# ==============================================================================
+# Playbook: 10_disaster_recovery.yml
+# Objetivo: Procedimientos Automatizados de Recuperación ante Desastres (DR),
+#           Respaldos (etcd / OpenStack) y Auto-Sanación del Clúster.
+#
+# Modos de Ejecución:
+#   1. Auditoría de Salud para DR:
+#      ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/10_disaster_recovery.yml --tags audit
+#
+#   2. Respaldo Integral (etcd + MariaDB OpenStack):
+#      ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/10_disaster_recovery.yml --tags backup
+#
+#   3. Auto-Sanación de Quórum etcd (remover miembro caído):
+#      ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/10_disaster_recovery.yml --tags heal_etcd -e "failed_ip=10.100.29.102"
+#
+#   4. Reincorporación Limpia de Nodo tras Recuperación por Ironic:
+#      ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/10_disaster_recovery.yml --tags rejoin --limit nodo-280
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# PLAY 1: Auditoría de Estado y Quórum en Control Planes
+# ------------------------------------------------------------------------------
+- name: "DR: Auditoría de Salud del Quórum etcd y Estado de Nodos"
+  hosts: k8s_control_plane
+  become: true
+  tags: [audit, status]
+  tasks:
+    - name: "Verificar si el socket de etcd responde en local"
+      ansible.builtin.command:
+        cmd: >
+          /var/lib/rancher/rke2/bin/etcdctl
+          --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt
+          --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt
+          --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key
+          endpoint health
+      environment:
+        ETCDCTL_API: "3"
+      register: etcd_health
+      failed_when: false
+      changed_when: false
+
+    - name: "Mostrar salud de etcd en cada nodo Control Plane"
+      ansible.builtin.debug:
+        msg: "Nodo {{ inventory_hostname }} ({{ ansible_host }}): {{ etcd_health.stdout | default('NO OPERATIVO / DOWN') }}"
+
+    - name: "Consultar lista de miembros activos en el Líder"
+      ansible.builtin.command:
+        cmd: >
+          /var/lib/rancher/rke2/bin/etcdctl
+          --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt
+          --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt
+          --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key
+          member list -w table
+      environment:
+        ETCDCTL_API: "3"
+      register: etcd_members
+      when: k8s_leader | default(false)
+      failed_when: false
+      changed_when: false
+
+    - name: "Tabla de miembros etcd del clúster"
+      ansible.builtin.debug:
+        var: etcd_members.stdout_lines
+      when: k8s_leader | default(false) and etcd_members.stdout_lines is defined
+
+# ------------------------------------------------------------------------------
+# PLAY 2: Respaldos Automatizados de Recuperación ante Desastres
+# ------------------------------------------------------------------------------
+- name: "DR: Generar Snapshot de etcd en el Control Plane Líder"
+  hosts: k8s_control_plane
+  become: true
+  tags: [backup, backup_etcd]
+  tasks:
+    - name: "Tomar Snapshot de etcd en el líder activo"
+      when: k8s_leader | default(false)
+      block:
+        - name: "Crear directorio local de snapshots si no existe"
+          ansible.builtin.file:
+            path: /var/lib/rancher/rke2/server/db/snapshots
+            state: directory
+            mode: '0700'
+
+        - name: "Ejecutar guardado de snapshot con RKE2 CLI"
+          ansible.builtin.command:
+            cmd: "rke2 etcd-snapshot save --name dr-backup-{{ ansible_date_time.iso8601_basic_short }}"
+          register: rke2_snap
+          changed_when: true
+
+        - name: "Reportar snapshot generado"
+          ansible.builtin.debug:
+            msg: "Snapshot etcd completado: {{ rke2_snap.stdout_lines | default(['OK']) }}"
+
+- name: "DR: Generar Respaldo de Base de Datos MariaDB y Configs Kolla en PXE Controller"
+  hosts: pxe_controller
+  become: true
+  tags: [backup, backup_openstack]
+  tasks:
+    - name: "Crear directorio para volcados de OpenStack en el Controller"
+      ansible.builtin.file:
+        path: /var/backups/openstack
+        state: directory
+        mode: '0750'
+
+    - name: "Obtener clave de base de datos desde passwords.yml de Kolla"
+      ansible.builtin.shell:
+        cmd: "grep database_password /etc/kolla/passwords.yml | awk '{print $2}'"
+      register: db_pass_raw
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: "Volcar todas las bases de datos MariaDB (Keystone, Nova, Neutron, Ironic, Glance)"
+      when: db_pass_raw.stdout != ""
+      ansible.builtin.shell:
+        cmd: >
+          docker exec mariadb mysqldump -u root -p'{{ db_pass_raw.stdout }}' --all-databases |
+          gzip -c > /var/backups/openstack/mariadb_dump_{{ ansible_date_time.iso8601_basic_short }}.sql.gz
+      changed_when: true
+
+    - name: "Empaquetar archivos de configuración /etc/kolla"
+      ansible.builtin.archive:
+        path: /etc/kolla
+        dest: "/var/backups/openstack/kolla_etc_{{ ansible_date_time.iso8601_basic_short }}.tar.gz"
+        format: gz
+        mode: '0640'
+
+# ------------------------------------------------------------------------------
+# PLAY 3: Auto-Sanación de Quórum etcd (Expulsión de Miembro Muerto)
+# ------------------------------------------------------------------------------
+- name: "DR: Eliminar Miembro Caído/Reemplazado de etcd para Proteger Quórum"
+  hosts: k8s_control_plane
+  become: true
+  tags: [heal_etcd]
+  tasks:
+    - name: "Identificar y remover miembro con IP fallida"
+      when:
+        - k8s_leader | default(false)
+        - failed_ip is defined and failed_ip != ""
+      block:
+        - name: "Localizar Member ID para la IP fallida ({{ failed_ip }})"
+          ansible.builtin.shell:
+            cmd: >
+              /var/lib/rancher/rke2/bin/etcdctl
+              --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt
+              --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt
+              --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key
+              member list | grep '{{ failed_ip }}' | awk -F',' '{print $1}'
+          environment:
+            ETCDCTL_API: "3"
+          register: target_member_id
+          changed_when: false
+
+        - name: "Remover miembro caído de etcd si fue localizado"
+          when: target_member_id.stdout != ""
+          ansible.builtin.command:
+            cmd: >
+              /var/lib/rancher/rke2/bin/etcdctl
+              --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt
+              --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt
+              --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key
+              member remove {{ target_member_id.stdout }}
+          environment:
+            ETCDCTL_API: "3"
+          register: member_remove_res
+
+        - name: "Confirmación de remoción"
+          ansible.builtin.debug:
+            msg: "Miembro con IP {{ failed_ip }} (ID {{ target_member_id.stdout | default('N/A') }}) retirado del quórum exitosamente."
+
+# ------------------------------------------------------------------------------
+# PLAY 4: Reincorporación de Nodo Recuperado
+# ------------------------------------------------------------------------------
+- name: "DR: Reincorporación Limpia de Nodo Recuperado al Clúster"
+  hosts: k8s_cluster
+  become: true
+  tags: [rejoin]
+  roles:
+    - common
+    - rke2_ha
+## recuperar el nodo con Ironic y luego ejecutar este playbook para reincorporarlo al clúster / recuperacion rapida 
