@@ -1,45 +1,108 @@
-# Archivos de entorno con credenciales reales
+# ==============================================================================
+# GITIGNORE: INFRAESTRUCTURA BARE-METAL, OPENSTACK, K8S Y OBSERVABILIDAD
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. SECRETOS Y CREDENCIALES (ZERO PLAINTEXT SECRETS)
+# ------------------------------------------------------------------------------
+# Archivos de entorno con credenciales
 config/env
-/ansible.cfg
-/inventory
+inventory/**/env
+inventory/**/vault.yml
+!inventory/**/vault.yml.example
+!inventory/**/env.example
 
-# Respaldo automático de configuraciones
-*.bak.*
-*.backup
+# Credenciales y documentación con valores reales
+credenciales.md
+!docs/reference/credentials.example.md
 
-# Llaves criptográficas y secretos
+# Archivos de contraseñas de Ansible Vault
+.vault_pass*
+ansible/.vault_pass*
+vault_*.yml
+
+# Claves criptográficas y llaves privadas SSH
 *.id_ed25519*
 *.id_rsa*
 *.pem
 *.key
 *.crt
 *.pfx
-vault_*.yml
-admin.password
-.vault_pass*
-ansible/.vault_pass*
+cluster_key
 ansible/keys/*
 !ansible/keys/.gitkeep
 !ansible/keys/README.md
 
-# Configuración de clúster y certificados
+# OpenStack Kolla credenciales reales
+openstack/secrets/*
+!openstack/secrets/*.example*
+!openstack/secrets/.gitkeep
+!openstack/secrets/README.md
+kolla/passwords.yml
+kolla/admin-openrc*.sh
+kolla/public-openrc*.sh
+kolla/clouds.yaml
+
+# Kubernetes y Kubeconfig
 rke2.yaml
 kubeconfig
 *.kubeconfig
-*openrc*
-clouds.yaml
 
-# Archivos de logs de ejecución
-/var/log/infra-setup/
-*.log
+# ------------------------------------------------------------------------------
+# 2. ARTEFACTOS PESADOS Y BINARIOS (DESCARGA VÍA SCRIPT)
+# ------------------------------------------------------------------------------
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/README.md
+!artifacts/*.sh
+!artifacts/*.sha256
+!artifacts/.gitignore
 
-# Imágenes pesadas de virtualización y Packer
+# Binarios de ramdisk Ironic IPA en repositorios
+kolla/config/ironic/*.initramfs
+kolla/config/ironic/*.kernel
+openstack/config/ironic/*.initramfs
+openstack/config/ironic/*.kernel
+
+# Imágenes de virtualización y Packer
 *.qcow2
 *.iso
 *.raw
 *.tar.gz
-kolla/config/ironic/
+*.sql.gz
 output-*/
 .vagrant/
-backups/
-*.sql.gz
+
+# ------------------------------------------------------------------------------
+# 3. RESPALDOS Y SNAPSHOTS DE DISASTER RECOVERY
+# ------------------------------------------------------------------------------
+backups/*
+!backups/.gitkeep
+!backups/README.md
+
+# ------------------------------------------------------------------------------
+# 4. ENTORNOS VIRTUALES Y CACHÉS DE DESARROLLO
+# ------------------------------------------------------------------------------
+.venv*/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ------------------------------------------------------------------------------
+# 5. ARCHIVOS TEMPORALES, LOGS Y EDITORES
+# ------------------------------------------------------------------------------
+*.log
+*.retry
+/var/log/infra-setup/
+*.bak
+*.bak.*
+*.backup
+*.swp
+*~
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

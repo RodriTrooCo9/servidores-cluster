@@ -1,0 +1,24 @@
+---
+# Ansible-lint configuration
+profile: production
+
+exclude_paths:
+  - .venv*/
+  - .git/
+  - backups/
+  - artifacts/
+  - openstack/
+
+rules:
+  line-length:
+    max: 200
+  no-changed-when:
+    level: warning
+  command-instead-of-module:
+    level: warning
+  yaml:
+    level: warning
+
+parseable: true
+quiet: false
+verbosity: 1
