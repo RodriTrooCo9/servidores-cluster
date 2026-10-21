@@ -1,6 +1,6 @@
 ---
 # Ansible-lint configuration
-profile: min
+profile: production
 
 exclude_paths:
   - .venv*/
@@ -9,9 +9,16 @@ exclude_paths:
   - artifacts/
   - openstack/
 
-warn_list:
-  - experimental
-  - no-changed-when
-  - command-instead-of-module
-  - yaml
-  - line-length
+rules:
+  line-length:
+    max: 200
+  no-changed-when:
+    level: warning
+  command-instead-of-module:
+    level: warning
+  yaml:
+    level: warning
+
+parseable: true
+quiet: false
+verbosity: 1
