@@ -19,7 +19,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 if [[ -f "${SCRIPT_DIR}/../lib/common.sh" ]]; then
     source "${SCRIPT_DIR}/../lib/common.sh"

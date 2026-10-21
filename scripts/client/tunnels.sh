@@ -17,7 +17,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 SSH_KEY="${REPO_DIR}/ansible/keys/cluster_key"
 if [[ ! -f "${SSH_KEY}" ]]; then
