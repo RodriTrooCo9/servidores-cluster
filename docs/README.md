@@ -4,6 +4,11 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 
 ---
 
+> 🚀 **¿Nuevo en el clúster? Empieza aquí:**  
+> 👉 [**Guía Rápida de Uso y Operación Paso a Paso (docs/GUIA_RAPIDA_USO.md)**](GUIA_RAPIDA_USO.md): Puesta en marcha en 10 minutos (llaves, SSH, tunnels, dashboards y comandos).
+
+---
+
 ## 🗺️ Mapa de Navegación
 
 ### 1. [Arquitectura y Diseño (`docs/architecture/`)](architecture/)
@@ -14,6 +19,7 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**OpenStack Glance e Ironic Bare-Metal**](architecture/openstack/OpenStack%20Glance,%20Formatos%20de%20Disco%20e%20Ironic%20Bare-Metal.md): Conceptos clave de aprovisionamiento físico.
 
 ### 2. [Procedimientos Operativos / Runbooks (`docs/runbooks/`)](runbooks/)
+- [**Manual Maestro de Recuperación y Rearranque (SRE Runbook)**](runbooks/manual-recuperacion-y-rearranque.md): Guía exhaustiva para apagones totales, caídas de nodo, pérdida de quórum etcd y fallos de servicio.
 - [**Recuperación ante Desastres (Disaster Recovery)**](runbooks/disaster_recovery.md): Protocolo de contingencia y restauración de etcd y MariaDB.
 - [**Blindaje de Red y Contención Rogue DHCP**](runbooks/blindaje_red_oficina.md): Reglas para aislar la red de pruebas de la oficina.
 - [**Rotación y Renovación de Secretos**](runbooks/rotacion_secretos.md): Guía de actualización periódica de claves y tokens.
