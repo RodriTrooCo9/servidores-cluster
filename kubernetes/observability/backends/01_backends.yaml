@@ -1,0 +1,300 @@
+# ==============================================================================
+# MANIFIESTO KUBERNETES: BACKENDS DE OBSERVABILIDAD (LOKI + TEMPO + VICTORIAMETRICS)
+# Namespace: observability
+# StorageClass: local-path (RKE2 nativo)
+# Límites estrictos para nodos Dell OptiPlex (8-16 GB RAM, 128 GB NVMe)
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    app.kubernetes.io/part-of: observability-stack
+---
+# ------------------------------------------------------------------------------
+# 1. VICTORIAMETRICS SINGLE-NODE (MÉTRICAS DE LARGO PLAZO - 30 DÍAS RETENCIÓN)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: victoriametrics
+  namespace: observability
+  labels:
+    app: victoriametrics
+spec:
+  ports:
+    - name: http
+      port: 8428
+      targetPort: 8428
+  selector:
+    app: victoriametrics
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: victoriametrics
+  namespace: observability
+spec:
+  serviceName: victoriametrics
+  replicas: 1
+  selector:
+    matchLabels:
+      app: victoriametrics
+  template:
+    metadata:
+      labels:
+        app: victoriametrics
+    spec:
+      containers:
+        - name: victoriametrics
+          image: victoriametrics/victoria-metrics:v1.101.0
+          args:
+            - "-storageDataPath=/vm-data"
+            - "-retentionPeriod=30d"
+            - "-httpListenAddr=:8428"
+          ports:
+            - name: http
+              containerPort: 8428
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          volumeMounts:
+            - name: vm-storage
+              mountPath: /vm-data
+  volumeClaimTemplates:
+    - metadata:
+        name: vm-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 25Gi
+---
+# ------------------------------------------------------------------------------
+# 2. GRAFANA LOKI SINGLE-BINARY (LOGS - 7 DÍAS RETENCIÓN)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: observability
+data:
+  loki.yaml: |
+    auth_enabled: false
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+    common:
+      path_prefix: /loki-data
+      storage:
+        filesystem:
+          chunks_directory: /loki-data/chunks
+          rules_directory: /loki-data/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    compactor:
+      working_directory: /loki-data/retention
+      compactor_ring:
+        kvstore:
+          store: inmemory
+      retention_enabled: true
+      delete_request_store: filesystem
+      retention_delete_delay: 2h
+      retention_delete_worker_count: 50
+    limits_config:
+      retention_period: 168h
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: observability
+  labels:
+    app: loki
+spec:
+  ports:
+    - name: http
+      port: 3100
+      targetPort: 3100
+    - name: grpc
+      port: 9096
+      targetPort: 9096
+  selector:
+    app: loki
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: observability
+spec:
+  serviceName: loki
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:3.1.0
+          args:
+            - "-config.file=/etc/loki/loki.yaml"
+          ports:
+            - name: http
+              containerPort: 3100
+            - name: grpc
+              containerPort: 9096
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+            - name: loki-storage
+              mountPath: /loki-data
+      volumes:
+        - name: config
+          configMap:
+            name: loki-config
+  volumeClaimTemplates:
+    - metadata:
+        name: loki-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 20Gi
+---
+# ------------------------------------------------------------------------------
+# 3. GRAFANA TEMPO SINGLE-BINARY (TRAZAS - 3 DÍAS RETENCIÓN, 20% HEAD SAMPLING)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: observability
+data:
+  tempo.yaml: |
+    server:
+      http_listen_port: 3200
+      grpc_listen_port: 9095
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+    compactor:
+      compaction:
+        block_retention: 72h
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /tempo-data/traces
+        wal:
+          path: /tempo-data/wal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: observability
+  labels:
+    app: tempo
+spec:
+  ports:
+    - name: http
+      port: 3200
+      targetPort: 3200
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+  selector:
+    app: tempo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tempo
+  namespace: observability
+spec:
+  serviceName: tempo
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+    spec:
+      containers:
+        - name: tempo
+          image: grafana/tempo:2.5.0
+          args:
+            - "-config.file=/etc/tempo/tempo.yaml"
+          ports:
+            - name: http
+              containerPort: 3200
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tempo
+            - name: tempo-storage
+              mountPath: /tempo-data
+      volumes:
+        - name: config
+          configMap:
+            name: tempo-config
+  volumeClaimTemplates:
+    - metadata:
+        name: tempo-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 15Gi

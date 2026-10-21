@@ -1,0 +1,37 @@
+---
+# ==============================================================================
+# DECLARACIÓN DE REPOSITORIOS SONATYPE NEXUS 3 (REPOS AS CODE)
+# ==============================================================================
+repositories:
+  - name: debian-proxy
+    format: apt
+    type: proxy
+    url: http://deb.debian.org/debian/
+    distribution: trixie
+    blob_store: default
+    strict_content_type_validation: true
+
+  - name: docker-hosted
+    format: docker
+    type: hosted
+    http_port: 8083
+    v1_enabled: false
+    force_basic_auth: false
+    write_policy: allow_write
+    blob_store: docker-blobstore
+
+  - name: docker-hub-proxy
+    format: docker
+    type: proxy
+    remote_url: https://registry-1.docker.io
+    use_docker_hub_index: true
+    blob_store: docker-blobstore
+
+  - name: docker-group
+    format: docker
+    type: group
+    http_port: 8082
+    members:
+      - docker-hosted
+      - docker-hub-proxy
+    blob_store: docker-blobstore

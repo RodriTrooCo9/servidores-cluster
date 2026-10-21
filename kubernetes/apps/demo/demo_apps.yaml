@@ -1,0 +1,110 @@
+# ==============================================================================
+# MANIFIESTO KUBERNETES: APLICACIONES DE PRUEBA AUTO-INSTRUMENTADAS CON OTEL
+# Namespace: aplicaciones
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aplicaciones
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api-python
+  namespace: aplicaciones
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "observability/auto-instrumentation"
+    spec:
+      containers:
+        - name: api
+          image: python:3.11-slim
+          command:
+            - "python3"
+            - "-c"
+            - |
+              import http.server, socketserver, time, os, logging
+              logging.basicConfig(level=logging.INFO)
+              class Handler(http.server.SimpleHTTPRequestHandler):
+                  def do_GET(self):
+                      logging.info(f"Peticion recibida en {self.path} desde {self.client_address[0]}")
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      self.wfile.write(b'{"status": "ok", "app": "backend-api-python", "version": "1.0.0"}')
+              server = socketserver.TCPServer(("", 8000), Handler)
+              logging.info("Servidor Backend Python iniciado en puerto 8000")
+              server.serve_forever()
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+  namespace: aplicaciones
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  selector:
+    app: backend-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-web
+  namespace: aplicaciones
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-web
+  template:
+    metadata:
+      labels:
+        app: frontend-web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-web
+  namespace: aplicaciones
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    app: frontend-web

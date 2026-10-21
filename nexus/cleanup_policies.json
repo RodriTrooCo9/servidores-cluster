@@ -1,0 +1,20 @@
+[
+  {
+    "name": "docker-cleanup-policy",
+    "format": "docker",
+    "notes": "Eliminar imagenes no etiquetadas y capas huerfanas tras 14 dias",
+    "criteria": {
+      "lastBlobUpdated": 1209600,
+      "lastDownloaded": 1209600,
+      "isPrerelease": null
+    }
+  },
+  {
+    "name": "apt-cleanup-policy",
+    "format": "apt",
+    "notes": "Depurar paquetes Debian huerfanos no consultados en 30 dias",
+    "criteria": {
+      "lastDownloaded": 2592000
+    }
+  }
+]
