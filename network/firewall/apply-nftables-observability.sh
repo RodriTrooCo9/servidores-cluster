@@ -13,7 +13,7 @@ set -Eeuo pipefail
 
 BACKUP_FILE="/tmp/nftables.backup.$(date +%s)"
 echo "[*] Creando respaldo de reglas nftables actuales en ${BACKUP_FILE}..."
-sudo nft list ruleset > "${BACKUP_FILE}"
+sudo nft list ruleset | sudo tee "${BACKUP_FILE}" >/dev/null
 
 echo "[*] Programando rollback automático de seguridad en 60 segundos..."
 (
@@ -25,7 +25,6 @@ echo "[*] Programando rollback automático de seguridad en 60 segundos..."
         echo "[!] Rollback completado con éxito. Conectividad preservada."
     fi
 ) >/dev/null 2>&1 &
-ROLLBACK_PID=$!
 touch "/tmp/nftables_pending_confirmation"
 
 echo "[*] Aplicando reglas de observabilidad en nftables..."
