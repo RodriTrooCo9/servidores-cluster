@@ -7,13 +7,16 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANSIBLE_DIR="${SCRIPT_DIR}/ansible"
-INVENTORY="${ANSIBLE_DIR}/inventory/hosts.yml"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ANSIBLE_DIR="${REPO_DIR}/ansible"
+INVENTORY="${REPO_DIR}/inventory/lab/hosts.yml"
 SITE_PLAYBOOK="${ANSIBLE_DIR}/site.yml"
 
-# shellcheck source=lib/common.sh
-if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
-    source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=scripts/lib/common.sh
+if [[ -f "${SCRIPT_DIR}/../lib/common.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/common.sh"
+elif [[ -f "${REPO_DIR}/scripts/lib/common.sh" ]]; then
+    source "${REPO_DIR}/scripts/lib/common.sh"
 fi
 
 load_config 2>/dev/null || true
