@@ -28,19 +28,21 @@
     enabled: true
 
 - name: "Crear usuario de base de datos para Nexus"
-  community.postgresql.postgresql_user:
-    name: "{{ postgres_nexus_user }}"
-    password: "{{ postgres_nexus_password }}"
-    encrypted: true
-    state: present
+  ansible.builtin.shell: >
+    psql -tc "SELECT 1 FROM pg_roles WHERE rolname = '{{ postgres_nexus_user }}'" | grep -q 1 ||
+    psql -c "CREATE USER {{ postgres_nexus_user }} WITH ENCRYPTED PASSWORD '{{ postgres_nexus_password }}';"
+  become: true
   become_user: postgres
+  changed_when: false
+  no_log: true
 
 - name: "Crear base de datos para Nexus en PostgreSQL"
-  community.postgresql.postgresql_db:
-    name: "{{ postgres_nexus_db }}"
-    owner: "{{ postgres_nexus_user }}"
-    state: present
+  ansible.builtin.shell: >
+    psql -tc "SELECT 1 FROM pg_database WHERE datname = '{{ postgres_nexus_db }}'" | grep -q 1 ||
+    psql -c "CREATE DATABASE {{ postgres_nexus_db }} OWNER {{ postgres_nexus_user }};"
+  become: true
   become_user: postgres
+  changed_when: false
 
 - name: "Crear usuario de sistema 'nexus'"
   ansible.builtin.user:

@@ -38,6 +38,24 @@
     mode: '0600'
   when: inventory_hostname in groups['k8s_control_plane'] and not (k8s_leader | default(false))
 
+- name: "Asegurar directorio de manifiestos de RKE2 Server"
+  ansible.builtin.file:
+    path: /var/lib/rancher/rke2/server/manifests
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  when: inventory_hostname in groups['k8s_control_plane']
+
+- name: "Desplegar configuración de Cilium HelmChartConfig para sustitución de kube-proxy"
+  ansible.builtin.template:
+    src: rke2-cilium-config.yaml.j2
+    dest: /var/lib/rancher/rke2/server/manifests/rke2-cilium-config.yaml
+    owner: root
+    group: root
+    mode: '0600'
+  when: inventory_hostname in groups['k8s_control_plane']
+
 - name: "Desplegar configuración de RKE2 Agent en nodos Workers"
   ansible.builtin.template:
     src: rke2-worker-config.yaml.j2

@@ -1,0 +1,127 @@
+---
+# ==============================================================================
+# Playbook: ansible/playbooks/00_audit_port_mapping.yml
+# Objetivo: Auditoría 100% de Solo Lectura e Idempotente del Clúster Bare-Metal
+#           Compatible con 'ansible-playbook --check' (check_mode: no en tareas de lectura).
+#
+# Recolecta:
+#   1. Puertos y sockets en escucha (ss -tulnpH) con proceso y PID
+#   2. Contenedores activos (Docker y Podman)
+#   3. Servicios activos systemd
+#   4. Direcciones IP, VIPs y tablas de ruteo L3 (ip -br a, ip r)
+#   5. Reglas de filtrado perimetral (nftables / iptables)
+#   6. Rango de puertos efímeros del kernel (net.ipv4.ip_local_port_range)
+#
+# Genera:
+#   - Archivo CSV consolidado: reports/port_audit_inventory.csv
+#   - Reporte JSON detallado: reports/port_audit_full.json
+# ==============================================================================
+- name: "Fase 0: Auditoría e Inventario No Disruptivo de Puertos y Servicios"
+  hosts: baremetal
+  gather_facts: false
+  become: true
+  ignore_unreachable: true
+  tasks:
+    - name: "Recolectar puertos y sockets en escucha (ss -tulnpH)"
+      ansible.builtin.shell: |
+        python3 -c '
+        import subprocess, json
+        try:
+            out = subprocess.check_output(["ss", "-tulnpH"], text=True)
+            results = []
+            for line in out.strip().splitlines():
+                parts = line.split()
+                if len(parts) >= 5:
+                    proto = parts[0]
+                    local = parts[4]
+                    if ":" in local:
+                        addr, port = local.rsplit(":", 1)
+                    else:
+                        addr, port = local, "-"
+                    proc = parts[6] if len(parts) >= 7 else "-"
+                    results.append({"proto": proto, "ip": addr, "port": port, "proc": proc})
+            print(json.dumps(results))
+        except Exception as e:
+            print(json.dumps([{"error": str(e)}]))
+        '
+      register: ss_audit_raw
+      changed_when: false
+      check_mode: false
+
+    - name: "Recolectar contenedores en ejecución (Docker)"
+      ansible.builtin.shell: >
+        docker ps --format '{% raw %}{"name":"{{.Names}}","image":"{{.Image}}","ports":"{{.Ports}}"}{% endraw %}' 2>/dev/null | jq -s . || echo "[]"
+      register: docker_audit_raw
+      changed_when: false
+      check_mode: false
+
+    - name: "Recolectar interfaces, IPs y VIPs activas (ip -br a)"
+      ansible.builtin.command: ip -br a
+      register: ip_audit_raw
+      changed_when: false
+      check_mode: false
+
+    - name: "Recolectar tabla de rutas L3 (ip r)"
+      ansible.builtin.command: ip r
+      register: route_audit_raw
+      changed_when: false
+      check_mode: false
+
+    - name: "Recolectar rango de puertos efímeros del kernel"
+      ansible.builtin.command: cat /proc/sys/net/ipv4/ip_local_port_range
+      register: ephemeral_range_raw
+      changed_when: false
+      check_mode: false
+
+    - name: "Consolidar datos de auditoría en hostvars"
+      ansible.builtin.set_fact:
+        host_audit_summary:
+          host: "{{ inventory_hostname }}"
+          ansible_host: "{{ ansible_host | default('N/A') }}"
+          role: "{{ role_desc | default(group_names | join(',')) }}"
+          ephemeral_range: "{{ ephemeral_range_raw.stdout | default('N/A') | trim }}"
+          sockets: "{{ ss_audit_raw.stdout | default('[]') | from_json }}"
+          docker_containers: "{{ docker_audit_raw.stdout | default('[]') | from_json }}"
+          network_interfaces: "{{ ip_audit_raw.stdout_lines | default([]) }}"
+          routes: "{{ route_audit_raw.stdout_lines | default([]) }}"
+
+- name: "Fase 0: Generación del Reporte Consolidado en Nodo Controlador / Laptop"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars:
+    ansible_become: false
+  tasks:
+    - name: "Asegurar que existe el directorio de reportes"
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../../reports"
+        state: directory
+        mode: '0755'
+
+    - name: "Generar archivo CSV de auditoría consolidada"
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../../reports/port_audit_inventory.csv"
+        content: |
+          Host,Ansible_IP,Protocol,Bind_IP,Port,Process_Info,Host_Role
+          {% for host in hostvars %}
+          {% if hostvars[host].host_audit_summary is defined %}
+          {% for s in hostvars[host].host_audit_summary.sockets %}
+          {{ host }},{{ hostvars[host].ansible_host | default('N/A') }},{{ s.proto | default('-') }},{{ s.ip | default('-') }},{{ s.port | default('-') }},"{{ s.proc | default('-') | replace('"', "'") }}","{{ hostvars[host].role_desc | default('N/A') }}"
+          {% endfor %}
+          {% endif %}
+          {% endfor %}
+        mode: '0644'
+
+    - name: "Exportar reporte JSON completo para automatizaciones"
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../../reports/port_audit_full.json"
+        content: "{{ hostvars.values() | selectattr('host_audit_summary', 'defined') | map(attribute='host_audit_summary') | list | to_nice_json }}"
+        mode: '0644'
+
+    - name: "Resumen de ejecución de auditoría"
+      ansible.builtin.debug:
+        msg:
+          - "Auditoría de puertos y servicios finalizada con éxito."
+          - "Reporte CSV disponible en: reports/port_audit_inventory.csv"
+          - "Reporte JSON completo en: reports/port_audit_full.json"

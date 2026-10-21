@@ -4,85 +4,85 @@
 # Orquestador integral para la infraestructura Bare-Metal Edge
 #
 # Uso por fases / tags:
-#   ansible-playbook site.yml --tags ping
-#   ansible-playbook site.yml --tags info
-#   ansible-playbook site.yml --tags base
-#   ansible-playbook site.yml --tags bastion
-#   ansible-playbook site.yml --tags nexus
-#   ansible-playbook site.yml --tags pxe
-#   ansible-playbook site.yml --tags ironic
-#   ansible-playbook site.yml --tags k8s
-#   ansible-playbook site.yml --tags monitoring
-#   ansible-playbook site.yml --tags healthcheck
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags preflight
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags base
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags services
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags platform
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags observability
+#   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags validation
 # ==============================================================================
 
-- name: "[Fase 0] Comprobación de Conectividad SSH"
-  import_playbook: playbooks/00_ping.yml
+- name: "[Fase 00] Preflight: Comprobación de Conectividad SSH"
+  import_playbook: playbooks/00-preflight/00_ping.yml
   tags:
+    - preflight
     - ping
 
-- name: "[Fase 1] Telemetría y Resumen de Sistema"
-  import_playbook: playbooks/01_system_summary.yml
+- name: "[Fase 00] Preflight: Auditoría de Mapeo de Puertos y Switch"
+  import_playbook: playbooks/00-preflight/01_audit_ports.yml
   tags:
-    - info
+    - preflight
+    - audit
+
+- name: "[Fase 00] Preflight: Telemetría y Resumen del Sistema"
+  import_playbook: playbooks/00-preflight/02_system_summary.yml
+  tags:
+    - preflight
     - facts
 
-- name: "[Fase 2] Configuración Base del Sistema Operativo (common)"
-  import_playbook: playbooks/02_base_config.yml
+- name: "[Fase 10] Base: Configuración del Sistema Operativo Debian 13"
+  import_playbook: playbooks/10-base/01_os_base.yml
   tags:
     - base
-    - config
     - common
 
-- name: "[Fase 3] Bastion Host, Seguridad Perimetral y Proxy Egress"
-  import_playbook: playbooks/03_bastion.yml
+- name: "[Fase 10] Base: Bastion Host, Seguridad Perimetral y Proxy Egress"
+  import_playbook: playbooks/10-base/02_bastion_hardening.yml
   tags:
+    - base
     - bastion
     - perimeter
 
-- name: "[Fase 4] Sonatype Nexus 3 OSS y PostgreSQL 16"
-  import_playbook: playbooks/04_nexus.yml
+- name: "[Fase 20] Servicios: Sonatype Nexus 3 OSS y PostgreSQL 16"
+  import_playbook: playbooks/20-services/01_nexus.yml
   tags:
+    - services
     - nexus
-    - repo
 
-- name: "[Fase 5] Servidor PXE, DHCP dnsmasq, TFTP e HTTPBoot"
-  import_playbook: playbooks/05_pxe_controller.yml
+- name: "[Fase 20] Servicios: Servidor PXE, DHCP dnsmasq y HTTPBoot"
+  import_playbook: playbooks/20-services/02_pxe_controller.yml
   tags:
+    - services
     - pxe
-    - dhcp
-    - tftp
 
-- name: "[Fase 6] OpenStack Ironic Standalone y Gestión Bare-Metal"
-  import_playbook: playbooks/06_ironic_deploy.yml
+- name: "[Fase 20] Servicios: OpenStack Ironic Standalone Bare-Metal"
+  import_playbook: playbooks/20-services/03_ironic_deploy.yml
   tags:
+    - services
     - ironic
-    - baremetal
 
-- name: "[Fase 7] Clúster Kubernetes HA (RKE2 + Cilium eBPF)"
-  import_playbook: playbooks/07_kubernetes_ha.yml
+- name: "[Fase 30] Plataforma: Clúster Kubernetes HA (RKE2 + Cilium eBPF)"
+  import_playbook: playbooks/30-platform/01_rke2_cluster.yml
   tags:
+    - platform
     - k8s
     - rke2
-    - cilium
 
-- name: "[Fase 8] Suite de Monitoreo (Prometheus, Grafana, Node Exporter)"
-  import_playbook: playbooks/08_monitoring.yml
+- name: "[Fase 40] Observabilidad: Suite de Monitoreo (Prometheus, Grafana, Node Exporter)"
+  import_playbook: playbooks/40-observability/01_monitoring.yml
   tags:
+    - observability
     - monitoring
-    - prometheus
-    - grafana
 
-- name: "[Fase 9] Auditoría de Salud y Validación Integral de Puertos"
-  import_playbook: playbooks/09_healthcheck.yml
+- name: "[Fase 50] Validación: Auditoría de Salud y Conectividad End-to-End"
+  import_playbook: playbooks/50-validation/01_healthcheck.yml
   tags:
+    - validation
     - healthcheck
-    - check
 
-- name: "[Fase 10] Recuperación ante Desastres (DR), Respaldos y Auto-Sanación"
-  import_playbook: playbooks/10_disaster_recovery.yml
+- name: "[Fase 90] Operaciones: Recuperación ante Desastres (DR) y Respaldos"
+  import_playbook: playbooks/90-operations/01_disaster_recovery.yml
   tags:
     - never
+    - operations
     - dr
-    - recovery
-

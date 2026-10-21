@@ -23,12 +23,13 @@
   tasks:
     - name: "Comprobar servicios críticos en Bastion"
       ansible.builtin.wait_for:
+        host: "{{ item.host | default('127.0.0.1') }}"
         port: "{{ item.port }}"
         timeout: 3
         state: started
       loop:
-        - { name: "OpenSSH Perimetral", port: "{{ bastion_ssh_port }}" }
-        - { name: "Squid Proxy Egress", port: "{{ squid_port }}" }
+        - { name: "OpenSSH Perimetral", port: "{{ bastion_ssh_port }}", host: "127.0.0.1" }
+        - { name: "Squid Proxy Egress", port: "{{ squid_port }}", host: "{{ bastion_ip }}" }
       ignore_errors: true
       register: bastion_services
 
@@ -60,17 +61,19 @@
 - name: "Healthcheck: Servicios Centrales en Nodo 306 (PXE/Router)"
   hosts: pxe_controller
   tasks:
-    - name: "Comprobar servicios críticos en Nodo 306"
+    - name: "Comprobar servicios críticos en Nodo 306 (OpenStack y Monitoreo)"
       ansible.builtin.wait_for:
+        host: "{{ item.host | default('127.0.0.1') }}"
         port: "{{ item.port }}"
         timeout: 3
         state: started
       loop:
-        - { name: "DNS/DHCP dnsmasq", port: 53 }
-        - { name: "HTTPBoot Nginx", port: "{{ pxe_httpboot_port }}" }
-        - { name: "Ironic Standalone API", port: "{{ ironic_api_port }}" }
-        - { name: "Prometheus TSDB", port: "{{ prometheus_port }}" }
-        - { name: "Grafana Web", port: "{{ grafana_port }}" }
+        - { name: "OpenStack Horizon Web", host: "10.100.29.5", port: 80 }
+        - { name: "OpenStack Keystone Identity", host: "10.100.29.5", port: 5000 }
+        - { name: "OpenStack Ironic Baremetal API", host: "10.100.29.5", port: "{{ ironic_api_port }}" }
+        - { name: "OpenStack Ironic HTTPBoot", host: "{{ pxe_ip }}", port: "{{ pxe_httpboot_port }}" }
+        - { name: "Prometheus TSDB", host: "127.0.0.1", port: "{{ prometheus_port }}" }
+        - { name: "Grafana Web", host: "127.0.0.1", port: "{{ grafana_port }}" }
       ignore_errors: true
       register: core_services
 
