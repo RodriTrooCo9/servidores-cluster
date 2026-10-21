@@ -1,0 +1,126 @@
+---
+# ==============================================================================
+# ARCHIVO MAESTRO DE VARIABLES: OBSERVABILIDAD CENTRALIZADA Y RESPETO DE PUERTOS
+# Ubicación: ansible/inventory/group_vars/observability.yml
+#
+# Principio de Diseño SRE:
+#   - Cero conflictos con OpenStack (Kolla 2025.1 Epoxy) y VIP 10.100.29.5
+#   - Cero conflictos con Ironic (DHCP 67, TFTP 69, HTTPBoot 8089, API 6385)
+#   - Cero conflictos con Kubernetes RKE2 (API 6443, Supervisor 9345, NodePorts 30000-32767)
+#   - Protección contra rango efímero del kernel Linux (32768-60999)
+#   - Bloque dedicado reservado para observabilidad extendida: 19000 - 19999
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. TOPOLOGÍA DE RED Y ACCESO
+# ------------------------------------------------------------------------------
+observability_network_cidr: "10.100.29.0/24"
+observability_controller_ip: "10.100.29.30"    # nodo-306 (PXE / Monitoreo)
+observability_controller_wan: "192.168.29.25"  # Interfaz WiFi (Túnel SSH / Admin)
+observability_nexus_registry: "10.100.29.20:8082" # Registry Docker local en nodo-315
+
+# ------------------------------------------------------------------------------
+# 2. PUERTOS DE METRICAS Y PROMETHEUS / VICTORIAMETRICS
+# ------------------------------------------------------------------------------
+# node_exporter (reutiliza el existente, ya auditado y en producción)
+node_exporter_port: 9100
+node_exporter_listen_address: "0.0.0.0"
+
+# Prometheus Server / VictoriaMetrics Single-Node
+# Nota: 9090 ya está activo en nodo-306. Si se usa VictoriaMetrics como backend,
+# escucha en 8428 sin colisionar con nada.
+prometheus_port: 9090
+victoria_metrics_http_port: 8428
+vmagent_port: 8429
+vmalert_port: 8880               # Seguro (Placement API usa 8780)
+alertmanager_web_port: 9093
+alertmanager_cluster_port: 9094
+blackbox_exporter_port: 9115
+
+# ------------------------------------------------------------------------------
+# 3. PUERTOS DE LOGS: GRAFANA LOKI
+# ------------------------------------------------------------------------------
+loki_http_port: 3100             # Libre en toda la flota
+loki_grpc_port: 9096             # Libre en toda la flota (Neutron usa 9696)
+
+# ------------------------------------------------------------------------------
+# 4. PUERTOS DE TRAZAS: GRAFANA TEMPO
+# ------------------------------------------------------------------------------
+tempo_http_port: 3200            # Libre en toda la flota
+tempo_grpc_port: 9095            # Libre en toda la flota
+
+# ------------------------------------------------------------------------------
+# 5. PUERTOS DEL OPENTELEMETRY COLLECTOR (AGENTE Y GATEWAY)
+# ------------------------------------------------------------------------------
+# Protocolo estándar OTLP (gRPC y HTTP)
+otlp_grpc_port: 4317             # Libre en toda la flota
+otlp_http_port: 4318             # Libre en toda la flota
+
+# Métricas internas del colector y endpoints de salud
+otel_metrics_port: 8888          # Libre en toda la flota
+otel_healthcheck_port: 13133     # Libre en toda la flota
+
+# zPages reubicado fuera del rango de puertos efímeros del kernel (32768-60999):
+# Original 55679 colisionaba con sockets salientes. Reubicado en bloque 19xxx:
+otel_zpages_port: 19579
+
+# Puerto para recepción de logs vía Syslog RFC5424 desde nodos y OpenStack
+otel_syslog_port: 15140          # Evita conflicto con Fluentd Kolla que usa 5140 UDP
+
+# ------------------------------------------------------------------------------
+# 6. EXPORTERS DE OPENSTACK E INFRAESTRUCTURA (SOLO LECTURA)
+# ------------------------------------------------------------------------------
+# OpenStack Exporter (consume APIs Keystone/Nova/Glance/Ironic con usuario 'reader')
+openstack_exporter_port: 9180    # Libre en nodo-306
+openstack_auth_url: "http://10.100.29.5:5000/v3"
+openstack_auth_user: "observability_reader"
+openstack_auth_domain: "Default"
+openstack_auth_project: "admin"
+
+# MariaDB / ProxySQL Exporter (conecta a ProxySQL o MariaDB local con SELECT)
+mysqld_exporter_port: 9104       # Libre en toda la flota
+
+# RabbitMQ Exporter (consume plugin de métricas de RabbitMQ Kolla)
+rabbitmq_exporter_port: 15692    # Libre en nodo-306
+
+# Memcached Exporter
+memcached_exporter_port: 9150    # Libre en nodo-306
+
+# Libvirt Exporter (para nodos de cómputo Nova)
+libvirt_exporter_port: 9177      # Libre en nodos compute
+
+# ------------------------------------------------------------------------------
+# 7. DASHBOARD GRAFANA
+# ------------------------------------------------------------------------------
+grafana_port: 3000               # Reutiliza el existente en nodo-306
+grafana_admin_user: "admin"
+# grafana_admin_password se gestiona vía vault o credenciales maestras
+
+# ------------------------------------------------------------------------------
+# 8. LIMITES DE RECURSOS (PROTECCION ESTRICTA PARA DEPOSITOS DE 8-16 GB RAM)
+# ------------------------------------------------------------------------------
+# Límites para el Agente OTel en Host / DaemonSet en K8s:
+otel_agent_cpu_limit: "250m"
+otel_agent_cpu_request: "50m"
+otel_agent_mem_limit: "256Mi"
+otel_agent_mem_request: "64Mi"
+
+# Límites para el Gateway OTel:
+otel_gateway_cpu_limit: "500m"
+otel_gateway_cpu_request: "100m"
+otel_gateway_mem_limit: "512Mi"
+otel_gateway_mem_request: "128Mi"
+
+# Límites para Loki Single-Binary (Filesystem backend):
+loki_cpu_limit: "1000m"
+loki_cpu_request: "200m"
+loki_mem_limit: "1024Mi"
+loki_mem_request: "256Mi"
+loki_retention_period: "168h"    # 7 días para proteger NVMe de 128 GB
+
+# Límites para Tempo Single-Binary (Filesystem backend):
+tempo_cpu_limit: "500m"
+tempo_cpu_request: "100m"
+tempo_mem_limit: "512Mi"
+tempo_mem_request: "128Mi"
+tempo_retention_period: "72h"    # 3 días para trazas
