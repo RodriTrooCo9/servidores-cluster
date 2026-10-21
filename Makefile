@@ -3,7 +3,11 @@ SHELL := /usr/bin/env bash
 INVENTORY ?= inventory/lab/hosts.yml
 ANSIBLE_PLAYBOOK ?= ansible-playbook -i $(INVENTORY)
 
-.PHONY: help lint syntax-check preflight bootstrap base services platform observability deploy health backup tunnels clean
+.PHONY: help setup lint syntax-check preflight bootstrap base services platform observability deploy health backup tunnels clean
+
+setup: ## Configura esta laptop/PC con accesos directos SSH, ProxyJump y dependencias
+	@echo "==> Configurando estacion de trabajo cliente..."
+	@./scripts/client/setup-client-workstation.sh
 
 help: ## Muestra este menu de ayuda con los objetivos documentados
 	@echo "=================================================================="
