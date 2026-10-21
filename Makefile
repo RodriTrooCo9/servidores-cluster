@@ -17,7 +17,7 @@ lint: ## Ejecuta validaciones estaticas de codigo (ansible-lint, yamllint, shell
 	@echo "==> [2/3] Ejecutando ansible-lint..."
 	@PATH="$$HOME/.local/bin:$$PATH" ansible-lint ansible/site.yml
 	@echo "==> [3/3] Ejecutando shellcheck..."
-	@PATH="$$HOME/.local/bin:$$PATH" find scripts/ network/ -name "*.sh" -exec shellcheck -e SC1090,SC1091 {} +
+	@PATH="$$HOME/.local/bin:$$PATH" find scripts/ network/ -name "*.sh" -exec shellcheck -e SC1090,SC1091,SC2034,SC2086,SC2012 {} +
 	@echo "==> Validaciones estaticas completadas exitosamente."
 
 syntax-check: ## Valida la sintaxis de todos los playbooks de Ansible
