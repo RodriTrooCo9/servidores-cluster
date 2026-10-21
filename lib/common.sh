@@ -153,32 +153,27 @@ run_cmd() {
 # ------------------------------------------------------------------------------
 # 4. CARGA DE CONFIGURACIÓN Y MAPEO DE INVENTARIO
 # ------------------------------------------------------------------------------
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 load_config() {
-    local env_file="${REPO_DIR}/config/env"
-    [[ -f "${REPO_DIR}/inventory/env" ]] && env_file="${REPO_DIR}/inventory/env"
-    local env_example="${REPO_DIR}/inventory/env.example"
-    [[ ! -f "${env_example}" && -f "${REPO_DIR}/config/env.example" ]] && env_example="${REPO_DIR}/config/env.example"
+    local env_file="${SCRIPT_DIR}/config/env"
+    local env_example="${SCRIPT_DIR}/config/env.example"
 
     if [[ -f "${env_file}" ]]; then
         log_info "Cargando archivo de entorno oficial: ${env_file}"
         # shellcheck disable=SC1090
         source "${env_file}"
     elif [[ -f "${env_example}" ]]; then
-        log_warn "No se encontró archivo de entorno; cargando valores de ${env_example}."
+        log_warn "No se encontró config/env; cargando valores predeterminados de config/env.example."
         # shellcheck disable=SC1090
         source "${env_example}"
     else
-        log_error "No se encontró archivo de entorno ni plantilla de ejemplo."
+        log_error "No se encontró ni config/env ni config/env.example."
         exit 1
     fi
 
-    # Validación de inventario CSV único
-    NODES_CSV="${REPO_DIR}/inventory/nodes.csv"
-    if [[ ! -f "${NODES_CSV}" && -f "${REPO_DIR}/config/nodes.csv" ]]; then
-        NODES_CSV="${REPO_DIR}/config/nodes.csv"
-    fi
+    # Validación de inventario CSV
+    NODES_CSV="${SCRIPT_DIR}/config/nodes.csv"
     if [[ ! -f "${NODES_CSV}" ]]; then
         log_error "Archivo de inventario no encontrado: ${NODES_CSV}"
         exit 1
