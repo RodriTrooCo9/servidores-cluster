@@ -4,6 +4,11 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 
 ---
 
+> 🚀 **¿Nuevo en el clúster? Empieza aquí:**  
+> 👉 [**Guía Rápida de Uso y Operación Paso a Paso (docs/GUIA_RAPIDA_USO.md)**](GUIA_RAPIDA_USO.md): Puesta en marcha en 10 minutos (llaves, SSH, tunnels, dashboards y comandos).
+
+---
+
 ## 🗺️ Mapa de Navegación
 
 ### 1. [Arquitectura y Diseño (`docs/architecture/`)](architecture/)
