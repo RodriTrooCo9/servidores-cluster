@@ -1,0 +1,7 @@
+#!ipxe
+echo ==========================================================
+echo   Aprovisionamiento Bare-Metal: Servidores 128GB NVMe
+echo ==========================================================
+kernel http://{{ pxe_ip }}:{{ pxe_httpboot_port }}/ipa/ipa.kernel ipa-api-url=http://{{ pxe_ip }}:{{ ironic_api_port }} boot=live console=tty0 initrd=ipa.initramfs
+initrd http://{{ pxe_ip }}:{{ pxe_httpboot_port }}/ipa/ipa.initramfs
+boot

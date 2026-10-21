@@ -1,0 +1,46 @@
+# ==============================================================================
+# CONFIGURACIÓN DNSMASQ (GENERADA POR ANSIBLE)
+# Servidor DHCP, TFTP y Arranque PXE para Subred Aislada
+# ==============================================================================
+
+interface={{ pxe_iface }}
+bind-interfaces
+listen-address={{ pxe_ip }}
+port=53
+
+# Salvaguarda perimetral: Ignorar cualquier petición DHCP de clientes no autorizados
+dhcp-ignore=tag:!known
+dhcp-mac=set:known,64:00:6a:2a:*:*:*
+
+# Gateway y DNS predeterminado (Bastión)
+dhcp-option=3,{{ cluster_gateway }}
+dhcp-option=6,{{ cluster_dns }}
+
+# Rango dinámico efímero para inspección o enrolamiento
+dhcp-range={{ dhcp_range_start }},{{ dhcp_range_end }},{{ cluster_netmask }},{{ dhcp_lease_time }}
+
+# ==============================================================================
+# RESERVAS ESTÁTICAS DE IP POR DIRECCIÓN MAC (DESDE INVENTARIO ANSIBLE)
+# ==============================================================================
+{% for h in groups['baremetal'] %}
+# Nodo ID {{ hostvars[h].node_id }}: {{ hostvars[h].cluster_hostname }}
+dhcp-host={{ hostvars[h].mac }},set:known,{{ hostvars[h].ansible_host }},{{ hostvars[h].cluster_hostname }},infinite
+{% endfor %}
+
+# Servidor TFTP Integrado
+enable-tftp
+tftp-root=/tftpboot
+
+# Detección de cliente iPXE para evitar bucles de arranque
+dhcp-userclass=set:ipxe,iPXE
+
+# Si el cliente ya ejecuta iPXE, entregar script de arranque vía HTTP
+dhcp-boot=tag:ipxe,http://{{ pxe_ip }}:{{ pxe_httpboot_port }}/boot.ipxe
+
+# Si no es iPXE, entregar binario de arranque según arquitectura de firmware
+dhcp-match=set:bios,option:client-arch,0
+dhcp-boot=tag:!ipxe,tag:bios,undionly.kpxe
+
+dhcp-match=set:efi-x86_64,option:client-arch,7
+dhcp-match=set:efi-x86_64,option:client-arch,9
+dhcp-boot=tag:!ipxe,tag:efi-x86_64,ipxe.efi

@@ -1,0 +1,14 @@
+---
+# ==============================================================================
+# Playbook: 06_ironic_deploy.yml
+# Objetivo: Desplegar OpenStack Ironic Standalone y Enrolar Flota Bare-Metal (Nodo 306)
+# Invoca: Rol 'ironic'
+# ==============================================================================
+- name: "OpenStack Ironic Standalone y Gestión de Hardware Bare-Metal"
+  hosts: pxe_controller
+  become: true
+  roles:
+    - ironic
+
+# desde aquí se puede invocar el rol 'pxe_controller' si es necesario para la configuración de red y servicios PXE
+# esto parace que se remplazo con la version de openstack en la red 

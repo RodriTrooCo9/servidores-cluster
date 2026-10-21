@@ -1,0 +1,18 @@
+---
+# ==============================================================================
+# CONFIGURACIÓN DE ALMACENAMIENTO NEXUS 3 (MITIGACIÓN SSD 128 GB)
+# ==============================================================================
+blobstores:
+  - name: default
+    type: File
+    path: /opt/sonatype/sonatype-work/nexus3/blobs/default
+    soft_quota:
+      type: spaceRemainingQuota
+      limit_in_gb: 20
+
+  - name: docker-blobstore
+    type: File
+    path: /opt/sonatype/sonatype-work/nexus3/blobs/docker
+    soft_quota:
+      type: spaceRemainingQuota
+      limit_in_gb: 25

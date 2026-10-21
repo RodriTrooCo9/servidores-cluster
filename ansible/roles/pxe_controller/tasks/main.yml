@@ -1,0 +1,111 @@
+---
+# ==============================================================================
+# Role: pxe_controller - DHCP (dnsmasq), TFTP, bootloaders e HTTPBoot Nginx
+# Reemplaza completamente scripts/05-pxe-dhcp-tftp.sh
+# ==============================================================================
+
+- name: "Comprobar si Kolla OpenStack gestiona los servicios de red/boot en Docker"
+  ansible.builtin.command: docker ps -q --filter "name=ironic_dnsmasq"
+  register: kolla_ironic_active
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+
+- name: "Aviso de coexistencia con Kolla OpenStack"
+  ansible.builtin.debug:
+    msg: "Kolla OpenStack (ironic_dnsmasq/ironic_http) está activo en Docker. Se omite el arranque de dnsmasq y nginx locales para evitar colisión de puertos 67, 69 y 8089."
+  when: kolla_ironic_active.stdout | length > 0
+
+- name: "Instalar paquetes del controlador PXE (dnsmasq, ipxe, nginx)"
+  ansible.builtin.apt:
+    name:
+      - dnsmasq
+      - ipxe
+      - nginx
+      - wget
+      - curl
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  register: apt_install_pxe
+  retries: 5
+  delay: 10
+  until: apt_install_pxe is success
+
+
+- name: "Crear estructura de directorios para TFTP e HTTPBoot"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /tftpboot
+    - /httpboot
+    - /httpboot/ipa
+    - /httpboot/images
+
+- name: "Copiar bootloaders iPXE a /tftpboot"
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: true
+    mode: '0644'
+  loop:
+    - { src: "/usr/lib/ipxe/undionly.kpxe", dest: "/tftpboot/undionly.kpxe" }
+    - { src: "/usr/lib/ipxe/ipxe.efi", dest: "/tftpboot/ipxe.efi" }
+  ignore_errors: true
+
+- name: "Desplegar script maestro de arranque boot.ipxe"
+  ansible.builtin.template:
+    src: boot.ipxe.j2
+    dest: "{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - /tftpboot/boot.ipxe
+    - /httpboot/boot.ipxe
+
+- name: "Desplegar configuración declarativa de dnsmasq"
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart dnsmasq
+
+- name: "Desplegar configuración Nginx para streaming HTTP /httpboot"
+  ansible.builtin.template:
+    src: nginx_httpboot.conf.j2
+    dest: /etc/nginx/sites-available/httpboot
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart nginx
+
+- name: "Habilitar sitio httpboot en Nginx y desactivar default"
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/httpboot
+    dest: /etc/nginx/sites-enabled/httpboot
+    state: link
+
+- name: "Eliminar sitio default de Nginx si existe"
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
+
+- name: "Asegurar que dnsmasq y nginx estén activos y habilitados (Omitido si Kolla está activo)"
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - nginx
+    - dnsmasq
+  when: kolla_ironic_active.stdout | length == 0
+

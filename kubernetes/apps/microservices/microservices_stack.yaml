@@ -1,0 +1,632 @@
+# ==============================================================================
+# MANIFIESTO KUBERNETES: STACK DE MICROSERVICIOS EMPRESARIALES CON OBSERVABILIDAD
+# Namespace: aplicaciones
+# Componentes:
+#   1. redis (Cache + redis_exporter sidecar con métricas Prometheus)
+#   2. backend-api-python (API base instrumentada con OpenTelemetry)
+#   3. orders-service (API de pedidos con caché en Redis e instrumentación OTel)
+#   4. notifications-service (Servicio de notificaciones asíncronas con OTel)
+#   5. frontend-web (Dashboard Web interactivo + Nginx Reverse Proxy - NodePort 30080)
+#   6. traffic-simulator (Generador continuo de tráfico, trazas y métricas)
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aplicaciones
+---
+# ------------------------------------------------------------------------------
+# 1. REDIS CON EXPORTER PROMETHEUS (Sidecar)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: aplicaciones
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--appendonly", "yes", "--protected-mode", "no"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 3
+            periodSeconds: 5
+        - name: redis-exporter
+          image: oliver006/redis_exporter:latest
+          env:
+            - name: REDIS_ADDR
+              value: "redis://localhost:6379"
+          ports:
+            - containerPort: 9121
+              name: metrics
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: aplicaciones
+  labels:
+    app: redis
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+spec:
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+    - name: metrics
+      port: 9121
+      targetPort: 9121
+  selector:
+    app: redis
+---
+# ------------------------------------------------------------------------------
+# 2. ORDERS SERVICE (Microservicio de Pedidos con OpenTelemetry)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  namespace: aplicaciones
+  labels:
+    app: orders-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "observability/auto-instrumentation"
+    spec:
+      containers:
+        - name: orders-api
+          image: python:3.11-slim
+          command:
+            - "python3"
+            - "-c"
+            - |
+              import http.server, socketserver, json, time, os, logging, random, urllib.request
+
+              logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] orders-service: %(message)s')
+
+              orders_memory_db = [
+                  {"id": "ORD-1001", "item": "Servidor Dell R640", "qty": 2, "amount": 4200.00, "status": "CONFIRMED"},
+                  {"id": "ORD-1002", "item": "Switch Arista 7050", "qty": 1, "amount": 1850.50, "status": "SHIPPED"},
+                  {"id": "ORD-1003", "item": "Transceptor 10G SFP+", "qty": 10, "amount": 450.00, "status": "CONFIRMED"}
+              ]
+
+              class OrdersHandler(http.server.BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == '/health':
+                          self.send_response(200)
+                          self.send_header('Content-Type', 'application/json')
+                          self.end_headers()
+                          self.wfile.write(b'{"status": "healthy", "service": "orders-service"}')
+                          return
+                      
+                      if self.path.startswith('/api/orders'):
+                          logging.info(f"Procesando consulta GET orders: total {len(orders_memory_db)} registros")
+                          time.sleep(random.uniform(0.01, 0.05)) # Simular latencia de DB
+                          self.send_response(200)
+                          self.send_header('Content-Type', 'application/json')
+                          self.send_header('Access-Control-Allow-Origin', '*')
+                          self.end_headers()
+                          self.wfile.write(json.dumps({"orders": orders_memory_db, "count": len(orders_memory_db)}).encode())
+                          return
+
+                      self.send_response(404)
+                      self.end_headers()
+                      self.wfile.write(b'{"error": "Endpoint not found"}')
+
+                  def do_POST(self):
+                      if self.path == '/api/orders':
+                          content_len = int(self.headers.get('Content-Length', 0))
+                          post_data = self.rfile.read(content_len).decode('utf-8') if content_len > 0 else "{}"
+                          try:
+                              payload = json.loads(post_data) if post_data else {}
+                          except Exception:
+                              payload = {}
+
+                          order_id = f"ORD-{random.randint(1004, 9999)}"
+                          item = payload.get("item", random.choice(["Memoria RAM DDR4 32GB", "Disco NVMe 1TB", "Cable DAC 10G", "Fuente Redundante"]))
+                          qty = payload.get("qty", random.randint(1, 5))
+                          amount = payload.get("amount", round(random.uniform(50.0, 950.0), 2))
+                          new_order = {"id": order_id, "item": item, "qty": qty, "amount": amount, "status": "PROCESSING"}
+                          orders_memory_db.append(new_order)
+                          if len(orders_memory_db) > 20:
+                              orders_memory_db.pop(0)
+
+                          logging.info(f"Nueva orden creada: {order_id} - Item: {item} - Total: ${amount}")
+                          
+                          # Notificar asíncronamente al notifications-service si está disponible
+                          try:
+                              req = urllib.request.Request("http://notifications-service:8081/api/notify", 
+                                                          data=json.dumps({"order_id": order_id, "amount": amount}).encode(),
+                                                          headers={'Content-Type': 'application/json'})
+                              urllib.request.urlopen(req, timeout=1)
+                          except Exception as e:
+                              logging.warning(f"No se pudo contactar a notifications-service: {e}")
+
+                          self.send_response(201)
+                          self.send_header('Content-Type', 'application/json')
+                          self.send_header('Access-Control-Allow-Origin', '*')
+                          self.end_headers()
+                          self.wfile.write(json.dumps(new_order).encode())
+                          return
+
+                      self.send_response(400)
+                      self.end_headers()
+
+              server = socketserver.TCPServer(("", 8080), OrdersHandler)
+              logging.info("Servidor Orders API escuchando en puerto 8080 con auto-instrumentacion OTel...")
+              server.serve_forever()
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "40m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "160Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-service
+  namespace: aplicaciones
+  labels:
+    app: orders-service
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: orders-service
+---
+# ------------------------------------------------------------------------------
+# 3. NOTIFICATIONS SERVICE (Microservicio de Notificaciones)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-service
+  namespace: aplicaciones
+  labels:
+    app: notifications-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notifications-service
+  template:
+    metadata:
+      labels:
+        app: notifications-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "observability/auto-instrumentation"
+    spec:
+      containers:
+        - name: notify-api
+          image: python:3.11-slim
+          command:
+            - "python3"
+            - "-c"
+            - |
+              import http.server, socketserver, json, logging, time, random
+
+              logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] notifications: %(message)s')
+
+              class NotifyHandler(http.server.BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == '/health':
+                          self.send_response(200)
+                          self.send_header('Content-Type', 'application/json')
+                          self.end_headers()
+                          self.wfile.write(b'{"status": "healthy", "service": "notifications-service"}')
+                          return
+                      self.send_response(404)
+                      self.end_headers()
+
+                  def do_POST(self):
+                      if self.path == '/api/notify':
+                          content_len = int(self.headers.get('Content-Length', 0))
+                          data = self.rfile.read(content_len).decode('utf-8')
+                          logging.info(f"Notificacion enviada por correo/SMS para evento: {data}")
+                          time.sleep(random.uniform(0.02, 0.08))
+                          self.send_response(200)
+                          self.send_header('Content-Type', 'application/json')
+                          self.end_headers()
+                          self.wfile.write(b'{"dispatched": true, "channel": "slack/email"}')
+                          return
+                      self.send_response(400)
+                      self.end_headers()
+
+              server = socketserver.TCPServer(("", 8081), NotifyHandler)
+              logging.info("Servidor Notifications escuchando en puerto 8081 con OTel...")
+              server.serve_forever()
+          ports:
+            - containerPort: 8081
+              name: http
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications-service
+  namespace: aplicaciones
+  labels:
+    app: notifications-service
+spec:
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+  selector:
+    app: notifications-service
+---
+# ------------------------------------------------------------------------------
+# 4. FRONTEND WEB & GATEWAY (UI Dashboard + Reverse Proxy Nginx)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx-config
+  namespace: aplicaciones
+data:
+  nginx.conf: |
+    events { worker_connections 1024; }
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        log_format json_combined escape=json
+            '{"time_local":"$time_local",'
+            '"remote_addr":"$remote_addr",'
+            '"request":"$request",'
+            '"status": "$status",'
+            '"body_bytes_sent":"$body_bytes_sent",'
+            '"request_time":"$request_time",'
+            '"http_referrer":"$http_referer",'
+            '"http_user_agent":"$http_user_agent"}';
+        access_log /var/log/nginx/access.log json_combined;
+
+        upstream backend_api {
+            server backend-api:8000;
+        }
+        upstream orders_api {
+            server orders-service:8080;
+        }
+        upstream notify_api {
+            server notifications-service:8081;
+        }
+
+        server {
+            listen 80;
+            server_name _;
+
+            location / {
+                root /usr/share/nginx/html;
+                index index.html;
+                try_files $uri $uri/ /index.html;
+            }
+
+            location /api/v1/data {
+                proxy_pass http://backend_api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /api/orders {
+                proxy_pass http://orders_api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /api/notify {
+                proxy_pass http://notify_api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+        }
+    }
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Panel de Microservicios Kubernetes | Observabilidad SRE</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #30363d; padding-bottom: 16px; margin-bottom: 24px; }
+        .badge { background: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 18px; }
+        .card h3 { margin-top: 0; color: #58a6ff; font-size: 16px; }
+        .card p { font-size: 13px; color: #8b949e; line-height: 1.5; }
+        .status-ok { color: #3fb950; font-weight: 600; }
+        .btn { background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn:hover { background: #2ea043; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #21262d; }
+        th { background: #21262d; color: #8b949e; }
+        .links a { color: #58a6ff; text-decoration: none; margin-right: 14px; font-size: 13px; }
+        .links a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div>
+            <h1 style="margin: 0; font-size: 24px; color: #f0f6fc;">Clúster Kubernetes Bare-Metal (RKE2 HA)</h1>
+            <p style="margin: 4px 0 0; color: #8b949e; font-size: 14px;">Microservicios distribuidos con OpenTelemetry, VictoriaMetrics, Loki y Tempo</p>
+          </div>
+          <span class="badge">ONLINE (3 Nodos Activos)</span>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Frontend Gateway</h3>
+            <p>Nginx 1.27 Alpine con JSON access logging. Enruta tráfico a los microservicios internos.</p>
+            <div class="status-ok">● Activo (2 Réplicas)</div>
+          </div>
+          <div class="card">
+            <h3>Orders Service</h3>
+            <p>API Python con OTel tracing automático, registra pedidos y notifica transacciones.</p>
+            <div class="status-ok">● Activo (2 Réplicas)</div>
+          </div>
+          <div class="card">
+            <h3>Redis Cache & Exporter</h3>
+            <p>Redis 7 Alpine para caché de alto rendimiento + Prometheus redis_exporter (9121).</p>
+            <div class="status-ok">● Activo (Cache + Métricas)</div>
+          </div>
+          <div class="card">
+            <h3>Notifications Service</h3>
+            <p>Microservicio desacoplado para despacho de alertas y confirmación de pedidos.</p>
+            <div class="status-ok">● Activo (2 Réplicas)</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Últimas Órdenes en Tiempo Real</h3>
+            <button class="btn" onclick="crearOrden()">+ Generar Orden de Prueba</button>
+          </div>
+          <table id="orders-table">
+            <thead>
+              <tr><th>ID Pedido</th><th>Artículo</th><th>Cantidad</th><th>Monto</th><th>Estado</th></tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr><td colspan="5" style="text-align:center; color:#8b949e;">Cargando pedidos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card links">
+          <h3 style="margin-top: 0;">Accesos Rápidos a Observabilidad Central:</h3>
+          <a href="http://10.100.29.30:3000" target="_blank">Grafana Central (Puerto 3000)</a>
+          <a href="http://10.100.29.101:30428" target="_blank">VictoriaMetrics UI (Puerto 30428)</a>
+          <a href="http://10.100.29.101:30200" target="_blank">Tempo Tracing (Puerto 30200)</a>
+          <a href="http://10.100.29.5" target="_blank">OpenStack Horizon (Puerto 80/8080)</a>
+        </div>
+      </div>
+
+      <script>
+        async function cargarOrdenes() {
+          try {
+            const res = await fetch('/api/orders');
+            const data = await res.json();
+            const tbody = document.getElementById('orders-body');
+            tbody.innerHTML = '';
+            (data.orders || []).slice(-8).reverse().forEach(o => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `<td><strong>${o.id}</strong></td><td>${o.item}</td><td>${o.qty}</td><td>$${o.amount}</td><td style="color:#58a6ff">${o.status}</td>`;
+              tbody.appendChild(tr);
+            });
+          } catch(e) {
+            console.error(e);
+          }
+        }
+        async function crearOrden() {
+          try {
+            await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item: "Servidor Bare-Metal Dell 3020M", qty: 1, amount: 890.00 })
+            });
+            await cargarOrdenes();
+          } catch(e) {
+            alert('Error creando orden: ' + e);
+          }
+        }
+        cargarOrdenes();
+        setInterval(cargarOrdenes, 4000);
+      </script>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-web
+  namespace: aplicaciones
+  labels:
+    app: frontend-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-web
+  template:
+    metadata:
+      labels:
+        app: frontend-web
+    spec:
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: frontend-nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+              - key: index.html
+                path: html/index.html
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-conf
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: html/index.html
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-web
+  namespace: aplicaciones
+  labels:
+    app: frontend-web
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    app: frontend-web
+---
+# ------------------------------------------------------------------------------
+# 5. TRAFFIC SIMULATOR (Generador Continuo de Tráfico, Trazas y Métricas RED)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-simulator
+  namespace: aplicaciones
+  labels:
+    app: traffic-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-simulator
+  template:
+    metadata:
+      labels:
+        app: traffic-simulator
+    spec:
+      containers:
+        - name: curl-traffic
+          image: curlimages/curl:latest
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              echo "Iniciando simulador continuo de trafico y observabilidad..."
+              COUNTER=0
+              while true; do
+                COUNTER=$((COUNTER + 1))
+                # 1. Petición al Frontend Web
+                curl -s -o /dev/null -w "Frontend: %{http_code}\n" http://frontend-web.aplicaciones.svc.cluster.local:80/
+                
+                # 2. Consulta GET a Orders Service (Genera traza OTel y consulta DB/Redis)
+                curl -s -o /dev/null -w "Orders GET: %{http_code}\n" http://orders-service.aplicaciones.svc.cluster.local:8080/api/orders
+                
+                # 3. Consulta GET a Backend API Python
+                curl -s -o /dev/null -w "Backend GET: %{http_code}\n" http://backend-api.aplicaciones.svc.cluster.local:8000/api/v1/data
+                
+                # 4. Creación aleatoria POST de pedido (cada 3 ciclos)
+                if [ $((COUNTER % 3)) -eq 0 ]; then
+                  curl -s -X POST -H "Content-Type: application/json" \
+                    -d '{"item":"Hardware Node Dell Optiplex","qty":1,"amount":320.00}' \
+                    -o /dev/null -w "Orders POST: %{http_code}\n" \
+                    http://orders-service.aplicaciones.svc.cluster.local:8080/api/orders
+                fi
+
+                # 5. Generar un error intencional (cada 10 ciclos) para verificar alertas y graficos de error
+                if [ $((COUNTER % 10)) -eq 0 ]; then
+                  curl -s -o /dev/null -w "Intentional Error 404: %{http_code}\n" \
+                    http://frontend-web.aplicaciones.svc.cluster.local:80/non-existent-endpoint || true
+                fi
+
+                sleep 3
+              done
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"

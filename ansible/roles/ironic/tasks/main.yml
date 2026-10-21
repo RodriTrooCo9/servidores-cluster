@@ -1,0 +1,120 @@
+---
+# ==============================================================================
+# Role: ironic - OpenStack Ironic Standalone y Gestión Bare-Metal
+# Reemplaza scripts/06-openstack-glance-bifrost.sh y deploy-masivo.sh
+# ==============================================================================
+
+- name: "Comprobar si Kolla OpenStack Ironic está activo en Docker"
+  ansible.builtin.command: docker ps -q --filter "name=ironic_conductor"
+  register: kolla_ironic_active
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+
+- name: "Aviso de coexistencia con Kolla OpenStack Ironic"
+  ansible.builtin.debug:
+    msg: "Kolla OpenStack Ironic está activo en Docker gestionando la flota con Wake-on-LAN. Se omite el despliegue del servicio Standalone en Podman para evitar colisiones en el puerto 6385."
+  when: kolla_ironic_active.stdout | length > 0
+
+- name: "Instalar Podman y paquetes cliente de OpenStack e Ironic"
+  ansible.builtin.apt:
+    name:
+      - podman
+      - python3-openstackclient
+      - python3-ironicclient
+      - wakeonlan
+      - ipmitool
+      - curl
+      - wget
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  ignore_errors: true
+  when: kolla_ironic_active.stdout | length == 0
+
+
+- name: "Crear estructura de directorios para Ironic y almacenamiento de imágenes"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /httpboot/ipa
+    - /httpboot/images
+    - /tftpboot
+    - /var/lib/ironic
+    - /opt/ironic
+
+- name: "Verificar si el ramdisk IPA kernel ya existe"
+  ansible.builtin.stat:
+    path: /httpboot/ipa/ipa.kernel
+  register: ipa_kernel_stat
+
+- name: "Descargar ramdisk oficial ipa.kernel si no existe"
+  ansible.builtin.get_url:
+    url: "https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.kernel"
+    dest: /httpboot/ipa/ipa.kernel
+    mode: '0644'
+  when: not ipa_kernel_stat.stat.exists
+
+- name: "Verificar si el ramdisk IPA initramfs ya existe"
+  ansible.builtin.stat:
+    path: /httpboot/ipa/ipa.initramfs
+  register: ipa_initramfs_stat
+
+- name: "Descargar ramdisk oficial ipa.initramfs si no existe"
+  ansible.builtin.get_url:
+    url: "https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.initramfs"
+    dest: /httpboot/ipa/ipa.initramfs
+    mode: '0644'
+  when: not ipa_initramfs_stat.stat.exists
+
+- name: "Desplegar servicio systemd de Ironic Standalone en Podman"
+  ansible.builtin.template:
+    src: ironic-conductor.service.j2
+    dest: /etc/systemd/system/ironic-conductor.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart Ironic
+  when: kolla_ironic_active.stdout | length == 0
+
+- name: "Asegurar que el servicio Ironic Conductor esté activo"
+  ansible.builtin.systemd:
+    name: ironic-conductor
+    state: started
+    enabled: true
+  when: kolla_ironic_active.stdout | length == 0
+
+- name: "Generar inventario declarativo baremetal.yaml desde Ansible"
+  ansible.builtin.template:
+    src: baremetal.yaml.j2
+    dest: /opt/ironic/baremetal.yaml
+    owner: root
+    group: root
+    mode: '0644'
+  when: kolla_ironic_active.stdout | length == 0
+
+- name: "Asegurar que la API de Ironic esté respondiendo en el puerto 6385"
+  ansible.builtin.wait_for:
+    host: "{{ pxe_ip }}"
+    port: "{{ ironic_api_port }}"
+    timeout: 30
+    state: started
+  ignore_errors: true
+  when: kolla_ironic_active.stdout | length == 0
+
+- name: "Enrolar nodos físicos en OpenStack Ironic Standalone"
+  ansible.builtin.command: >
+    podman exec -e OS_AUTH_TYPE=none ironic-conductor
+    baremetal create /opt/ironic/baremetal.yaml
+  register: ironic_enroll
+  changed_when: "'Created node' in ironic_enroll.stdout"
+  failed_when: false
+  when: kolla_ironic_active.stdout | length == 0
+

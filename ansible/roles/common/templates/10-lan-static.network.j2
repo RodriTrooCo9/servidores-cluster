@@ -1,0 +1,9 @@
+[Match]
+MACAddress={{ mac }}
+
+[Network]
+Address={{ ansible_host }}/24
+{% if inventory_hostname not in ['nodo-314', 'nodo-306'] %}
+Gateway={{ cluster_gateway }}
+DNS={{ cluster_dns }}
+{% endif %}

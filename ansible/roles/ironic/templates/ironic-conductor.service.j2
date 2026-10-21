@@ -1,0 +1,28 @@
+[Unit]
+Description=tack Ironic Standalone Conductor & API
+After=network-online.target nginx.service dnsmasq.service
+Wants=network-online.target
+
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/podman rm -f ironic-conductor
+ExecStart=/usr/bin/podman run --name ironic-conductor \
+    --net=host \
+    --privileged \
+    -v /httpboot:/httpboot:shared \
+    -v /httpboot:/shared/html:rw \
+    -v /tftpboot:/tftpboot:shared \
+    -v /tftpboot:/shared/tftpboot:rw \
+    -v /var/lib/ironic:/data:rw \
+    -v /opt/ironic:/opt/ironic:shared \
+    -e HTTP_PORT="{{ pxe_httpboot_port }}" \
+    -e IRONIC_IP="{{ pxe_ip }}" \
+    -e PROVISIONING_INTERFACE="{{ pxe_iface }}" \
+    -e OS_AUTH_TYPE=none \
+    quay.io/metal3-io/ironic:latest /usr/bin/runironic
+ExecStop=/usr/bin/podman stop -t 10 ironic-conductor
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

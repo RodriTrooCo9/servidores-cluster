@@ -1,0 +1,45 @@
+---
+# ==============================================================================
+# Playbook: ansible/playbooks/99_observability_rollback.yml
+# Objetivo: Desinstalación limpia, segura y reversible del stack de observabilidad
+#           Garantía SRE: No toca OpenStack, Kolla, RKE2 ni interfaces de red.
+# ==============================================================================
+- name: "Rollback 1: Eliminar Manifiestos y Cargas de Kubernetes"
+  hosts: k8s_control_plane[0]
+  become: true
+  tasks:
+    - name: "Eliminar Namespace observability y recursos asociados"
+      ansible.builtin.shell: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml delete namespace observability --ignore-not-found=true --timeout=60s
+      ignore_errors: true
+
+- name: "Rollback 2: Limpieza de Exporters y Servicios en Bare-Metal"
+  hosts: baremetal
+  become: true
+  tasks:
+    - name: "Detener servicios de exportadores opcionales (si se instalaron)"
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - openstack-exporter
+        - otel-collector
+      ignore_errors: true
+
+    - name: "Remover tablas temporales de nftables para observabilidad"
+      ansible.builtin.command: nft delete table inet observability_filter
+      ignore_errors: true
+
+- name: "Rollback 3: Verificación de Integridad de OpenStack e Ironic"
+  hosts: pxe_controller
+  become: true
+  tasks:
+    - name: "Verificar que los contenedores de Kolla siguen intactos"
+      ansible.builtin.shell: docker ps --format '{{.Names}}' | grep -E 'kolla|openstack'
+      register: kolla_containers
+      changed_when: false
+
+    - name: "Confirmación de estado saludable post-rollback"
+      ansible.builtin.debug:
+        msg: "Rollback finalizado con éxito. Servicios de OpenStack y Clúster Bare-Metal intactos."

@@ -1,0 +1,19 @@
+# Generado automáticamente por Ansible para OpenStack Ironic Standalone
+nodes:
+{% for h in groups['baremetal'] %}
+  - name: "{{ hostvars[h].cluster_hostname }}"
+    driver: "manual-management"
+    driver_info:
+      deploy_kernel: "http://{{ pxe_ip }}:{{ pxe_httpboot_port }}/ipa/ipa.kernel"
+      deploy_ramdisk: "http://{{ pxe_ip }}:{{ pxe_httpboot_port }}/ipa/ipa.initramfs"
+    properties:
+      cpus: 4
+      memory_mb: {{ hostvars[h].ram_gb * 1024 }}
+      local_gb: {{ hostvars[h].disk_gb - 8 }}
+      cpu_arch: "x86_64"
+    extra:
+      ipv4_address: "{{ hostvars[h].ansible_host }}"
+      node_id: "{{ hostvars[h].node_id }}"
+    ports:
+      - address: "{{ hostvars[h].mac }}"
+{% endfor %}

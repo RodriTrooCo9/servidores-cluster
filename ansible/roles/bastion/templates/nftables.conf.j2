@@ -1,0 +1,63 @@
+#!/usr/sbin/nft -f
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # 1. Tráfico local en loopback
+        iifname "lo" accept
+
+        # 2. Conexiones establecidas y relacionadas
+        ct state established,related accept
+        ct state invalid drop
+
+        # 3. Tráfico total desde la red interna del clúster (LAN)
+        iifname "{{ bastion_lan_iface }}" ip saddr { {{ cluster_subnet }} } accept
+
+        # 4. Tráfico ICMP Ping permitido
+        icmp type echo-request accept
+
+        # 5. Acceso SSH desde la red/IP de administración externa o VPN
+{% if bastion_ssh_port | int == 22 %}
+        ip saddr { {{ admin_allowed_ips }} } tcp dport 22 ct state new accept
+{% else %}
+        ip saddr { {{ admin_allowed_ips }} } tcp dport { 22, {{ bastion_ssh_port }} } ct state new accept
+{% endif %}
+
+        # 6. Proxy Squid y Chrony NTP desde la subred del clúster
+        ip saddr { {{ cluster_subnet }} } tcp dport {{ squid_port }} ct state new accept
+        ip saddr { {{ cluster_subnet }} } udp dport {{ chrony_ntp_port }} accept
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy accept;
+{% if bastion_lan_iface != bastion_wan_iface %}
+
+        # Tráfico de retorno establecido
+        ct state established,related accept
+
+        # Salida de los nodos del clúster (LAN) hacia la red corporativa/internet (WAN)
+        iifname "{{ bastion_lan_iface }}" oifname "{{ bastion_wan_iface }}" accept
+
+        # Tráfico SSH directo o ProxyJump desde Laptop Admin hacia nodos del clúster
+        iifname "{{ bastion_wan_iface }}" oifname "{{ bastion_lan_iface }}" ip saddr { {{ admin_allowed_ips }} } tcp dport 22 accept
+{% endif %}
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}
+{% if bastion_lan_iface != bastion_wan_iface %}
+
+table ip nat {
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+
+        # Enmascarar (NAT Masquerade) el tráfico del clúster al salir a la oficina
+        oifname "{{ bastion_wan_iface }}" masquerade
+    }
+}
+{% endif %}
+

@@ -1,0 +1,13 @@
+---
+# ==============================================================================
+# Playbook: 02_base_config.yml
+# Objetivo: Homologar configuración base del sistema en toda la flota
+# Invoca: Rol 'common' (Hostname, /etc/hosts, networkd, Swap, Sysctl, Chrony, APT Nexus)
+# ==============================================================================
+- name: "Configuración Base e Inmutabilidad de Nodos Bare-Metal"
+  hosts: baremetal
+  become: true
+  roles:
+    - common
+
+# verifica la red como host swap ys servicios de sincronización de tiempo, antes de ejecutar el playbook completo

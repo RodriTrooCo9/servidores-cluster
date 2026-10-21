@@ -1,0 +1,7 @@
+server {
+    listen {{ pxe_httpboot_port }};
+    server_name _;
+    root /httpboot;
+    autoindex on;
+    sendfile on;
+}

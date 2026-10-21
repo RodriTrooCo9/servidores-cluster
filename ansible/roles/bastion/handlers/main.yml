@@ -1,0 +1,15 @@
+---
+- name: Reload SSH
+  ansible.builtin.systemd:
+    name: ssh
+    state: reloaded
+
+- name: Restart Squid
+  ansible.builtin.systemd:
+    name: squid
+    state: restarted
+
+- name: Restart nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: restarted

@@ -1,0 +1,13 @@
+server: https://{{ k8s_leader_ip }}:9345
+token: "{{ rke2_cluster_token }}"
+write-kubeconfig-mode: "0644"
+tls-san:
+  - "{{ ansible_host }}"
+  - "k8s-api.{{ cluster_domain }}"
+
+cni: {{ rke2_cni }}
+disable-kube-proxy: true
+
+etcd-arg:
+  - "auto-compaction-retention={{ etcd_compaction_retention }}"
+  - "quota-backend-bytes={{ etcd_quota_backend_bytes }}"

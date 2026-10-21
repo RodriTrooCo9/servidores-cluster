@@ -1,0 +1,38 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k8s-baremetal-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: k8s.cluster.rules
+      rules:
+        - alert: KubernetesNodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Nodo Kubernetes no listo ({{ $labels.node }})"
+            description: "El nodo {{ $labels.node }} lleva mas de 5 minutos en estado NotReady."
+
+        - alert: HighMemoryPressure
+          expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Presion de memoria alta en {{ $labels.instance }}"
+            description: "El uso de memoria supera el 90% en el servidor bare-metal."
+
+        - alert: HighDiskUsage128GB
+          expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Almacenamiento critico en SSD de 128 GB ({{ $labels.instance }})"
+            description: "La particion raiz supera el 80% de ocupacion."

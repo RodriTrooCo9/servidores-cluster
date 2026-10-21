@@ -1,0 +1,21 @@
+# ==============================================================================
+# Configuración Central de Prometheus (Generada automáticamente por Ansible)
+# ==============================================================================
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:{{ prometheus_port }}']
+
+  - job_name: 'node_exporter'
+    static_configs:
+{% for h in groups['baremetal'] %}
+      - targets: ['{{ hostvars[h].ansible_host }}:{{ node_exporter_port }}']
+        labels:
+          instance: '{{ hostvars[h].cluster_hostname }}'
+          node_id: '{{ hostvars[h].node_id }}'
+          role: '{{ hostvars[h].role_desc | default("k8s") }}'
+{% endfor %}

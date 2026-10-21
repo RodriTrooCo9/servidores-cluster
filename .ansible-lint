@@ -1,0 +1,17 @@
+---
+# Ansible-lint configuration
+profile: min
+
+exclude_paths:
+  - .venv*/
+  - .git/
+  - backups/
+  - artifacts/
+  - openstack/
+
+warn_list:
+  - experimental
+  - no-changed-when
+  - command-instead-of-module
+  - yaml
+  - line-length

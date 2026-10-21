@@ -1,0 +1,16 @@
+write-kubeconfig-mode: "0644"
+tls-san:
+  - "{{ ansible_host }}"
+  - "{{ cluster_hostname }}.{{ cluster_domain }}"
+  - "k8s-api.{{ cluster_domain }}"
+
+token: "{{ rke2_cluster_token }}"
+
+# Red eBPF Cilium nativa
+cni: {{ rke2_cni }}
+disable-kube-proxy: true
+
+# Mitigación estricta para almacenamiento NVMe de 128 GB
+etcd-arg:
+  - "auto-compaction-retention={{ etcd_compaction_retention }}"
+  - "quota-backend-bytes={{ etcd_quota_backend_bytes }}"

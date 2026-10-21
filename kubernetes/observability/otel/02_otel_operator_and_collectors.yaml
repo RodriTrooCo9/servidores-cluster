@@ -1,0 +1,169 @@
+# ==============================================================================
+# MANIFIESTO KUBERNETES: OPENTELEMETRY OPERATOR, COLLECTORS E INSTRUMENTATION
+# Namespace: observability
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. OPENTELEMETRY COLLECTOR GATEWAY (DEPLOYMENT CENTRALIZADO)
+# ------------------------------------------------------------------------------
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-gateway
+  namespace: observability
+spec:
+  mode: deployment
+  replicas: 2
+  image: otel/opentelemetry-collector-contrib:0.104.0
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        send_batch_size: 1024
+        timeout: 1s
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      probabilistic_sampler:
+        hash_seed: 22
+        sampling_percentage: 20.0
+
+    exporters:
+      otlp/tempo:
+        endpoint: "tempo.observability.svc.cluster.local:4317"
+        tls:
+          insecure: true
+      loki:
+        endpoint: "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        tls:
+          insecure: true
+      prometheusremotewrite:
+        endpoint: "http://victoriametrics.observability.svc.cluster.local:8428/api/v1/write"
+        tls:
+          insecure: true
+
+    service:
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, probabilistic_sampler, batch]
+          exporters: [otlp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheusremotewrite]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [loki]
+---
+# ------------------------------------------------------------------------------
+# 2. OPENTELEMETRY COLLECTOR AGENT (DAEMONSET EN CADA NODO K8S)
+# ------------------------------------------------------------------------------
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-agent
+  namespace: observability
+spec:
+  mode: daemonset
+  image: otel/opentelemetry-collector-contrib:0.104.0
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      filelog:
+        include: [/var/log/pods/*/*/*.log]
+        exclude: [/var/log/pods/observability_*/*/*.log]
+        start_at: end
+
+    processors:
+      batch:
+        send_batch_size: 512
+        timeout: 1s
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+
+    exporters:
+      otlp/gateway:
+        endpoint: "otel-gateway-collector.observability.svc.cluster.local:4317"
+        tls:
+          insecure: true
+
+    service:
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]
+        logs:
+          receivers: [filelog, otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/gateway]
+---
+# ------------------------------------------------------------------------------
+# 3. CRD INSTRUMENTATION: AUTO-INSTRUMENTACIÓN PARA JAVA Y PYTHON
+# ------------------------------------------------------------------------------
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: auto-instrumentation
+  namespace: observability
+spec:
+  exporter:
+    endpoint: http://otel-agent-collector.observability.svc.cluster.local:4318
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+  sampler:
+    type: parentbased_traceidratio
+    argument: "0.20"
+  java:
+    image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:1.32.0
+    env:
+      - name: OTEL_METRICS_EXPORTER
+        value: "none"
+  python:
+    image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python:0.43b0
+    env:
+      - name: OTEL_METRICS_EXPORTER
+        value: "none"
