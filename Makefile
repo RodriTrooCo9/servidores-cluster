@@ -59,11 +59,10 @@ health: ## [Fase 50] Ejecuta diagnostico integral de salud de la flota en termin
 	@./scripts/diagnostics/healthcheck.sh
 
 backup: ## [Fase 90] Genera respaldos y snapshots de contingencia (DR)
-	@echo "==> Ejecutando respaldo de desastres..."
+	@echo "==> respaldo de desastres..."
 	@$(ANSIBLE_PLAYBOOK) ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup
 
 tunnels: ## Abre tuneles SSH locales para dashboards (Grafana, Horizon, Nexus)
-	@echo "==> Abriendo tuneles SSH seguros..."
 	@./scripts/client/tunnels.sh
 
 clean: ## Limpia archivos temporales, logs y caches locales
@@ -71,3 +70,10 @@ clean: ## Limpia archivos temporales, logs y caches locales
 	@find . -type f -name "*.retry" -delete
 	@find . -type f -name "*.pyc" -delete
 	@find . -type d -name "__pycache__" -delete
+
+
+
+
+
+
+
