@@ -89,17 +89,17 @@ data:
 
     exporters:
       loki:
-        endpoint: "http://10.100.29.101:30100/loki/api/v1/push"
+        endpoint: "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
         tls:
           insecure: true
 
       prometheusremotewrite:
-        endpoint: "http://10.100.29.101:30428/api/v1/write"
+        endpoint: "http://victoriametrics.observability.svc.cluster.local:8428/api/v1/write"
         tls:
           insecure: true
 
       otlp/gateway:
-        endpoint: "10.100.29.101:30317"
+        endpoint: "tempo.observability.svc.cluster.local:4317"
         tls:
           insecure: true
 

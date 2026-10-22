@@ -22,10 +22,12 @@ metadata:
   labels:
     app: victoriametrics
 spec:
+  type: NodePort
   ports:
     - name: http
       port: 8428
       targetPort: 8428
+      nodePort: 30428
   selector:
     app: victoriametrics
 ---
@@ -130,10 +132,12 @@ metadata:
   labels:
     app: loki
 spec:
+  type: NodePort
   ports:
     - name: http
       port: 3100
       targetPort: 3100
+      nodePort: 30100
     - name: grpc
       port: 9096
       targetPort: 9096
@@ -232,10 +236,12 @@ metadata:
   labels:
     app: tempo
 spec:
+  type: NodePort
   ports:
     - name: http
       port: 3200
       targetPort: 3200
+      nodePort: 30200
     - name: otlp-grpc
       port: 4317
       targetPort: 4317
