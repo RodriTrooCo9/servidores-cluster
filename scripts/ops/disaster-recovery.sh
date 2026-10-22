@@ -37,7 +37,7 @@ fi
 SSH_KEY="${REPO_DIR}/ansible/keys/cluster_key"
 CONTROLLER_IP="192.168.29.25"
 CONTROLLER_USER="n306"
-OS_VIP="10.100.29.5"
+OS_VIP="10.100.29.30"
 OS_AUTH_URL="http://${OS_VIP}:5000/v3"
 OS_PASS="Admin2025!"
 BACKUP_ROOT="${REPO_DIR}/backups/dr_$(date +%Y%m%d)"
@@ -90,7 +90,7 @@ scp_from_node() {
 
 resolve_node_info() {
     local target="$1"
-    local hosts_file="${REPO_DIR}/ansible/inventory/hosts.yml"
+    local hosts_file="${REPO_DIR}/inventory/lab/hosts.yml"
 
     NODE_NAME=""
     NODE_HOST=""
@@ -179,24 +179,22 @@ cmd_backup_etcd() {
     log_info "Iniciando respaldo de base de datos etcd de Kubernetes..."
     mkdir -p "${BACKUP_ROOT}/etcd"
 
-    local leader_ip="10.100.29.101"
+    local leader_ip="10.100.29.30"
     local ts
     ts="$(date +%Y%m%d_%H%M%S)"
 
-    if run_on_node "${leader_ip}" "true" 2>/dev/null; then
-        log_info "Generando snapshot etcd en el líder ${leader_ip}..."
-        run_on_node "${leader_ip}" \
-            "sudo rke2 etcd-snapshot save --name manual-dr-${ts}" 2>/dev/null || true
+    if run_on_node "${leader_ip}" "true" 2>/dev/null || run_on_controller "true" 2>/dev/null; then
+        log_info "Generando snapshot etcd en el nodo controlador ${leader_ip}..."
+        run_on_controller \
+            "sudo /var/lib/rancher/rke2/bin/etcdctl snapshot save /tmp/etcd_snapshot_${ts}.db --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key" 2>/dev/null || \
+            run_on_controller "sudo rke2 etcd-snapshot save --name manual-dr-${ts}" 2>/dev/null || true
 
-        log_info "Copiando snapshots disponibles..."
-        run_on_node "${leader_ip}" \
-            "sudo tar -czf /tmp/etcd_snapshots_${ts}.tar.gz -C /var/lib/rancher/rke2/server/db/snapshots ." 2>/dev/null || true
-        
-        scp_from_node "${leader_ip}" "/tmp/etcd_snapshots_${ts}.tar.gz" "${BACKUP_ROOT}/etcd/" 2>/dev/null || true
-        run_on_node "${leader_ip}" "sudo rm -f /tmp/etcd_snapshots_${ts}.tar.gz" 2>/dev/null || true
+        log_info "Copiando snapshot etcd..."
+        scp -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${CONTROLLER_USER}@${CONTROLLER_IP}:/tmp/etcd_snapshot_${ts}.db" "${BACKUP_ROOT}/etcd/" 2>/dev/null || true
+        run_on_controller "sudo rm -f /tmp/etcd_snapshot_${ts}.db" 2>/dev/null || true
         log_success "Snapshot etcd respaldado en: ${BACKUP_ROOT}/etcd/"
     else
-        log_warn "Nodo líder Kubernetes (${leader_ip}) no responde. Si el líder cayó, use --heal-etcd en otro nodo Control Plane."
+        log_warn "Nodo controlador Kubernetes (${leader_ip}) no responde."
     fi
 }
 
@@ -379,11 +377,7 @@ EOF
         log_success "¡El nodo ${NODE_NAME} ha arrancado su nuevo disco SSD y responde por SSH!"
         log_info "5. Ejecutando incorporación final al clúster mediante Ansible..."
         cd "${REPO_DIR}"
-        if [[ "${NODE_ROLE}" == "control-plane" ]]; then
-            ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07_kubernetes_ha.yml --limit "${NODE_HOST}"
-        else
-            ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07_kubernetes_ha.yml --limit "${NODE_HOST}"
-        fi
+        ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/02_kubernetes_ha.yml --limit "${NODE_HOST}"
         log_success "=================================================================="
         log_success "   RECUPERACIÓN COMPLETADA CON ÉXITO: NODO ${NODE_NAME} OPERATIVO "
         log_success "=================================================================="
