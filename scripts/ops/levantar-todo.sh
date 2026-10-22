@@ -43,14 +43,14 @@ cd "${REPO_DIR}"
 # Paso 2: Bastión y Nexus
 echo -e "\n${YELLOW}[Paso 2/6] Configurando y levantando Bastión (314) y Nexus (315)...${NC}"
 ansible-playbook -i "${INVENTORY}" \
-  ansible/playbooks/20-services/01_bastion.yml \
-  ansible/playbooks/20-services/02_nexus.yml
+  ansible/playbooks/10-base/02_bastion_hardening.yml \
+  ansible/playbooks/20-services/01_nexus.yml
 echo -e "${GREEN}✓ Bastión y Nexus 3 operativos.${NC}"
 
 # Paso 3: PXE Controller
 echo -e "\n${YELLOW}[Paso 3/6] Verificando controlador PXE y dnsmasq (306)...${NC}"
 ansible-playbook -i "${INVENTORY}" \
-  ansible/playbooks/20-services/03_pxe_controller.yml
+  ansible/playbooks/20-services/02_pxe_controller.yml
 echo -e "${GREEN}✓ Controlador PXE verificado.${NC}"
 
 # Paso 4: Monitoreo Centralizado (Node Exporter, Prometheus, Grafana)
@@ -62,7 +62,7 @@ echo -e "${GREEN}✓ Monitoreo (Prometheus :9090, Grafana :3000) operativo.${NC}
 # Paso 5: Kubernetes HA (RKE2 Server en 306 + Agents en nodos trabajadores)
 echo -e "\n${YELLOW}[Paso 5/6] Verificando y levantando Kubernetes HA (RKE2 + Cilium)...${NC}"
 ansible-playbook -i "${INVENTORY}" \
-  ansible/playbooks/30-platform/02_kubernetes_ha.yml
+  ansible/playbooks/30-platform/01_rke2_cluster.yml
 echo -e "${GREEN}✓ Clúster RKE2 y CNI Cilium activos.${NC}"
 
 # Paso 6: Healthcheck global de validación
