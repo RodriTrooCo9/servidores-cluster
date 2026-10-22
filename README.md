@@ -1,5 +1,9 @@
 # Guía Maestra de Instalación Conjunta: Infraestructura Bare-Metal Edge con Bastion Host, Sonatype Nexus, PXE/Glance, OpenStack Ironic y Clúster Kubernetes sobre Debian 13 (Trixie)
 
+> 🚀 **¿Solo quieres clonar y conectarte ya mismo?**  
+> 👉 [**GUÍA RÁPIDA: CLONAR Y CONECTARSE AL SERVIDOR (CONECTARSE_AL_SERVIDOR.md)**](CONECTARSE_AL_SERVIDOR.md)  
+> 👉 [**MANUAL INTEGRAL DE INSTALACIÓN Y OPERACIÓN (docs/runbooks/manual-integral-instalacion-y-recuperacion.md)**](docs/runbooks/manual-integral-instalacion-y-recuperacion.md)
+
 > **Documento Oficial de Infraestructura como Código (IaC), Arquitectura y Despliegue de Producción**  
 > **Sistema Operativo Base**: Debian GNU/Linux 13 (Trixie) con Kernel 6.12+ en la flota física completa de 8 nodos  
 > **Modelo Operativo**: Aprovisionamiento Físico Zero-Touch, Aislamiento de Red L2, Despliegue Masivo por MAC, Inmutabilidad de Imágenes y Clúster Kubernetes de Alta Disponibilidad (HA)  
