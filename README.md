@@ -1160,7 +1160,7 @@ initrd http://10.100.29.30:8089/ipa/ipa.initramfs
 boot
 EOF
 
-# [PXE] ✅ Obligatorio: Servidor HTTP Nginx en puerto 8089
+# [PXE] Obligatorio: Servidor HTTP Nginx en puerto 8089
 sudo tee /etc/nginx/sites-available/httpboot << 'EOF'
 server {
     listen 8089;

@@ -18,16 +18,16 @@
         "y": 0
       },
       "id": 100,
-      "title": "M\u00c9TRICAS EJECUTIVAS DEL CL\u00daSTER",
+      "title": "MÉTRICAS EJECUTIVAS DEL CLÚSTER",
       "type": "row"
     },
     {
       "id": 1,
-      "title": "Nodos F\u00edsicos Activos (Bare-Metal)",
+      "title": "Nodos Físicos Activos (Bare-Metal)",
       "type": "stat",
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 1
       },
@@ -85,8 +85,8 @@
       "type": "stat",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 4,
         "y": 1
       },
       "datasource": {
@@ -143,8 +143,8 @@
       "type": "stat",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 12,
+        "w": 4,
+        "x": 8,
         "y": 1
       },
       "datasource": {
@@ -201,8 +201,8 @@
       "type": "stat",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 12,
         "y": 1
       },
       "datasource": {
@@ -227,6 +227,104 @@
       "options": {
         "colorMode": "value",
         "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Almacenamiento Total Instalado",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "expr": "sum(node_filesystem_size_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"})",
+          "legendFormat": "Total Disco"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "purple",
+            "mode": "fixed"
+          },
+          "unit": "bytes"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Consumo Promedio de Disco",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - (sum(node_filesystem_free_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"}) / sum(node_filesystem_size_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"})))",
+          "legendFormat": "Disco %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
         "justifyMode": "auto",
         "reduceOptions": {
           "calcs": [
@@ -312,14 +410,76 @@
       }
     },
     {
-      "id": 7,
-      "title": "Tr\u00e1fico de Red Recibido (RX Bytes/segundo)",
+      "id": 11,
+      "title": "Uso de Disco en Tiempo Real (% por Nodo)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 14
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "expr": "100 - (node_filesystem_avail_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"} * 100)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Espacio Disponible en Disco por Nodo",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "expr": "node_filesystem_avail_bytes{job=\"baremetal-nodes\",fstype=~\"ext4|xfs|btrfs\",mountpoint=\"/\"}",
+          "legendFormat": "{{instance}} Libre"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "bytes"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Tráfico de Red Recibido (RX Bytes/segundo)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
       },
       "datasource": {
         "type": "prometheus",
@@ -342,13 +502,13 @@
     },
     {
       "id": 8,
-      "title": "Tr\u00e1fico de Red Transmitido (TX Bytes/segundo)",
+      "title": "Tráfico de Red Transmitido (TX Bytes/segundo)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 22
       },
       "datasource": {
         "type": "prometheus",
@@ -386,5 +546,5 @@
   "timezone": "browser",
   "title": "Flota Bare-Metal - Vista General (8 Nodos)",
   "uid": "baremetal-fleet-overview",
-  "version": 1
+  "version": 2
 }
