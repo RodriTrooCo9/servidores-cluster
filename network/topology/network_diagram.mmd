@@ -1,0 +1,33 @@
+graph TD
+    subgraph WAN ["Red de Gestion / Oficina (WAN)"]
+        Laptop["DevOps Laptop\n192.168.29.16"]
+    end
+
+    subgraph Perimetro ["Bastion Host (Perimetro)"]
+        Bastion["Nodo 314: Bastion\nWAN: 192.168.21.107\nLAN: 10.100.29.10:2222\nSquid Proxy :3128\nnftables NAT Masquerade"]
+    end
+
+    subgraph Aislada ["Subred Privada Bare-Metal Aislada (10.100.29.0/24)"]
+        Nexus["Nodo 315: Nexus OSS\n10.100.29.20\nAPT Proxy :8081\nDocker Group :8082\nPostgreSQL :5432"]
+        PXE["Nodo 306: PXE Controller\n10.100.29.30 (WiFi: 192.168.29.25)\ndnsmasq DHCP/TFTP\nNginx HTTPBoot :8089\nOpenStack Ironic :6385\nPrometheus :9090\nGrafana :3000"]
+
+        subgraph K8s_CP ["Plano de Control RKE2 HA (etcd)"]
+            CP1["Nodo 269: k8s-cp-01 (Leader)\n10.100.29.101"]
+            CP2["Nodo 280: k8s-cp-02\n10.100.29.102"]
+            CP3["Nodo 320: k8s-cp-03\n10.100.29.103"]
+        end
+
+        subgraph K8s_Workers ["Nodos Workers RKE2"]
+            W1["Nodo 321: k8s-worker-01\n10.100.29.111"]
+            W2["Nodo 279: k8s-worker-02\n10.100.29.112"]
+        end
+    end
+
+    Laptop -- "SSH ProxyJump (:2222)" --> Bastion
+    Laptop -. "Túnel WiFi de Emergencia" .-> PXE
+    Bastion -- "LAN Interna" --> Aislada
+    Aislada -- "Egress vía Squid (:3128)" --> Bastion
+    PXE -- "DHCP / iPXE Boot" --> K8s_CP
+    PXE -- "DHCP / iPXE Boot" --> K8s_Workers
+    Nexus -- "APT / Docker Mirror" --> K8s_CP
+    Nexus -- "APT / Docker Mirror" --> K8s_Workers
