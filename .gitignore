@@ -79,6 +79,9 @@ output-*/
 backups/*
 !backups/.gitkeep
 !backups/README.md
+reports/*
+!reports/.gitkeep
+!reports/README.md
 
 # ------------------------------------------------------------------------------
 # 4. ENTORNOS VIRTUALES Y CACHÉS DE DESARROLLO

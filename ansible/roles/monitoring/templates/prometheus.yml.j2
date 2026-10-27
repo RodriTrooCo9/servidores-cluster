@@ -8,14 +8,54 @@ global:
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:{{ prometheus_port }}']
+      - targets: ['localhost:{{ prometheus_port | default(9090) }}']
 
-  - job_name: 'node_exporter'
+  - job_name: 'baremetal-nodes'
     static_configs:
 {% for h in groups['baremetal'] %}
-      - targets: ['{{ hostvars[h].ansible_host }}:{{ node_exporter_port }}']
+      - targets: ['{{ hostvars[h].ansible_host }}:{{ node_exporter_port | default(9100) }}']
         labels:
           instance: '{{ hostvars[h].cluster_hostname }}'
           node_id: '{{ hostvars[h].node_id }}'
-          role: '{{ hostvars[h].role_desc | default("k8s") }}'
+          role: '{{ hostvars[h].role_desc | default("k8s-node") }}'
 {% endfor %}
+
+  - job_name: 'kubernetes-cadvisor'
+    scheme: https
+    metrics_path: /metrics/cadvisor
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /etc/prometheus/tokens/k8s_token
+    static_configs:
+      - targets: ['10.100.29.30:10250']
+        labels:
+          node: 'cp-01'
+      - targets: ['10.100.29.101:10250']
+        labels:
+          node: 'worker-05'
+      - targets: ['10.100.29.102:10250']
+        labels:
+          node: 'worker-01'
+      - targets: ['10.100.29.103:10250']
+        labels:
+          node: 'worker-02'
+      - targets: ['10.100.29.111:10250']
+        labels:
+          node: 'worker-03'
+      - targets: ['10.100.29.112:10250']
+        labels:
+          node: 'worker-04'
+      - targets: ['10.100.29.20:10250']
+        labels:
+          node: 'worker-06'
+
+  - job_name: 'kubernetes-apiserver'
+    scheme: https
+    metrics_path: /metrics
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /etc/prometheus/tokens/k8s_token
+    static_configs:
+      - targets: ['10.100.29.30:6443']
+        labels:
+          component: 'kube-apiserver'

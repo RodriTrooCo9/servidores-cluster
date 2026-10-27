@@ -1,16 +1,27 @@
 ---
-# Yamllint configuration for Ansible and Kubernetes
+# Yamllint configuration for Ansible, OpenStack and Kubernetes
 extends: default
 
 rules:
   line-length:
-    max: 200
+    max: 300
     level: warning
   truthy:
     check-keys: false
     level: warning
   comments:
     min-spaces-from-content: 1
+    level: warning
+  comments-indentation: false
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  empty-lines:
+    max: 3
+    level: warning
+  trailing-spaces:
+    level: warning
+  new-line-at-end-of-file:
     level: warning
   document-start: disable
   brackets:
@@ -19,11 +30,10 @@ rules:
   braces:
     min-spaces-inside: 0
     max-spaces-inside: 1
-  empty-lines:
-    max: 2
 
 ignore: |
   .venv*/
   .git/
   artifacts/
   backups/
+  reports/
