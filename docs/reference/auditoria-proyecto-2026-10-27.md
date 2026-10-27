@@ -1,4 +1,4 @@
-# Auditoría del proyecto — 2026-10-27
+# Auditoría del proyecto: bugs y posibles mejoras — 2026-10-27
 
 Revisión estática de automatización Bash/Python, roles y playbooks Ansible,
 inventarios, plantillas, manifiestos Kubernetes, configuración OpenStack/Nexus,
@@ -35,6 +35,43 @@ equivalen a una comprobación del estado actual de los servidores.
 | 19 | P2 | `kubernetes/observability/otel/02_otel_operator_and_collectors.yaml:111–115` | El collector agente configura `filelog` para `/var/log/pods`, pero no declara volúmenes hostPath ni mounts para ese directorio. Ese agente no puede leer los logs del host. Existe otro DaemonSet que sí monta `/var/log`; conviene aclarar qué agente debe usarse. | Montar los logs en el collector que los consume o consolidar ambos agentes. |
 | 20 | P2 | `ansible/playbooks/50-validation/01_healthcheck.yml`; `scripts/diagnostics/healthcheck.sh` | Los fallos de salud se muestran pero no se acumulan en un resultado fallido. El script considera activa Ironic ante cualquier cuerpo HTTP, incluso una respuesta de error, y usa el bastión como fallback Kubernetes aunque los control planes están en otro grupo. | Comprobar códigos HTTP y estado esperado, consultar el líder real y devolver error si falla un servicio requerido. |
 | 21 | P2 | `cloud-init/scripts/generate_configdrive.sh:164–170` | Si no existe `mkisofs` ni `genisoimage`, no genera ISO pero informa éxito y devuelve cero. | Exigir una herramienta disponible y verificar que el archivo final exista y no esté vacío. |
+
+## Nivel de verificación
+
+- **Reproducidos localmente:** hallazgos 1 y 4. Se usó un stub de Ansible para el primero y el renderizado local de Kustomize para el segundo.
+- **Detectados por inspección del código:** los demás hallazgos. Sus condiciones están presentes en los archivos, pero su impacto sobre servidores existentes depende de su configuración y estado.
+- **Dependencias externas pendientes:** montajes efectivos de `kolla_toolbo
+x`, repositorios APT ya instalados, CRDs, almacenamiento y servicios existentes. Pueden mitigar algunos síntomas, pero no están asegurados por los flujos revisados.
+
+## Posibles mejoras
+
+Estas propuestas son trabajo pendiente; no se aplicaron cambios a los scripts ni
+a la infraestructura durante esta auditoría.
+
+| ID | Área y evidencia | Mejora propuesta | Beneficio | Esfuerzo relativo |
+|---|---|---|---|---|
+| M1 | Inventarios y valores repetidos en `scripts/ops/disaster-recovery.sh`, `scripts/client/tunnels.sh` e `inventory/nodes.csv` | Usar el inventario Ansible como fuente de nodos, usuarios, líder y endpoints; generar CSV y configuraciones auxiliares cuando hagan falta. | Evitar divergencias entre recuperación, despliegue y diagnóstico. | Medio |
+| M2 | Orquestadores Bash con acciones durante el parseo | Separar validación de argumentos, planificación y ejecución. Rechazar argumentos incompletos y combinaciones incompatibles antes de cualquier acción. | Simulación confiable y errores de uso sin efectos parciales. | Bajo |
+| M3 | `.gitlab-ci.yml` declara etapa `dry-run` sin jobs | Añadir pruebas locales de CLI con comandos simulados: orden de `--dry-run`, `--new-mac`, argumentos ausentes y propagación de errores. | Detectar regresiones de lógica sin acceso a servidores. | Medio |
+| M4 | `.gitlab-ci.yml` y `Makefile` usan criterios ShellCheck distintos | Compartir una configuración de validación y cubrir también `cloud-init/`, `artifacts/` y `nexus/scripts/`. Fijar versiones de herramientas y colecciones Ansible. | Resultados reproducibles entre laptop y CI. | Bajo |
+| M5 | Composición en `kubernetes/base/` | Validar ambos overlays en CI, comprobar referencias a Services/ConfigMaps y validar recursos contra esquemas compatibles con las CRDs elegidas. | Detectar dependencias faltantes antes de desplegar. | Medio |
+| M6 | Backups Bash y Ansible | Publicar respaldos de forma atómica, registrar tamaño/checksum y verificar restauración en un entorno aislado; definir retención y copia fuera del nodo origen. | Medir recuperabilidad en lugar de solo generación de archivos. | Medio/alto |
+| M7 | Roles `rke2_ha`, `nexus` y `monitoring` | Separar instalación, configuración y validación; reemplazar errores ignorados por condiciones explícitas. Aplicar cambios de configuración con handlers y reinicios controlados. | Convergencia y despliegues que fallen cuando un requisito no se cumple. | Medio |
+| M8 | Descargas `latest`, scripts remotos y checksum `none` de Packer | Fijar versiones de artefactos, imágenes por digest cuando sea viable y verificar checksums antes de instalar. Descargar el instalador RKE2 y comprobar su resultado antes de ejecutarlo. | Actualizaciones deliberadas y compilaciones reproducibles. | Medio |
+| M9 | `ansible.cfg`, claves y variables sensibles | Centralizar secretos en Vault, reducir el alcance de llaves y recuperar validación de identidad SSH con `known_hosts` administrado. Añadir detección de secretos en pre-commit/CI sin imprimir valores. | Reducir exposición y errores por credenciales divergentes. | Medio |
+| M10 | Dos agentes OTel y configuración de backends | Definir un único responsable por señal y por nodo; documentar volúmenes, RBAC, endpoints, retención y límites de memoria/disco. | Evitar duplicación de ingesta y facilitar diagnóstico. | Medio |
+| M11 | Healthchecks Bash y Ansible | Emitir salida humana y JSON opcional; devolver código distinto de cero para fallos requeridos. Usar timeouts totales y comprobar cuerpo/código HTTP esperados. | Integración con CI y alertas sin falsos positivos. | Medio |
+| M12 | `inventory/prod/hosts.yml` es una plantilla | Añadir variables independientes y validaciones previas de subred, MAC, líder único, usuarios y secretos obligatorios; impedir usar placeholders inadvertidamente. | Evitar aplicar valores de laboratorio a producción. | Medio |
+| M13 | `README.md` conserva rutas anteriores a la reorganización | Mantener comandos ejecutables en guías breves y enlazar los detalles; validar enlaces y rutas internas en CI. Documentar prerrequisitos externos del despliegue Kubernetes. | Menos instrucciones obsoletas y menor costo de mantenimiento. | Bajo |
+| M14 | `Makefile`: `deploy` depende de fases hermanas | Serializar explícitamente las fases que dependen entre sí o impedir su ejecución paralela. `make -j deploy` puede lanzar base, servicios y plataforma a la vez. | Preservar el orden de instalación incluso con Make paralelo. | Bajo |
+
+## Plan de corrección y criterios de aceptación
+
+1. **Simulación y recuperación:** corregir bugs 1–3, 9 y 13. Una opción de simulación debe impedir mutaciones sin depender del orden de argumentos; un fallo de snapshot, dump o transferencia debe devolver error. Probar restauración antes de considerar confiables los respaldos.
+2. **Credenciales y acceso:** corregir bugs 6–8 y 12. El kubeconfig original debe tener `0600`; los scripts deben encontrar la configuración desde cualquier directorio; los secretos deben inyectarse sin valores fijos en código.
+3. **Despliegue limpio:** corregir bugs 4–5, 10–11, 14–15 y 21. Ambos overlays deben renderizarse con restricciones predeterminadas, todas las dependencias deben crearse o declararse como prerrequisitos, y los generadores deben fallar si no producen su artefacto.
+4. **Operación:** corregir bugs 16–20. Confirmar rollback real del firewall en laboratorio, aplicación de cambios a servicios activos, lectura de logs desde los nodos y fallos de salud reflejados en códigos de salida.
+5. **Mantenimiento:** incorporar M1 y M3–M14 progresivamente. Ejecutar una instalación limpia y una segunda ejecución para evaluar idempotencia, además de una recuperación de prueba sobre un nodo destinado a laboratorio.
 
 ## Validaciones ejecutadas
 

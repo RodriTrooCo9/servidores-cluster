@@ -85,6 +85,15 @@ metadata:
   namespace: observability
 spec:
   mode: daemonset
+  volumes:
+    - name: pod-logs
+      hostPath:
+        path: /var/log/pods
+        type: Directory
+  volumeMounts:
+    - name: pod-logs
+      mountPath: /var/log/pods
+      readOnly: true
   image: otel/opentelemetry-collector-contrib:0.104.0
   resources:
     requests:

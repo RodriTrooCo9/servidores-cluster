@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
+.NOTPARALLEL: deploy
 INVENTORY ?= inventory/lab/hosts.yml
 ANSIBLE_PLAYBOOK ?= ansible-playbook -i $(INVENTORY)
 

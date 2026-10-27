@@ -37,13 +37,14 @@ fi
 SSH_KEY="${REPO_DIR}/ansible/keys/cluster_key"
 CONTROLLER_IP="192.168.29.25"
 CONTROLLER_USER="n306"
-OS_VIP="10.100.29.30"
+OS_VIP="${OS_VIP:-10.100.29.5}"
 OS_AUTH_URL="http://${OS_VIP}:5000/v3"
-OS_PASS="Admin2025!"
-BACKUP_ROOT="${REPO_DIR}/backups/dr_$(date +%Y%m%d)"
+OS_PASS="${OS_PASSWORD:-}"
+printf -v OS_PASS_QUOTED %q "${OS_PASS}"
+export ANSIBLE_CONFIG="${REPO_DIR}/ansible.cfg"
 
-OS_CMD="sudo docker exec kolla_toolbox openstack --os-auth-url ${OS_AUTH_URL} --os-user-domain-name Default --os-project-domain-name Default --os-project-name admin --os-username admin --os-password ${OS_PASS} --os-identity-api-version 3"
-OS_SYS="sudo docker exec kolla_toolbox openstack --os-auth-url ${OS_AUTH_URL} --os-user-domain-name Default --os-system-scope all --os-username admin --os-password ${OS_PASS} --os-identity-api-version 3"
+OS_CMD="sudo docker exec kolla_toolbox openstack --os-auth-url ${OS_AUTH_URL} --os-user-domain-name Default --os-project-domain-name Default --os-project-name admin --os-username admin --os-password ${OS_PASS_QUOTED} --os-identity-api-version 3"
+OS_SYS="sudo docker exec kolla_toolbox openstack --os-auth-url ${OS_AUTH_URL} --os-user-domain-name Default --os-system-scope all --os-username admin --os-password ${OS_PASS_QUOTED} --os-identity-api-version 3"
 
 show_help() {
     cat << EOF
@@ -143,60 +144,16 @@ cmd_audit() {
     run_on_controller "${OS_CMD} image list"
 }
 
-cmd_backup_openstack() {
-    log_info "Iniciando respaldo de OpenStack MariaDB y configuraciones..."
-    mkdir -p "${BACKUP_ROOT}/openstack"
-
-    local ts
-    ts="$(date +%Y%m%d_%H%M%S)"
-
-    local db_pass=""
-    if [[ -f "${REPO_DIR}/.vault_pass" && -f "${REPO_DIR}/kolla/passwords.yml" ]]; then
-        db_pass="$("${REPO_DIR}/.venv-kolla/bin/ansible-vault" view "${REPO_DIR}/kolla/passwords.yml" --vault-password-file "${REPO_DIR}/.vault_pass" 2>/dev/null | grep -E '^database_password:' | awk '{print $2}')"
-    fi
-
-    log_info "Extrayendo volcado SQL de todas las bases de datos de OpenStack..."
-    if [[ -n "${db_pass}" ]]; then
-        run_on_controller "sudo docker exec mariadb mysqldump -u root -p'${db_pass}' --all-databases | gzip -c > /tmp/openstack_mariadb_${ts}.sql.gz"
-    else
-        run_on_controller "sudo docker exec mariadb mysqldump -u root -p\$(sudo grep database_password /etc/kolla/passwords.yml 2>/dev/null | awk '{print \$2}') --all-databases | gzip -c > /tmp/openstack_mariadb_${ts}.sql.gz"
-    fi
-    
-    scp -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${CONTROLLER_USER}@${CONTROLLER_IP}:/tmp/openstack_mariadb_${ts}.sql.gz" "${BACKUP_ROOT}/openstack/"
-    run_on_controller "sudo rm -f /tmp/openstack_mariadb_${ts}.sql.gz"
-
-    log_info "Respaldando archivos de configuración /etc/kolla..."
-    run_on_controller "sudo tar -czf /tmp/kolla_etc_${ts}.tar.gz -C /etc/kolla ."
-    scp -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${CONTROLLER_USER}@${CONTROLLER_IP}:/tmp/kolla_etc_${ts}.tar.gz" "${BACKUP_ROOT}/openstack/"
-    run_on_controller "sudo rm -f /tmp/kolla_etc_${ts}.tar.gz"
-
-    cp -r "${REPO_DIR}/kolla" "${BACKUP_ROOT}/openstack/kolla_repo_${ts}"
-
-    log_success "Respaldo de OpenStack completado exitosamente en: ${BACKUP_ROOT}/openstack/"
+run_backup_playbook() {
+    local tag="$1"
+    cd "${REPO_DIR}"
+    ansible-playbook -i "${REPO_DIR}/inventory/lab/hosts.yml" \
+        "${REPO_DIR}/ansible/playbooks/90-operations/01_disaster_recovery.yml" --tags "${tag}"
+    log_success "Respaldo y transferencia completados en ${REPO_DIR}/backups/"
 }
 
-cmd_backup_etcd() {
-    log_info "Iniciando respaldo de base de datos etcd de Kubernetes..."
-    mkdir -p "${BACKUP_ROOT}/etcd"
-
-    local leader_ip="10.100.29.30"
-    local ts
-    ts="$(date +%Y%m%d_%H%M%S)"
-
-    if run_on_node "${leader_ip}" "true" 2>/dev/null || run_on_controller "true" 2>/dev/null; then
-        log_info "Generando snapshot etcd en el nodo controlador ${leader_ip}..."
-        run_on_controller \
-            "sudo /var/lib/rancher/rke2/bin/etcdctl snapshot save /tmp/etcd_snapshot_${ts}.db --cacert=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt --cert=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt --key=/var/lib/rancher/rke2/server/tls/etcd/server-client.key" 2>/dev/null || \
-            run_on_controller "sudo rke2 etcd-snapshot save --name manual-dr-${ts}" 2>/dev/null || true
-
-        log_info "Copiando snapshot etcd..."
-        scp -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${CONTROLLER_USER}@${CONTROLLER_IP}:/tmp/etcd_snapshot_${ts}.db" "${BACKUP_ROOT}/etcd/" 2>/dev/null || true
-        run_on_controller "sudo rm -f /tmp/etcd_snapshot_${ts}.db" 2>/dev/null || true
-        log_success "Snapshot etcd respaldado en: ${BACKUP_ROOT}/etcd/"
-    else
-        log_warn "Nodo controlador Kubernetes (${leader_ip}) no responde."
-    fi
-}
+cmd_backup_openstack() { run_backup_playbook backup_openstack; }
+cmd_backup_etcd() { run_backup_playbook backup_etcd; }
 
 cmd_heal_etcd() {
     local failed_node="$1"
@@ -369,7 +326,7 @@ EOF
         fi
         echo -ne "  Esperando inicialización de hardware... (${retries} intentos restantes)\r"
         sleep 10
-        (( retries -= 1 ))
+        retries=$((retries - 1))
     done
     echo ""
 
@@ -388,52 +345,37 @@ EOF
     fi
 }
 
-# Parseo de argumentos
-if [[ $# -eq 0 ]]; then
-    show_help
-    exit 0
-fi
-
+# Leer opciones completas antes de realizar cualquier acción.
+[[ $# -gt 0 ]] || { show_help; exit 0; }
 NEW_MAC_ARG=""
+ACTION=""
+TARGET=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --audit)
-            cmd_audit
-            shift
-            ;;
-        --backup-all)
-            cmd_backup_openstack
-            cmd_backup_etcd
-            shift
-            ;;
-        --backup-openstack)
-            cmd_backup_openstack
-            shift
-            ;;
-        --backup-etcd)
-            cmd_backup_etcd
-            shift
-            ;;
-        --heal-etcd)
-            cmd_heal_etcd "$2"
-            shift 2
-            ;;
+        --audit|--backup-all|--backup-openstack|--backup-etcd|--heal-etcd|--reprovision)
+            [[ -z "${ACTION}" ]] || { log_error "Use una sola acción por ejecución"; exit 2; }
+            ACTION="$1"; shift
+            if [[ "${ACTION}" == --heal-etcd || "${ACTION}" == --reprovision ]]; then
+                [[ $# -gt 0 && "$1" != -* ]] || { log_error "Falta el nodo destino"; exit 2; }
+                TARGET="$1"; shift
+            fi ;;
         --new-mac)
-            NEW_MAC_ARG="$2"
-            shift 2
-            ;;
-        --reprovision)
-            cmd_reprovision "$2" "${NEW_MAC_ARG}"
-            shift 2
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_error "Opción no reconocida: $1"
-            show_help
-            exit 1
-            ;;
+            [[ $# -ge 2 && "$2" =~ ^([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}$ ]] || { log_error "MAC inválida"; exit 2; }
+            NEW_MAC_ARG="$2"; shift 2 ;;
+        -h|--help) show_help; exit 0 ;;
+        *) log_error "Opción no reconocida: $1"; exit 2 ;;
     esac
 done
+[[ -n "${ACTION}" ]] || { log_error "Indique una acción"; exit 2; }
+[[ -z "${NEW_MAC_ARG}" || "${ACTION}" == --reprovision ]] || { log_error "--new-mac requiere --reprovision"; exit 2; }
+if [[ "${ACTION}" == --audit || "${ACTION}" == --reprovision ]]; then
+    [[ -n "${OS_PASS}" ]] || { log_error "Cargue OS_PASSWORD desde su OpenRC antes de continuar"; exit 2; }
+fi
+case "${ACTION}" in
+    --audit) cmd_audit ;;
+    --backup-all) run_backup_playbook backup ;;
+    --backup-openstack) cmd_backup_openstack ;;
+    --backup-etcd) cmd_backup_etcd ;;
+    --heal-etcd) cmd_heal_etcd "${TARGET}" ;;
+    --reprovision) cmd_reprovision "${TARGET}" "${NEW_MAC_ARG}" ;;
+esac

@@ -36,6 +36,8 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**ADR 0003: Mitigación de almacenamiento para SSD de 128 GB**](adr/0003-mitigacion-disco-128gb.md)
 
 ### 5. [Referencia Rápida (`docs/reference/`)](reference/)
+- [**Correcciones aplicadas y validación pendiente**](reference/correcciones-aplicadas-2026-10-27.md): Cambios implementados tras la auditoría, pruebas locales y pendientes de laboratorio.
+- [**Auditoría del proyecto: bugs y posibles mejoras**](reference/auditoria-proyecto-2026-10-27.md): Hallazgos priorizados, evidencia, validaciones y plan de corrección.
 - [**Matriz de Puertos y Servicios**](reference/puertos_y_servicios.md): Inventario completo de puertos TCP/UDP.
 - [**Cheat-Sheet de IPs y Hardware**](reference/env_cheatsheet.md): Resumen rápido de direcciones y alias SSH.
 - [**Plantilla de Credenciales**](reference/credentials.example.md): Modelo sanitizado sin secretos en texto plano.
