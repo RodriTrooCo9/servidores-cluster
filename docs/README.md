@@ -16,11 +16,11 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**Flujo Detallado de Arranque PXE/iPXE**](architecture/arranque_pxe_detallado.md): Investigación y configuración paso a paso del booteo de red.
 - [**Topología y Aislamiento de Red**](architecture/network/aislamiento_red_oficina.md): Seguridad L2/L3 y contención de tráfico.
 - [**Evolución Histórica de Infraestructura**](architecture/evolucion_infraestructura.md): Registro histórico de cambios y trazabilidad.
-- [**OpenStack Glance e Ironic Bare-Metal**](architecture/openstack/OpenStack%20Glance,%20Formatos%20de%20Disco%20e%20Ironic%20Bare-Metal.md): Conceptos clave de aprovisionamiento físico.
+- [**Arquitectura Comparativa Ironic, Glance y Bifrost**](architecture/openstack/glance_ironic_bifrost_arquitectura_comparativa.md): Análisis arquitectónico de aprovisionamiento físico bare-metal.
+- [**Plan Maestro de Compilación e Instalación iPXE**](architecture/openstack/plan_maestro_instalacion_ipxe.md): Compilación y despliegue del binario iPXE con drivers integrados.
 
 ### 2. [Procedimientos Operativos / Runbooks (`docs/runbooks/`)](runbooks/)
 - [**MANUAL INTEGRAL DEL PROYECTO (Instalación desde Cero + Operación + 21 Escenarios de Falla)**](runbooks/manual-integral-instalacion-y-recuperacion.md): **La biblia técnica del clúster.** Despliegue paso a paso (Fases 00 a 90), arquitectura de red, secuencia de arranque y los 21 escenarios SRE de contingencia.
-- [**Manual Maestro de Recuperación y Rearranque (SRE Runbook)**](runbooks/manual-recuperacion-y-rearranque.md): Guía exhaustiva para apagones totales, caídas de nodo, pérdida de quórum etcd y fallos de servicio.
 - [**Recuperación ante Desastres (Disaster Recovery)**](runbooks/disaster_recovery.md): Protocolo de contingencia y restauración de etcd y MariaDB.
 - [**Blindaje de Red y Contención Rogue DHCP**](runbooks/blindaje_red_oficina.md): Reglas para aislar la red de pruebas de la oficina.
 - [**Rotación y Renovación de Secretos**](runbooks/rotacion_secretos.md): Guía de actualización periódica de claves y tokens.

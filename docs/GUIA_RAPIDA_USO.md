@@ -179,4 +179,4 @@ make backup
 
 ### Manual Completo de Recuperación ante Desastres:
 Para emergencias mayores (apagones totales, pérdida de quórum etcd, discos llenos o caída de Nexus), consulta el manual oficial:  
-👉 [**Manual de Recuperación y Rearranque (docs/runbooks/manual-recuperacion-y-rearranque.md)**](runbooks/manual-recuperacion-y-rearranque.md).
+👉 [**Manual Integral de Instalación y Recuperación (docs/runbooks/manual-integral-instalacion-y-recuperacion.md)**](runbooks/manual-integral-instalacion-y-recuperacion.md).
