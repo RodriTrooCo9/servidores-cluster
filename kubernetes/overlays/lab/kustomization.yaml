@@ -9,4 +9,4 @@ labels:
   - pairs:
       environment: lab
       cluster: k8s-baremetal-lab
-    includeSelectors: true
+    includeSelectors: false

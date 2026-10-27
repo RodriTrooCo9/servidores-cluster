@@ -9,4 +9,4 @@ labels:
   - pairs:
       environment: prod
       cluster: k8s-baremetal-prod
-    includeSelectors: true
+    includeSelectors: false
