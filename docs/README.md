@@ -27,6 +27,8 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**Incorporación de Nuevo Nodo Bare-Metal**](runbooks/anadir_nodo.md): Procedimiento de alta y enrolamiento de servidores adicionales.
 
 ### 3. [Observabilidad y Telemetría (`docs/observability/`)](observability/)
+- [**Etapa 1: instalar Coroot primero**](observability/instalar-coroot-primero.md): Servidor, UI y primer agente sobre Debian existente; sin reconstruir imágenes.
+- [**Instalar Coroot con Debian 13, Packer y Cloud-Init**](observability/coroot-debian13-packer.md): Servidor dedicado, agentes, construcción de imagen y verificación operativa.
 - [**Guía de Monitoreo Prometheus y Grafana**](observability/prometheus_grafana.md): Configuración de paneles, agentes y métricas.
 - [**Manual Maestro de Observabilidad Avanzada**](observability/manual_maestro_observabilidad.md): Arquitectura de VictoriaMetrics, Loki, Tempo y OpenTelemetry.
 
