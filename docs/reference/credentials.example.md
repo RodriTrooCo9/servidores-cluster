@@ -40,7 +40,7 @@ Host n306-wifi
 ---
 
 ## 3. URLs de Servicios y Dashboards
-- **Grafana Observabilidad**: `http://localhost:3000` (Vía túnel SSH `make tunnels`).
+- **Grafana Observabilidad**: `http://localhost:3001` (Vía túnel SSH `make tunnels`).
 - **OpenStack Horizon Web**: `http://localhost:8080` (Vía túnel SSH `make tunnels`).
 - **Sonatype Nexus 3 Web**: `http://localhost:8081` (Vía túnel SSH `make tunnels`).
 - **Prometheus TSDB**: `http://localhost:9090`.

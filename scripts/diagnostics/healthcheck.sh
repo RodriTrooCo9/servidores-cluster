@@ -9,7 +9,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # shellcheck source=lib/common.sh
 if [[ -f "${SCRIPT_DIR}/../lib/common.sh" ]]; then
     source "${SCRIPT_DIR}/../lib/common.sh"
@@ -227,7 +227,10 @@ if command -v kubectl >/dev/null 2>&1 && [[ -f "${KUBECONFIG_FILE}" ]]; then
 fi
 
 if [[ -z "${K8S_NODES}" ]]; then
-    K8S_NODES=$(ssh -n -o BatchMode=yes -o ConnectTimeout=3 bastion "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes -o wide" 2>/dev/null || echo "")
+    for host_target in "n306-wifi" "cp-01" "bastion"; do
+        K8S_NODES=$(ssh -n -o BatchMode=yes -o ConnectTimeout=3 "${host_target}" "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes -o wide" 2>/dev/null || echo "")
+        [[ -n "${K8S_NODES}" ]] && break
+    done
 fi
 
 if [[ -n "${K8S_NODES}" ]]; then
@@ -238,7 +241,10 @@ if [[ -n "${K8S_NODES}" ]]; then
         CILIUM_PODS=$(kubectl --kubeconfig="${KUBECONFIG_FILE}" --request-timeout=3s get pods -n kube-system -l k8s-app=cilium 2>/dev/null || echo "")
     fi
     if [[ -z "${CILIUM_PODS}" ]]; then
-        CILIUM_PODS=$(ssh -n -o BatchMode=yes -o ConnectTimeout=3 bastion "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get pods -n kube-system -l k8s-app=cilium" 2>/dev/null || echo "")
+        for host_target in "n306-wifi" "cp-01" "bastion"; do
+            CILIUM_PODS=$(ssh -n -o BatchMode=yes -o ConnectTimeout=3 "${host_target}" "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get pods -n kube-system -l k8s-app=cilium" 2>/dev/null || echo "")
+            [[ -n "${CILIUM_PODS}" ]] && break
+        done
     fi
     [[ -n "${CILIUM_PODS}" ]] && echo "${CILIUM_PODS}"
 else

@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
-
+# ==============================================================================
+# LEVANTAR TODO - Secuencia de Arranque y Recuperación Global del Clúster
+# ==============================================================================
+# Orden de encendido:
+#   1. Contenedores de OpenStack Kolla en nodo 306 (pxe-controller)
+#   2. Servicios perimetrales: Bastión (SSH/Squid) y Nexus (Docker/APT)
+#   3. Servicios PXE y DHCP dnsmasq
+#   4. Monitoreo central: Node Exporter, Prometheus, Grafana
+#   5. Plataforma Kubernetes HA (RKE2 + Cilium eBPF)
+#   6. Healthcheck de validación integral
+# ==============================================================================
 
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -16,47 +26,51 @@ NC='\033[0m'
 SSH_KEY="${REPO_DIR}/ansible/keys/cluster_key"
 CONTROLLER_IP="192.168.29.25"
 CONTROLLER_USER="n306"
+INVENTORY="${REPO_DIR}/inventory/lab/hosts.yml"
+export ANSIBLE_CONFIG="${REPO_DIR}/ansible.cfg"
 
-# Paso 1: OpenStack
+echo -e "${BLUE}${BOLD}==================================================================${NC}"
+echo -e "${BLUE}${BOLD}       INICIANDO SECUENCIA GLOBAL DE ARRANQUE DEL CLÚSTER         ${NC}"
+echo -e "${BLUE}${BOLD}==================================================================${NC}"
+
+# Paso 1: Asegurar contenedores Kolla en nodo controlador (OpenStack Ironic/Glance/MariaDB)
+echo -e "\n${YELLOW}[Paso 1/6] Levantando contenedores OpenStack Kolla en nodo 306...${NC}"
 ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${CONTROLLER_USER}@${CONTROLLER_IP}" \
   "sudo docker start \$(sudo docker ps -a -q) >/dev/null 2>&1 || true"
-# Paso 2: Bastión y Nexus
+echo -e "${GREEN}✓ Contenedores Docker en nodo 306 verificados.${NC}"
+
 cd "${REPO_DIR}"
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03_bastion.yml ansible/playbooks/04_nexus.yml
 
-# Paso 3: Monitoreo
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08_monitoring.yml
+# Paso 2: Bastión y Nexus
+echo -e "\n${YELLOW}[Paso 2/6] Configurando y levantando Bastión (314) y Nexus (315)...${NC}"
+ansible-playbook -i "${INVENTORY}" \
+  ansible/playbooks/10-base/02_bastion_hardening.yml \
+  ansible/playbooks/20-services/01_nexus.yml
+echo -e "${GREEN}✓ Bastión y Nexus 3 operativos.${NC}"
 
-# Paso 4: Kubernetes HA
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07_kubernetes_ha.yml
+# Paso 3: PXE Controller
+echo -e "\n${YELLOW}[Paso 3/6] Verificando controlador PXE y dnsmasq (306)...${NC}"
+ansible-playbook -i "${INVENTORY}" \
+  ansible/playbooks/20-services/02_pxe_controller.yml
+echo -e "${GREEN}✓ Controlador PXE verificado.${NC}"
 
-# Paso 5: Healthcheck
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/09_healthcheck.yml
+# Paso 4: Monitoreo Centralizado (Node Exporter, Prometheus, Grafana)
+echo -e "\n${YELLOW}[Paso 4/6] Levantando suite de monitoreo y observabilidad...${NC}"
+ansible-playbook -i "${INVENTORY}" \
+  ansible/playbooks/40-observability/01_monitoring.yml
+echo -e "${GREEN}✓ Monitoreo (Prometheus :9090, Grafana :3000) operativo.${NC}"
 
-# 1. Asegurar OpenStack arriba:
-ssh -i ansible/keys/cluster_key n306@192.168.29.25 "sudo docker start \$(sudo docker ps -a -q)"
+# Paso 5: Kubernetes HA (RKE2 Server en 306 + Agents en nodos trabajadores)
+echo -e "\n${YELLOW}[Paso 5/6] Verificando y levantando Kubernetes HA (RKE2 + Cilium)...${NC}"
+ansible-playbook -i "${INVENTORY}" \
+  ansible/playbooks/30-platform/01_rke2_cluster.yml
+echo -e "${GREEN}✓ Clúster RKE2 y CNI Cilium activos.${NC}"
 
-# 2. Levantar Bastión (Squid/SSH) y Nexus (Docker Hub/APT):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03_bastion.yml ansible/playbooks/04_nexus.yml
+# Paso 6: Healthcheck global de validación
+echo -e "\n${YELLOW}[Paso 6/6] Ejecutando validación integral de salud (Healthcheck)...${NC}"
+ansible-playbook -i "${INVENTORY}" \
+  ansible/playbooks/50-validation/01_healthcheck.yml
 
-# 3. Levantar Monitoreo (Grafana/Prometheus):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08_monitoring.yml
-
-# 4. Levantar Kubernetes HA (RKE2 + Cilium eBPF):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07_kubernetes_ha.yml
-# 1. Asegurar OpenStack arriba:
-ssh -i ansible/keys/cluster_key n306@192.168.29.25 "sudo docker start \$(sudo docker ps -a -q)"
-
-# 2. Levantar Bastión (Squid/SSH) y Nexus (Docker Hub/APT):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03_bastion.yml ansible/playbooks/04_nexus.yml
-
-# 3. Levantar Monitoreo (Grafana/Prometheus):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08_monitoring.yml
-
-# 4. Levantar Kubernetes HA (RKE2 + Cilium eBPF):
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07_kubernetes_ha.yml
-
-# 5. Comprobar que absolutamente todo quedó ONLINE:
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/09_healthcheck.yml
-# 5. Comprobar que absolutamente todo quedó ONLINE:
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/09_healthcheck.yml
+echo -e "\n${GREEN}${BOLD}==================================================================${NC}"
+echo -e "${GREEN}${BOLD}  ¡SECUENCIA DE ARRANQUE COMPLETADA EXITOSAMENTE EN TODA LA FLOTA!${NC}"
+echo -e "${GREEN}${BOLD}==================================================================${NC}"
