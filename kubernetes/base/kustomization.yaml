@@ -5,3 +5,4 @@ resources:
   - ../apps/microservices
   - ../observability/backends
   - ../observability/otel
+  - ../observability/coroot

@@ -1,0 +1,23 @@
+[Unit]
+Description=Coroot node agent
+Documentation=https://coroot.com
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/etc/coroot-node-agent/agent.env
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/coroot-node-agent/agent.env
+KillMode=process
+Delegate=yes
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+ExecStart=/usr/bin/coroot-node-agent --listen=${LISTEN}
