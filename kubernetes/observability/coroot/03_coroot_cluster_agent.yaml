@@ -1,0 +1,119 @@
+# ==============================================================================
+# MANIFIESTO KUBERNETES: COROOT CLUSTER AGENT
+# Namespace: observability
+# Conexión: http://10.100.29.30:19000 (Coroot CE en Nodo 306)
+# ==============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: coroot-cluster-agent
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: coroot-cluster-agent
+    app.kubernetes.io/part-of: coroot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: coroot-cluster-agent
+  labels:
+    app.kubernetes.io/name: coroot-cluster-agent
+    app.kubernetes.io/part-of: coroot
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - services
+      - endpoints
+      - pods
+      - events
+      - persistentvolumeclaims
+      - persistentvolumes
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - cronjobs
+      - jobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - volumeattachments
+      - storageclasses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources:
+      - customresourcedefinitions
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - nodes/proxy
+      - nodes/metrics
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: coroot-cluster-agent
+  labels:
+    app.kubernetes.io/name: coroot-cluster-agent
+    app.kubernetes.io/part-of: coroot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: coroot-cluster-agent
+subjects:
+  - kind: ServiceAccount
+    name: coroot-cluster-agent
+    namespace: observability
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coroot-cluster-agent
+  namespace: observability
+  labels:
+    app: coroot-cluster-agent
+    app.kubernetes.io/name: coroot-cluster-agent
+    app.kubernetes.io/part-of: coroot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coroot-cluster-agent
+  template:
+    metadata:
+      labels:
+        app: coroot-cluster-agent
+        app.kubernetes.io/name: coroot-cluster-agent
+    spec:
+      serviceAccountName: coroot-cluster-agent
+      containers:
+        - name: cluster-agent
+          image: ghcr.io/coroot/coroot-cluster-agent:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --coroot-url=http://10.100.29.30:19000
+            - --api-key=AkvUESvXAvoNOnBOXoz-vQEtEM-GeTqx
+            - --metrics-scrape-interval=15s
+            - --metrics-wal-dir=/data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

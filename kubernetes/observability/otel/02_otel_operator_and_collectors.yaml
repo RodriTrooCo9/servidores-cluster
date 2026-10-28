@@ -48,6 +48,12 @@ spec:
         endpoint: "tempo.observability.svc.cluster.local:4317"
         tls:
           insecure: true
+      otlphttp/coroot:
+        endpoint: "http://10.100.29.30:19000"
+        headers:
+          "x-api-key": "AkvUESvXAvoNOnBOXoz-vQEtEM-GeTqx"
+        tls:
+          insecure: true
       loki:
         endpoint: "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
         tls:
@@ -65,7 +71,7 @@ spec:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, probabilistic_sampler, batch]
-          exporters: [otlp/tempo]
+          exporters: [otlp/tempo, otlphttp/coroot]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
@@ -73,7 +79,7 @@ spec:
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [loki]
+          exporters: [loki, otlphttp/coroot]
 ---
 # ------------------------------------------------------------------------------
 # 2. CRD INSTRUMENTATION: AUTO-INSTRUMENTACIÓN CENTRALIZADA (JAVA Y PYTHON)
