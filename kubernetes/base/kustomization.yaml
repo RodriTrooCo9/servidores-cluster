@@ -1,9 +1,7 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
-  - ../apps/microservices/microservices_stack.yaml
-  - ../observability/backends/01_backends.yaml
-  - ../observability/otel/02_otel_operator_and_collectors.yaml
-  - ../observability/agents/node_telemetry_agent.yaml
+  - ../apps/microservices
+  - ../observability/backends
+  - ../observability/otel

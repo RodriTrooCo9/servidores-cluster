@@ -27,6 +27,7 @@ SSH_KEY="${REPO_DIR}/ansible/keys/cluster_key"
 CONTROLLER_IP="192.168.29.25"
 CONTROLLER_USER="n306"
 INVENTORY="${REPO_DIR}/inventory/lab/hosts.yml"
+export ANSIBLE_CONFIG="${REPO_DIR}/ansible.cfg"
 
 echo -e "${BLUE}${BOLD}==================================================================${NC}"
 echo -e "${BLUE}${BOLD}       INICIANDO SECUENCIA GLOBAL DE ARRANQUE DEL CLÚSTER         ${NC}"
@@ -68,7 +69,7 @@ echo -e "${GREEN}✓ Clúster RKE2 y CNI Cilium activos.${NC}"
 # Paso 6: Healthcheck global de validación
 echo -e "\n${YELLOW}[Paso 6/6] Ejecutando validación integral de salud (Healthcheck)...${NC}"
 ansible-playbook -i "${INVENTORY}" \
-  ansible/playbooks/50-verification/01_healthcheck.yml
+  ansible/playbooks/50-validation/01_healthcheck.yml
 
 echo -e "\n${GREEN}${BOLD}==================================================================${NC}"
 echo -e "${GREEN}${BOLD}  ¡SECUENCIA DE ARRANQUE COMPLETADA EXITOSAMENTE EN TODA LA FLOTA!${NC}"

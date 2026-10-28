@@ -1,4 +1,11 @@
 ---
+- name: "Exigir contraseña PostgreSQL suministrada mediante Vault"
+  ansible.builtin.assert:
+    that:
+      - postgres_nexus_password | default('') | length > 0
+    fail_msg: "Configure vault_postgres_password conservando el valor actual de PostgreSQL."
+  no_log: true
+
 # ==============================================================================
 # Role: nexus - Sonatype Nexus 3 OSS con Backend PostgreSQL
 # Reemplaza completamente scripts/03-nexus.sh
@@ -125,9 +132,11 @@
     dest: /opt/sonatype/nexus/bin/nexus.vmoptions
     owner: nexus
     group: nexus
-    mode: '0644'
+    mode: '0600'
   when: nexus_bin.stat.exists or (extracted_nexus_dir is defined and extracted_nexus_dir.matched > 0)
   notify: Restart Nexus
+
+  no_log: true
 
 - name: "Desplegar unidad systemd de Nexus"
   ansible.builtin.template:
