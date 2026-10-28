@@ -1,9 +1,0 @@
----
-# Defaults para el rol coroot_node_agent
-coroot_version: "v1.37.0"
-coroot_collector_endpoint: "http://10.100.29.30:19000"
-coroot_listen: "127.0.0.1:19080"
-coroot_scrape_interval: "15s"
-coroot_binary_checksum: "sha256:3836e9f2d750821f3266eae1c939b7716518c20b06b44770123c84850dfad062"
-coroot_binary_url: "http://10.100.29.30:8089/coroot-node-agent"
-coroot_binary_fallback_url: "https://github.com/coroot/coroot-node-agent/releases/download/{{ coroot_version }}/coroot-node-agent-amd64"

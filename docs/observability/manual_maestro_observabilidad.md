@@ -338,7 +338,7 @@ df -h /var/lib/rancher/k3s/storage/
 Las políticas de compactación y retención configuradas (30d para VictoriaMetrics, 7d para Loki y 3d para Tempo) garantizan que el almacenamiento nunca supere los 60 GiB combinados.
 
 ### 3. Verificar Conectividad de Grafana hacia los Datasources
-Desde cualquier navegador conectado vía túnel SSH ([http://localhost:3001](http://localhost:3001)):
+Desde cualquier navegador conectado vía túnel SSH ([http://localhost:3000](http://localhost:3000)):
 * Menú lateral -> **Connections** -> **Data sources**.
 * Haz clic en **VictoriaMetrics**, **Loki** o **Tempo** y presiona el botón **Save & test**. Debe responder en verde: *"Data source is working"*.
 
@@ -410,7 +410,7 @@ Todos los servicios están expuestos localmente en la máquina del administrador
 | Servicio | URL Local | Descripción |
 | :--- | :--- | :--- |
 | **Portal Microservicios Web** | [http://localhost:30080](http://localhost:30080) | Dashboard interactivo de pedidos y estado del clúster |
-| **Grafana Observabilidad** | [http://localhost:3001](http://localhost:3001) | Dashboards de Métricas, Logs, Trazas y OpenStack |
+| **Grafana Observabilidad** | [http://localhost:3000](http://localhost:3000) | Dashboards de Métricas, Logs, Trazas y OpenStack |
 | **VictoriaMetrics Web UI** | [http://localhost:30428](http://localhost:30428) | Explorador directo de métricas y consultas PromQL |
 | **Tempo Tracing** | [http://localhost:30200](http://localhost:30200) | Endpoint OTLP y búsqueda de trazas distribuidas |
 | **OpenStack Horizon** | [http://localhost:8080/auth/login/](http://localhost:8080/auth/login/) | Consola Web de OpenStack Kolla |
@@ -424,7 +424,7 @@ ssh -i ansible/keys/cluster_key -o StrictHostKeyChecking=no -f -N \
   -L 8081:10.100.29.20:8081 \
   -L 8082:10.100.29.20:8082 \
   -L 8083:10.100.29.20:8083 \
-  -L 3001:10.100.29.30:3000 \
+  -L 3000:10.100.29.30:3000 \
   -L 9090:10.100.29.30:9090 \
   -L 6443:10.100.29.101:6443 \
   -L 30080:10.100.29.101:30080 \
@@ -432,83 +432,3 @@ ssh -i ansible/keys/cluster_key -o StrictHostKeyChecking=no -f -N \
   -L 30200:10.100.29.101:30200 \
   n306@192.168.29.25
 ```
-
----
-
-## 7. Gestión de Usuarios, Contraseñas y Proyectos en OpenStack
-
-### 1. Cambiar la Contraseña del Administrador (`admin`)
-
-#### Método A: Desde la Consola Web Horizon
-1. Accede a [http://localhost:8080/auth/login/](http://localhost:8080/auth/login/).
-2. Inicia sesión con:
-   * **Domain**: `Default`
-   * **User Name**: `admin`
-   * **Password**: `Admin2025!`
-3. En la esquina superior derecha, haz clic en el usuario `admin` -> **Settings (Configuración)**.
-4. En el menú lateral izquierdo, haz clic en **Change Password (Cambiar Contraseña)**.
-5. Introduce la contraseña actual (`Admin2025!`), la nueva contraseña y confirma.
-
-#### Método B: Vía OpenStack Keystone CLI (Automático)
-Ejecutar desde el nodo de control (`n306`):
-```bash
-sudo docker exec kolla_toolbox openstack --os-auth-url http://10.100.29.30:5000/v3 \
-  --os-user-domain-name Default --os-project-domain-name Default \
-  --os-project-name admin --os-username admin --os-password Admin2025! \
-  --os-identity-api-version 3 \
-  user set --password "TuNuevaClave2026!" admin
-```
-> [!IMPORTANT]
-> Si cambias la contraseña de `admin`, debes actualizarla también en `/etc/kolla/admin-openrc.sh` (`export OS_PASSWORD='TuNuevaClave2026!'`) y en `scripts/disaster-recovery.sh` para que los scripts de automatización sigan operando correctamente.
-
----
-
-### 2. Creación de Proyectos (Tenants), Usuarios y Roles
-
-En OpenStack:
-* **Project (Proyecto)**: Espacio de trabajo aislado donde residen las máquinas virtuales, redes y recursos.
-* **User (Usuario)**: Cuenta que inicia sesión.
-* **Role (Rol)**: Nivel de privilegios dentro del proyecto (`admin`, `member`, `reader`).
-
-#### Crear desde la Interfaz Web Horizon:
-1. En el menú lateral izquierdo, ve a **Identity (Identidad)**.
-2. Para crear un Proyecto: Haz clic en **Projects** -> botón **+ Create Project**, define el nombre (ej. `produccion`) y las cuotas de CPU/RAM.
-3. Para crear un Usuario: Haz clic en **Users** -> botón **+ Create User**:
-   * **User Name**: Nombre del usuario (ej. `dev_user`).
-   * **Password**: Contraseña inicial.
-   * **Primary Project**: Proyecto asignado (ej. `produccion` o `admin`).
-   * **Role**: Selecciona `member` (usuario estándar) o `reader` (solo lectura).
-
-#### Crear por Línea de Comandos (Kolla Toolbox):
-```bash
-# 1. Crear un Proyecto
-sudo docker exec kolla_toolbox openstack --os-auth-url http://10.100.29.30:5000/v3 \
-  --os-user-domain-name Default --os-project-domain-name Default \
-  --os-project-name admin --os-username admin --os-password Admin2025! \
-  --os-identity-api-version 3 \
-  project create --domain Default --description "Proyecto Desarrollo" dev-project
-
-# 2. Crear un Usuario asociado al Proyecto
-sudo docker exec kolla_toolbox openstack --os-auth-url http://10.100.29.30:5000/v3 \
-  --os-user-domain-name Default --os-project-domain-name Default \
-  --os-project-name admin --os-username admin --os-password Admin2025! \
-  --os-identity-api-version 3 \
-  user create --domain Default --project dev-project --password "ClaveUsuario2026!" desarrollador
-
-# 3. Asignar el rol 'member' al usuario en ese proyecto
-sudo docker exec kolla_toolbox openstack --os-auth-url http://10.100.29.30:5000/v3 \
-  --os-user-domain-name Default --os-project-domain-name Default \
-  --os-project-name admin --os-username admin --os-password Admin2025! \
-  --os-identity-api-version 3 \
-  role add --project dev-project --user desarrollador member
-```
-
-#### Cambiar la contraseña de cualquier usuario:
-```bash
-sudo docker exec kolla_toolbox openstack --os-auth-url http://10.100.29.30:5000/v3 \
-  --os-user-domain-name Default --os-project-domain-name Default \
-  --os-project-name admin --os-username admin --os-password Admin2025! \
-  --os-identity-api-version 3 \
-  user set --password "NuevaClave" <nombre_o_id_usuario>
-```
-

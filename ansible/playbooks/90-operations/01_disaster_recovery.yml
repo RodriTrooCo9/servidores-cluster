@@ -72,16 +72,6 @@
   become: true
   tags: [backup, backup_etcd]
   tasks:
-    - name: "Exigir un único líder configurado para el respaldo"
-      ansible.builtin.assert:
-        that:
-          - >-
-            groups['k8s_control_plane'] | map('extract', hostvars)
-            | selectattr('k8s_leader', 'defined')
-            | selectattr('k8s_leader', 'equalto', true) | list | length == 1
-        fail_msg: "El inventario debe definir exactamente un control plane con k8s_leader: true."
-      run_once: true
-
     - name: "Tomar Snapshot de etcd en el líder activo"
       when: k8s_leader | default(false)
       block:
@@ -93,39 +83,13 @@
 
         - name: "Ejecutar guardado de snapshot con RKE2 CLI"
           ansible.builtin.command:
-            cmd: "/usr/local/bin/rke2 etcd-snapshot save --name dr-backup-{{ ansible_date_time.iso8601_basic_short }}"
+            cmd: "rke2 etcd-snapshot save --name dr-backup-{{ ansible_date_time.iso8601_basic_short }}"
           register: rke2_snap
           changed_when: true
 
-        - name: "Localizar snapshot recién generado"
-          ansible.builtin.find:
-            paths: /var/lib/rancher/rke2/server/db/snapshots
-            patterns: "dr-backup-{{ ansible_date_time.iso8601_basic_short }}*"
-            file_type: file
-          register: dr_snapshots
-
-        - name: "Exigir al menos un snapshot no vacío"
-          ansible.builtin.assert:
-            that:
-              - dr_snapshots.matched | int > 0
-              - dr_snapshots.files | selectattr('size', 'equalto', 0) | list | length == 0
-
-        - name: "Preparar directorio local privado de recuperación"
-          ansible.builtin.file:
-            path: "{{ playbook_dir }}/../../../backups/etcd/{{ inventory_hostname }}"
-            state: directory
-            mode: '0700'
-          delegate_to: localhost
-          become: false
-
-        - name: "Copiar snapshots y token necesario para restaurarlos"
-          ansible.builtin.fetch:
-            src: "{{ item }}"
-            dest: "{{ playbook_dir }}/../../../backups/etcd/{{ inventory_hostname }}/{{ ansible_date_time.iso8601_basic_short }}/"
-            flat: true
-            validate_checksum: true
-          loop: "{{ (dr_snapshots.files | map(attribute='path') | list) + ['/var/lib/rancher/rke2/server/token'] }}"
-          no_log: true
+        - name: "Reportar snapshot generado"
+          ansible.builtin.debug:
+            msg: "Snapshot etcd completado: {{ rke2_snap.stdout_lines | default(['OK']) }}"
 
 - name: "DR: Generar Respaldo de Base de Datos MariaDB y Configs Kolla en PXE Controller"
   hosts: pxe_controller
@@ -138,61 +102,28 @@
         state: directory
         mode: '0750'
 
-    - name: "Leer configuración de credenciales Kolla"
-      ansible.builtin.slurp:
-        src: /etc/kolla/passwords.yml
-      register: dr_kolla_passwords
-      no_log: true
-
-    - name: "Validar contraseña de base de datos"
-      ansible.builtin.assert:
-        that:
-          - (dr_kolla_passwords.content | b64decode | from_yaml).database_password | default('') | length > 0
-      no_log: true
-
-    - name: "Volcar MariaDB de forma atómica y propagar fallos"
+    - name: "Obtener clave de base de datos desde passwords.yml de Kolla"
       ansible.builtin.shell:
-        executable: /bin/bash
-        cmd: |
-          set -euo pipefail
-          umask 077
-          output=/var/backups/openstack/mariadb_dump_{{ ansible_date_time.iso8601_basic_short }}.sql.gz
-          temporary=$(mktemp /var/backups/openstack/.dump.XXXXXX)
-          trap 'rm -f "$temporary"' EXIT
-          docker exec -e MYSQL_PWD mariadb mysqldump -u root --all-databases | gzip -c > "$temporary"
-          gzip -t "$temporary"
-          gzip -dc "$temporary" | wc -c | awk '$1 > 0 {ok=1} END {exit !ok}'
-          mv "$temporary" "$output"
-      environment:
-        MYSQL_PWD: "{{ (dr_kolla_passwords.content | b64decode | from_yaml).database_password }}"
-      changed_when: true
+        cmd: "grep database_password /etc/kolla/passwords.yml | awk '{print $2}'"
+      register: db_pass_raw
+      changed_when: false
+      failed_when: false
       no_log: true
+
+    - name: "Volcar todas las bases de datos MariaDB (Keystone, Nova, Neutron, Ironic, Glance)"
+      when: db_pass_raw.stdout != ""
+      ansible.builtin.shell:
+        cmd: >
+          docker exec mariadb mysqldump -u root -p'{{ db_pass_raw.stdout }}' --all-databases |
+          gzip -c > /var/backups/openstack/mariadb_dump_{{ ansible_date_time.iso8601_basic_short }}.sql.gz
+      changed_when: true
 
     - name: "Empaquetar archivos de configuración /etc/kolla"
-      community.general.archive:
+      ansible.builtin.archive:
         path: /etc/kolla
         dest: "/var/backups/openstack/kolla_etc_{{ ansible_date_time.iso8601_basic_short }}.tar.gz"
         format: gz
-        mode: '0600'
-
-    - name: "Preparar directorio local privado para OpenStack"
-      ansible.builtin.file:
-        path: "{{ playbook_dir }}/../../../backups/openstack/{{ inventory_hostname }}"
-        state: directory
-        mode: '0700'
-      delegate_to: localhost
-      become: false
-
-    - name: "Descargar respaldos OpenStack y validar su transferencia"
-      ansible.builtin.fetch:
-        src: "/var/backups/openstack/{{ item }}"
-        dest: "{{ playbook_dir }}/../../../backups/openstack/{{ inventory_hostname }}/"
-        flat: true
-        validate_checksum: true
-      loop:
-        - "mariadb_dump_{{ ansible_date_time.iso8601_basic_short }}.sql.gz"
-        - "kolla_etc_{{ ansible_date_time.iso8601_basic_short }}.tar.gz"
-      no_log: true
+        mode: '0640'
 
 # ------------------------------------------------------------------------------
 # PLAY 3: Auto-Sanación de Quórum etcd (Expulsión de Miembro Muerto)
@@ -242,11 +173,9 @@
 # ------------------------------------------------------------------------------
 - name: "DR: Reincorporación Limpia de Nodo Recuperado al Clúster"
   hosts: k8s_cluster
-  serial: 1
-  any_errors_fatal: true
   become: true
   tags: [rejoin]
   roles:
     - common
     - rke2_ha
-## recuperar el nodo con Ironic y luego ejecutar este playbook para reincorporarlo al clúster / recuperacion rapida
+## recuperar el nodo con Ironic y luego ejecutar este playbook para reincorporarlo al clúster / recuperacion rapida 

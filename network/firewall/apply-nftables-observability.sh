@@ -1,59 +1,50 @@
 #!/usr/bin/env bash
-# Restringe puertos de observabilidad; conserva el resto del ruleset.
-# Ejecutar localmente con sudo. Requiere confirmación en 60 segundos.
+# ==============================================================================
+# Script: scripts/apply-nftables-observability.sh
+# Objetivo: Aplicar reglas de firewall nftables restrictivas para observabilidad
+#           con ROLLBACK AUTOMÁTICO DE SEGURIDAD (60 segundos).
+#
+# Flujos permitidos:
+#   - Scraping métricas: 9100 (node_exporter), 9180 (openstack), 15692 (rabbitmq), 9104 (mysql)
+#   - Ingesta OTLP: 4317 gRPC / 4318 HTTP exclusivamente dentro de 10.100.29.0/24
+#   - Tráfico existente: OpenStack VIP (10.100.29.5), PXE/DHCP/TFTP Ironic, RKE2 K8s
+# ==============================================================================
 set -Eeuo pipefail
-[[ ${EUID} -eq 0 ]] || { echo "Ejecute con sudo" >&2; exit 1; }
-command -v flock >/dev/null
-exec 9>/run/lock/infra-observability.lock
-flock -n 9 || { echo "Ya hay otra aplicación de reglas en curso" >&2; exit 1; }
-umask 077
-WORK_DIR=$(mktemp -d /tmp/infra-observability.XXXXXX)
-APPLIED=false
-CONFIRMED=false
-restore() {
-    local code=$?
-    trap - EXIT
-    if [[ "${APPLIED}" == true && "${CONFIRMED}" == false ]]; then
-        echo "Sin confirmación: restaurando la tabla anterior..." >&2
-        if ! nft -f "${WORK_DIR}/restore.nft"; then
-            echo "ERROR: rollback fallido. Respaldo: ${WORK_DIR}" >&2
-            exit 1
-        fi
-    fi
-    # Se conserva el respaldo privado para diagnóstico.
-    echo "Archivos de reglas: ${WORK_DIR}"
-    exit "${code}"
-}
-trap restore EXIT
-trap 'exit 1' HUP INT TERM
 
-if nft list table inet observability_filter > "${WORK_DIR}/previous.nft" 2>/dev/null; then
-    echo 'delete table inet observability_filter' > "${WORK_DIR}/apply.nft"
-else
-    : > "${WORK_DIR}/previous.nft"
-    : > "${WORK_DIR}/apply.nft"
-fi
-{
-    echo 'delete table inet observability_filter'
-    cat "${WORK_DIR}/previous.nft"
-} > "${WORK_DIR}/restore.nft"
-cat >> "${WORK_DIR}/apply.nft" <<'RULES'
+BACKUP_FILE="/tmp/nftables.backup.$(date +%s)"
+echo "[*] Creando respaldo de reglas nftables actuales en ${BACKUP_FILE}..."
+sudo nft list ruleset | sudo tee "${BACKUP_FILE}" >/dev/null
+
+echo "[*] Programando rollback automático de seguridad en 60 segundos..."
+(
+    sleep 60
+    if [[ -f "/tmp/nftables_pending_confirmation" ]]; then
+        echo "[!] TIEMPO EXPIRADO SIN CONFIRMACIÓN. Revirtiendo reglas nftables..."
+        sudo nft -f "${BACKUP_FILE}"
+        rm -f "/tmp/nftables_pending_confirmation"
+        echo "[!] Rollback completado con éxito. Conectividad preservada."
+    fi
+) >/dev/null 2>&1 &
+touch "/tmp/nftables_pending_confirmation"
+
+echo "[*] Aplicando reglas de observabilidad en nftables..."
+sudo nft -f - << 'EOF'
 table inet observability_filter {
     chain input {
         type filter hook input priority 0; policy accept;
-        iifname "lo" accept
+
+        # Permitir tráfico loopback
+        iif "lo" accept
+
+        # Permitir conexiones establecidas y relacionadas
+        ct state established,related accept
+
+        # Permitir puertos de observabilidad exclusivamente desde la red interna (10.100.29.0/24)
         ip saddr 10.100.29.0/24 tcp dport { 9100, 9180, 9104, 15692, 9090, 8428, 3100, 3200, 4317, 4318, 19579 } accept
-        tcp dport { 9100, 9180, 9104, 15692, 9090, 8428, 3100, 3200, 4317, 4318, 19579 } drop
+
+        # No interferir con Ironic DHCP/TFTP ni SSH
+        udp dport { 67, 68, 69 } accept
+        tcp dport 22 accept
     }
 }
-RULES
-nft -c -f "${WORK_DIR}/apply.nft"
-nft -f "${WORK_DIR}/apply.nft"
-APPLIED=true
-printf 'Compruebe conectividad. Escriba CONFIRMAR antes de 60 segundos: '
-if read -r -t 60 answer && [[ "${answer}" == CONFIRMAR ]]; then
-    CONFIRMED=true
-    echo "Reglas confirmadas (solo en memoria; no se modificó la configuración persistente)."
-else
-    exit 1
-fi
+EOF

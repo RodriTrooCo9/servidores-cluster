@@ -78,7 +78,7 @@ spec:
             storage: 25Gi
 ---
 # ------------------------------------------------------------------------------
-# 2.  (LOGS - 7 DÍAS RETENCIÓN)
+# 2. GRAFANA LOKI SINGLE-BINARY (LOGS - 7 DÍAS RETENCIÓN)
 # ------------------------------------------------------------------------------
 apiVersion: v1
 kind: ConfigMap

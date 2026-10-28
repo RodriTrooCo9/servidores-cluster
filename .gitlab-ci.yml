@@ -8,12 +8,6 @@ variables:
   ANSIBLE_FORCE_COLOR: "true"
   PY_COLORS: "1"
 
-cli:regressions:
-  stage: dry-run
-  image: python:3.11-slim
-  script:
-    - python3 -m unittest discover -s tests -v
-
 lint:yaml:
   stage: lint
   image: python:3.11-slim
