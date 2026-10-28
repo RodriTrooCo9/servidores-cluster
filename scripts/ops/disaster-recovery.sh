@@ -377,7 +377,7 @@ EOF
         log_success "¡El nodo ${NODE_NAME} ha arrancado su nuevo disco SSD y responde por SSH!"
         log_info "5. Ejecutando incorporación final al clúster mediante Ansible..."
         cd "${REPO_DIR}"
-        ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/02_kubernetes_ha.yml --limit "${NODE_HOST}"
+        ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke2_cluster.yml --limit "${NODE_HOST}"
         log_success "=================================================================="
         log_success "   RECUPERACIÓN COMPLETADA CON ÉXITO: NODO ${NODE_NAME} OPERATIVO "
         log_success "=================================================================="

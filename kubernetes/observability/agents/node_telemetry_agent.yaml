@@ -7,15 +7,10 @@
 #   - Trazas -> Tempo / OTel Gateway (10.100.29.101:30317)
 # ==============================================================================
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: monitoring
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: otel-node-agent
-  namespace: monitoring
+  namespace: observability
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -39,13 +34,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: otel-node-agent
-    namespace: monitoring
+    namespace: observability
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otel-node-agent-config
-  namespace: monitoring
+  namespace: observability
 data:
   config.yaml: |
     receivers:
@@ -60,7 +55,7 @@ data:
         include:
           - /var/log/pods/*/*/*.log
         exclude:
-          - /var/log/pods/monitoring_*/*/*.log
+          - /var/log/pods/observability_*/*/*.log
         start_at: beginning
 
       kubeletstats:
@@ -122,7 +117,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: otel-node-agent
-  namespace: monitoring
+  namespace: observability
 spec:
   selector:
     matchLabels:

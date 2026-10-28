@@ -19,6 +19,7 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**OpenStack Glance e Ironic Bare-Metal**](architecture/openstack/OpenStack%20Glance,%20Formatos%20de%20Disco%20e%20Ironic%20Bare-Metal.md): Conceptos clave de aprovisionamiento físico.
 
 ### 2. [Procedimientos Operativos / Runbooks (`docs/runbooks/`)](runbooks/)
+- [**MANUAL INTEGRAL DEL PROYECTO (Instalación desde Cero + Operación + 21 Escenarios de Falla)**](runbooks/manual-integral-instalacion-y-recuperacion.md): **La biblia técnica del clúster.** Despliegue paso a paso (Fases 00 a 90), arquitectura de red, secuencia de arranque y los 21 escenarios SRE de contingencia.
 - [**Manual Maestro de Recuperación y Rearranque (SRE Runbook)**](runbooks/manual-recuperacion-y-rearranque.md): Guía exhaustiva para apagones totales, caídas de nodo, pérdida de quórum etcd y fallos de servicio.
 - [**Recuperación ante Desastres (Disaster Recovery)**](runbooks/disaster_recovery.md): Protocolo de contingencia y restauración de etcd y MariaDB.
 - [**Blindaje de Red y Contención Rogue DHCP**](runbooks/blindaje_red_oficina.md): Reglas para aislar la red de pruebas de la oficina.
