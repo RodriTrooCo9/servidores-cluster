@@ -1,11 +1,16 @@
 ---
-# ==============================================================================
-# Playbook: 07_kubernetes_ha.yml
-# Objetivo: Desplegar Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF)
-# Invoca: Rol 'rke2_ha' en grupos k8s_control_plane y k8s_workers
-# ==============================================================================
-- name: "Clúster Kubernetes RKE2 Alta Disponibilidad (CPs y Workers)"
-  hosts: k8s_cluster
+- name: "Actualizar control planes RKE2 de uno en uno"
+  hosts: k8s_control_plane
+  serial: 1
+  any_errors_fatal: true
+  become: true
+  roles:
+    - rke2_ha
+
+- name: "Actualizar workers tras los control planes"
+  hosts: k8s_workers
+  serial: 1
+  any_errors_fatal: true
   become: true
   roles:
     - rke2_ha

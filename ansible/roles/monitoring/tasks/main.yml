@@ -36,7 +36,6 @@
         state: present
         update_cache: yes
         cache_valid_time: 3600
-      ignore_errors: true
 
     - name: "Desplegar configuración de Prometheus con todos los targets del inventario"
       ansible.builtin.template:
@@ -55,4 +54,3 @@
       loop:
         - prometheus
         - grafana-server
-      ignore_errors: true

@@ -76,71 +76,7 @@ spec:
           exporters: [loki]
 ---
 # ------------------------------------------------------------------------------
-# 2. OPENTELEMETRY COLLECTOR AGENT (DAEMONSET EN CADA NODO K8S)
-# ------------------------------------------------------------------------------
-apiVersion: opentelemetry.io/v1beta1
-kind: OpenTelemetryCollector
-metadata:
-  name: otel-agent
-  namespace: observability
-spec:
-  mode: daemonset
-  image: otel/opentelemetry-collector-contrib:0.104.0
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "64Mi"
-    limits:
-      cpu: "250m"
-      memory: "256Mi"
-  config:
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-      filelog:
-        include: [/var/log/pods/*/*/*.log]
-        exclude: [/var/log/pods/observability_*/*/*.log]
-        start_at: end
-
-    processors:
-      batch:
-        send_batch_size: 512
-        timeout: 1s
-      memory_limiter:
-        check_interval: 1s
-        limit_percentage: 75
-        spike_limit_percentage: 15
-
-    exporters:
-      otlp/gateway:
-        endpoint: "otel-gateway-collector.observability.svc.cluster.local:4317"
-        tls:
-          insecure: true
-
-    service:
-      telemetry:
-        metrics:
-          address: 0.0.0.0:8888
-      pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
-        metrics:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
-        logs:
-          receivers: [filelog, otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/gateway]
----
-# ------------------------------------------------------------------------------
-# 3. CRD INSTRUMENTATION: AUTO-INSTRUMENTACIÓN PARA JAVA Y PYTHON
+# 2. CRD INSTRUMENTATION: AUTO-INSTRUMENTACIÓN CENTRALIZADA (JAVA Y PYTHON)
 # ------------------------------------------------------------------------------
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
@@ -149,7 +85,7 @@ metadata:
   namespace: observability
 spec:
   exporter:
-    endpoint: http://otel-agent-collector.observability.svc.cluster.local:4318
+    endpoint: http://otel-gateway-collector.observability.svc.cluster.local:4318
   propagators:
     - tracecontext
     - baggage

@@ -16,17 +16,19 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**Flujo Detallado de Arranque PXE/iPXE**](architecture/arranque_pxe_detallado.md): Investigación y configuración paso a paso del booteo de red.
 - [**Topología y Aislamiento de Red**](architecture/network/aislamiento_red_oficina.md): Seguridad L2/L3 y contención de tráfico.
 - [**Evolución Histórica de Infraestructura**](architecture/evolucion_infraestructura.md): Registro histórico de cambios y trazabilidad.
-- [**OpenStack Glance e Ironic Bare-Metal**](architecture/openstack/OpenStack%20Glance,%20Formatos%20de%20Disco%20e%20Ironic%20Bare-Metal.md): Conceptos clave de aprovisionamiento físico.
+- [**Arquitectura Comparativa Ironic, Glance y Bifrost**](architecture/openstack/glance_ironic_bifrost_arquitectura_comparativa.md): Análisis arquitectónico de aprovisionamiento físico bare-metal.
+- [**Plan Maestro de Compilación e Instalación iPXE**](architecture/openstack/plan_maestro_instalacion_ipxe.md): Compilación y despliegue del binario iPXE con drivers integrados.
 
 ### 2. [Procedimientos Operativos / Runbooks (`docs/runbooks/`)](runbooks/)
 - [**MANUAL INTEGRAL DEL PROYECTO (Instalación desde Cero + Operación + 21 Escenarios de Falla)**](runbooks/manual-integral-instalacion-y-recuperacion.md): **La biblia técnica del clúster.** Despliegue paso a paso (Fases 00 a 90), arquitectura de red, secuencia de arranque y los 21 escenarios SRE de contingencia.
-- [**Manual Maestro de Recuperación y Rearranque (SRE Runbook)**](runbooks/manual-recuperacion-y-rearranque.md): Guía exhaustiva para apagones totales, caídas de nodo, pérdida de quórum etcd y fallos de servicio.
 - [**Recuperación ante Desastres (Disaster Recovery)**](runbooks/disaster_recovery.md): Protocolo de contingencia y restauración de etcd y MariaDB.
 - [**Blindaje de Red y Contención Rogue DHCP**](runbooks/blindaje_red_oficina.md): Reglas para aislar la red de pruebas de la oficina.
 - [**Rotación y Renovación de Secretos**](runbooks/rotacion_secretos.md): Guía de actualización periódica de claves y tokens.
 - [**Incorporación de Nuevo Nodo Bare-Metal**](runbooks/anadir_nodo.md): Procedimiento de alta y enrolamiento de servidores adicionales.
 
 ### 3. [Observabilidad y Telemetría (`docs/observability/`)](observability/)
+- [**Etapa 1: instalar Coroot primero**](observability/instalar-coroot-primero.md): Servidor, UI y primer agente sobre Debian existente; sin reconstruir imágenes.
+- [**Instalar Coroot con Debian 13, Packer y Cloud-Init**](observability/coroot-debian13-packer.md): Servidor dedicado, agentes, construcción de imagen y verificación operativa.
 - [**Guía de Monitoreo Prometheus y Grafana**](observability/prometheus_grafana.md): Configuración de paneles, agentes y métricas.
 - [**Manual Maestro de Observabilidad Avanzada**](observability/manual_maestro_observabilidad.md): Arquitectura de VictoriaMetrics, Loki, Tempo y OpenTelemetry.
 
@@ -36,6 +38,8 @@ Bienvenido al repositorio de documentación de la infraestructura bare-metal con
 - [**ADR 0003: Mitigación de almacenamiento para SSD de 128 GB**](adr/0003-mitigacion-disco-128gb.md)
 
 ### 5. [Referencia Rápida (`docs/reference/`)](reference/)
+- [**Correcciones aplicadas y validación pendiente**](reference/correcciones-aplicadas-2026-10-27.md): Cambios implementados tras la auditoría, pruebas locales y pendientes de laboratorio.
+- [**Auditoría del proyecto: bugs y posibles mejoras**](reference/auditoria-proyecto-2026-10-27.md): Hallazgos priorizados, evidencia, validaciones y plan de corrección.
 - [**Matriz de Puertos y Servicios**](reference/puertos_y_servicios.md): Inventario completo de puertos TCP/UDP.
 - [**Cheat-Sheet de IPs y Hardware**](reference/env_cheatsheet.md): Resumen rápido de direcciones y alias SSH.
 - [**Plantilla de Credenciales**](reference/credentials.example.md): Modelo sanitizado sin secretos en texto plano.
