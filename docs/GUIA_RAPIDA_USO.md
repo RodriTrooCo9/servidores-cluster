@@ -93,7 +93,7 @@ make tunnels
 
 | Servicio | URL en tu Navegador | Usuario por Defecto | Propósito Operativo |
 | :--- | :--- | :---: | :--- |
-| **Grafana** | [http://localhost:3000](http://localhost:3000) | `admin` / *(según vault)* | Métricas de CPU, RAM, red, pods y dashboards. |
+| **Grafana** | [http://localhost:3001](http://localhost:3001) | `admin` / *(según vault)* | Métricas de CPU, RAM, red, pods y dashboards. |
 | **OpenStack Horizon** | [http://localhost:8080](http://localhost:8080) | `admin` | Consola web de aprovisionamiento bare-metal. |
 | **Sonatype Nexus 3** | [http://localhost:8081](http://localhost:8081) | `admin` | Registro de imágenes Docker y paquetes Debian. |
 | **Prometheus TSDB** | [http://localhost:9090](http://localhost:9090) | *(Sin clave)* | Explorador de métricas PromQL y estado de targets. |
@@ -169,7 +169,7 @@ make backup
 - **Causa**: El Nodo 306 (`192.168.29.25`) está apagado o no conectó al Wi-Fi.
 - **Solución**: Presionar el botón de encendido del chasis físico del Nodo 306. Esperar 45 segundos hasta que responda `ping 192.168.29.25`.
 
-### Problema B: `curl: (7) Failed to connect to localhost port 3000: Connection refused`
+### Problema B: `curl: (7) Failed to connect to localhost port 3001: Connection refused`
 - **Causa**: No está corriendo `make tunnels`.
 - **Solución**: Abre una ventana de terminal y ejecuta `make tunnels`. Déjala corriendo mientras trabajas.
 

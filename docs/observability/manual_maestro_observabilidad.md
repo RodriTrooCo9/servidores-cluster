@@ -338,7 +338,7 @@ df -h /var/lib/rancher/k3s/storage/
 Las políticas de compactación y retención configuradas (30d para VictoriaMetrics, 7d para Loki y 3d para Tempo) garantizan que el almacenamiento nunca supere los 60 GiB combinados.
 
 ### 3. Verificar Conectividad de Grafana hacia los Datasources
-Desde cualquier navegador conectado vía túnel SSH ([http://localhost:3000](http://localhost:3000)):
+Desde cualquier navegador conectado vía túnel SSH ([http://localhost:3001](http://localhost:3001)):
 * Menú lateral -> **Connections** -> **Data sources**.
 * Haz clic en **VictoriaMetrics**, **Loki** o **Tempo** y presiona el botón **Save & test**. Debe responder en verde: *"Data source is working"*.
 
@@ -410,7 +410,7 @@ Todos los servicios están expuestos localmente en la máquina del administrador
 | Servicio | URL Local | Descripción |
 | :--- | :--- | :--- |
 | **Portal Microservicios Web** | [http://localhost:30080](http://localhost:30080) | Dashboard interactivo de pedidos y estado del clúster |
-| **Grafana Observabilidad** | [http://localhost:3000](http://localhost:3000) | Dashboards de Métricas, Logs, Trazas y OpenStack |
+| **Grafana Observabilidad** | [http://localhost:3001](http://localhost:3001) | Dashboards de Métricas, Logs, Trazas y OpenStack |
 | **VictoriaMetrics Web UI** | [http://localhost:30428](http://localhost:30428) | Explorador directo de métricas y consultas PromQL |
 | **Tempo Tracing** | [http://localhost:30200](http://localhost:30200) | Endpoint OTLP y búsqueda de trazas distribuidas |
 | **OpenStack Horizon** | [http://localhost:8080/auth/login/](http://localhost:8080/auth/login/) | Consola Web de OpenStack Kolla |
@@ -424,7 +424,7 @@ ssh -i ansible/keys/cluster_key -o StrictHostKeyChecking=no -f -N \
   -L 8081:10.100.29.20:8081 \
   -L 8082:10.100.29.20:8082 \
   -L 8083:10.100.29.20:8083 \
-  -L 3000:10.100.29.30:3000 \
+  -L 3001:10.100.29.30:3000 \
   -L 9090:10.100.29.30:9090 \
   -L 6443:10.100.29.101:6443 \
   -L 30080:10.100.29.101:30080 \
