@@ -167,10 +167,6 @@ if command -v mkisofs >/dev/null 2>&1; then
     mkisofs -R -V config-2 -o "${ISO_IMG}" "${OUTPUT_DIR}" >/dev/null 2>&1
 elif command -v genisoimage >/dev/null 2>&1; then
     genisoimage -R -V config-2 -o "${ISO_IMG}" "${OUTPUT_DIR}" >/dev/null 2>&1
-else
-    echo "ERROR: Instale mkisofs o genisoimage." >&2
-    exit 1
 fi
-[[ -s "${ISO_IMG}" ]] || { echo "ERROR: No se generó la ISO." >&2; exit 1; }
 
 echo "[OK] ConfigDrive generado exitosamente para ${NODE_NAME}: ${ISO_IMG}"

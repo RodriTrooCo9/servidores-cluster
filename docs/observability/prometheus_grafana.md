@@ -42,9 +42,9 @@
 * Ni el puerto `9090` (Prometheus) ni el puerto `3000` (Grafana) se exponen a la red corporativa.
 * La laptop del administrador (`192.168.29.16`) accede exclusivamente mediante **túneles SSH en reenvío local (`ssh -L`)** a través de la interfaz Wi-Fi del Nodo 306 (`192.168.29.25`):
   ```bash
-  ssh -L 3001:localhost:3000 -L 9090:localhost:9090 -L 9093:localhost:9093 -N -f n306-wifi
+  ssh -L 3000:localhost:3000 -L 9090:localhost:9090 -L 9093:localhost:9093 -N -f n306-wifi
   ```
-  Permitiendo acceder desde el navegador en `http://localhost:3001` y `http://localhost:9090`.
+  Permitiendo acceder desde el navegador en `http://localhost:3000` y `http://localhost:9090`.
 
 ### 1.4 Binarios Nativos + systemd vs Docker Compose
 * **Recomendación Oficial**: **Binarios estáticos oficiales (`.tar.gz`) con unidades systemd dedicadas**.
@@ -63,7 +63,7 @@
 |                                                                                                                  |
 |                                     [ LAPTOP ADMIN ] (192.168.29.16 Wi-Fi)                                       |
 |                                            |                                                                     |
-|                             Túneles SSH    | • ssh -L 3001:localhost:3000 (Grafana)                              |
+|                             Túneles SSH    | • ssh -L 3000:localhost:3000 (Grafana)                              |
 |                             Cifrados       | • ssh -L 9090:localhost:9090 (Prometheus)                           |
 |                                            v                                                                     |
 |  +------------------------------------------------------------------------------------------------------------+  |

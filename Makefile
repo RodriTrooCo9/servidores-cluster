@@ -1,6 +1,5 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
-.NOTPARALLEL: deploy
 INVENTORY ?= inventory/lab/hosts.yml
 ANSIBLE_PLAYBOOK ?= ansible-playbook -i $(INVENTORY)
 
@@ -69,9 +68,6 @@ backup: ## [Fase 90] Genera respaldos y snapshots de contingencia (DR)
 
 tunnels: ## Abre tuneles SSH locales para dashboards (Grafana, Horizon, Nexus)
 	@./scripts/client/tunnels.sh
-
-web-tunnels: ## Consulta las URLs publicas HTTPS (Cloudflare Tunnels) activas del cluster
-	@ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no n306@192.168.29.25 "/usr/local/bin/tuneles-web"
 
 clean: ## Limpia archivos temporales, logs y caches locales
 	@echo "==> Limpiando archivos temporales..."

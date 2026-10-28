@@ -1,14 +1,9 @@
-# Guía Maestra de Instalación Conjunta: Infraestructura Bare-Metal Edge con Bastion Host, Sonatype Nexus, OpenStack Kolla-Ansible, Clúster Kubernetes RKE2 HA (Cilium eBPF) y Suite de Observabilidad (Coroot eBPF, OTel, Prometheus, Grafana) sobre Debian 13 (Trixie)
-
-> 🚀 **¿Solo quieres clonar y desplegar paso a paso sin teoría?**  
-> 👉 [**GUÍA DE EJECUCIÓN DIRECTA COPIAR/PEGAR (INSTALL.md)**](INSTALL.md)  
-> 👉 [**GUÍA RÁPIDA: CLONAR Y CONECTARSE AL SERVIDOR (CONECTARSE_AL_SERVIDOR.md)**](CONECTARSE_AL_SERVIDOR.md)  
-> 👉 [**MANUAL INTEGRAL DE INSTALACIÓN Y OPERACIÓN (docs/runbooks/manual-integral-instalacion-y-recuperacion.md)**](docs/runbooks/manual-integral-instalacion-y-recuperacion.md)
+# Guía Maestra de Instalación Conjunta: Infraestructura Bare-Metal Edge con Bastion Host, Sonatype Nexus, PXE/Glance, OpenStack Ironic y Clúster Kubernetes sobre Debian 13 (Trixie)
 
 > **Documento Oficial de Infraestructura como Código (IaC), Arquitectura y Despliegue de Producción**  
 > **Sistema Operativo Base**: Debian GNU/Linux 13 (Trixie) con Kernel 6.12+ en la flota física completa de 8 nodos  
-> **Modelo Operativo**: Aprovisionamiento Físico Zero-Touch, Aislamiento de Red L2, Despliegue Masivo por MAC, Imágenes Inmutables Packer en Glance, Clúster Kubernetes RKE2 HA con Datapath Cilium eBPF y Telemetría Full-Stack Coroot / OTel / VictoriaMetrics / Loki / Tempo  
-> **Hardware Real**: 8 Nodos Bare-Metal físicos (Dell OptiPlex 3020M, Realtek RTL8111G; 3 equipos de 8 GB RAM / 5 equipos de 16 GB RAM, todos con 128 GB de disco NVMe/SSD)
+> **Modelo Operativo**: Aprovisionamiento Físico Zero-Touch, Aislamiento de Red L2, Despliegue Masivo por MAC, Inmutabilidad de Imágenes y Clúster Kubernetes de Alta Disponibilidad (HA)  
+> **Hardware Real**: 8 Nodos Bare-Metal físicos (3 equipos de 8 GB RAM / 5 equipos de 16 GB RAM, todos con 128 GB de disco NVMe/SSD)
 
 ---
 
@@ -17,11 +12,11 @@
 1. [Resumen Ejecutivo y Arquitectura del Sistema](#1-resumen-ejecutivo-y-arquitectura-del-sistema)
    - 1.1 [Objetivo del Proyecto y Alcance Operativo](#11-objetivo-del-proyecto-y-alcance-operativo)
    - 1.2 [Componentes de la Solución y Recursos Compartidos](#12-componentes-de-la-solución-y-recursos-compartidos)
-   - 1.3 [Estructura Limpia del Repositorio: Documentación (`docs/`), Playbooks y Scripts](#13-estructura-limpia-del-repositorio-documentación-docs-playbooks-y-scripts)
+   - 1.3 [Estructura Limpia del Repositorio: Documentación (`docs/`) y Scripts (`scripts/`)](#13-estructura-limpia-del-repositorio-documentación-docs-y-scripts-scripts)
    - 1.4 [Diagramas Maestros de Arquitectura (Mermaid con Explicaciones Simples)](#14-diagramas-maestros-de-arquitectura-mermaid-con-explicaciones-simples)
-2. [Investigación Comparativa y Arquitectura OpenStack Kolla-Ansible vs Ironic Standalone](#2-investigación-comparativa-y-arquitectura-openstack-kolla-ansible-vs-ironic-standalone)
+2. [Investigación Comparativa: OpenStack Kolla-Ansible vs Bifrost/Ironic Standalone](#2-investigación-comparativa-openstack-kolla-ansible-vs-bifrostironic-standalone)
    - 2.1 [Análisis de la Guía de Referencia (Kolla-Ansible en Debian)](#21-análisis-de-la-guía-de-referencia-kolla-ansible-en-debian)
-   - 2.2 [Viabilidad y Contención de Recursos frente al Límite de 128 GB de Disco](#22-viabilidad-y-contención-de-recursos-frente-al-límite-de-128-gb-de-disco)
+   - 2.2 [Viabilidad de OpenStack Completo frente a Limitaciones de Hardware](#22-viabilidad-de-openstack-completo-frente-a-limitaciones-de-hardware)
    - 2.3 [Diferencias entre Entorno de Desarrollo y Producción](#23-diferencias-entre-entorno-de-desarrollo-y-producción)
 3. [Inventario Real de los 8 Nodos, Asignación de Roles y Métodos de Aprovisionamiento](#3-inventario-real-de-los-8-nodos-asignación-de-roles-y-métodos-de-aprovisionamiento)
    - 3.1 [Mapa Oficial: ID de Inventario → MAC → RAM → Disco → Rol → IP con Justificación](#31-mapa-oficial-id-de-inventario--mac--ram--disco--rol--ip-con-justificación)
@@ -33,23 +28,22 @@
    - 4.1 [Matriz de Compatibilidad Oficial y Mitigación de Conflictos](#41-matriz-de-compatibilidad-oficial-y-mitigación-de-conflictos)
    - 4.2 [Estrategia de Ejecución de Servicios en Debian 13](#42-estrategia-de-ejecución-de-servicios-en-debian-13)
 5. [Fases Cronológicas de Instalación Paso a Paso](#5-fases-cronológicas-de-instalación-paso-a-paso)
-   - [5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh` & Ansible Core)](#50-orquestación-remota-desde-laptop-ejecutar-desde-laptopsh--ansible-core)
-   - [Fase 1: Preparación Base del Sistema Operativo en Debian 13 (`roles/common`)](#fase-1-preparación-base-del-sistema-operativo-en-debian-13-rolescommon)
-   - [Fase 2: Bastion Host (Seguridad Perimetral, SSH ProxyJump y nftables) (`roles/bastion`)](#fase-2-bastion-host-seguridad-perimetral-ssh-proxyjump-y-nftables-rolesbastion)
-   - [Fase 3: Sonatype Nexus 3 con Backend PostgreSQL 16 y Tuning de Disco (`roles/nexus`)](#fase-3-sonatype-nexus-3-con-backend-postgresql-16-y-tuning-de-disco-rolesnexus)
+   - [5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh`)](#50-orquestación-remota-desde-laptop-ejecutar-desde-laptopsh)
+   - [Fase 1: Preparación Base del Sistema Operativo en Debian 13](#fase-1-preparación-base-del-sistema-operativo-en-debian-13)
+   - [Fase 2: Bastion Host (Seguridad Perimetral, SSH ProxyJump y nftables)](#fase-2-bastion-host-seguridad-perimetral-ssh-proxyjump-y-nftables)
+   - [Fase 3: Sonatype Nexus 3 con Backend PostgreSQL 16 y Tuning de Disco](#fase-3-sonatype-nexus-3-con-backend-postgresql-16-y-tuning-de-disco)
    - [Fase 4: Configuración de Clientes para Consumir Nexus](#fase-4-configuración-de-clientes-para-consumir-nexus)
-   - [Fase 5: Servicios de Arranque por Red PXE / iPXE con Reservas por MAC (`roles/pxe_controller`)](#fase-5-servicios-de-arranque-por-red-pxe--ipxe-con-reservas-por-mac-rolespxe_controller)
-   - [Fase 6: OpenStack Kolla-Ansible (Glance, Ironic, Keystone, Horizon) (`roles/ironic`)](#fase-6-openstack-kolla-ansible-glance-ironic-keystone-horizon-rolesironic)
-   - [Fase 7: Compilación de Imagen Dorada con Packer, eBPF Agent y Cloud-Init (`debian13-coroot.pkr.hcl`)](#fase-7-compilación-de-imagen-dorada-con-packer-ebpf-agent-y-cloud-init-debian13-corootpkrhcl)
+   - [Fase 5: Servicios de Arranque por Red PXE / iPXE con Reservas por MAC](#fase-5-servicios-de-arranque-por-red-pxe--ipxe-con-reservas-por-mac)
+   - [Fase 6: OpenStack Glance e Ironic Standalone para Servidores Físicos](#fase-6-openstack-glance-e-ironic-standalone-para-servidores-físicos)
+   - [Fase 7: Plantillas Cloud-Init, ConfigDrive y Compilación Inmutable con Packer](#fase-7-plantillas-cloud-init-configdrive-y-compilación-inmutable-con-packer)
    - [Fase 8: Despliegue Masivo por Red Privada "Un Solo Botón" (Zero-Touch Provisioning)](#fase-8-despliegue-masivo-por-red-privada-un-solo-botón-zero-touch-provisioning)
-   - [Fase 9: Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF) y Microservicios (`roles/rke2_ha`)](#fase-9-clúster-kubernetes-de-alta-disponibilidad-rke2--cilium-ebpf-y-microservicios-rolesrke2_ha)
-   - [Fase 10: Suite Unificada de Observabilidad y Telemetría eBPF (Prometheus, Grafana, Coroot CE, OTel, VictoriaMetrics, Loki, Tempo)](#fase-10-suite-unificada-de-observabilidad-y-telemetría-ebpf-prometheus-grafana-coroot-ce-otel-victoriametrics-loki-tempo)
-   - [Fase 11: Ciclo de Vida, Reinstalación de Nodos y Recuperación ante Desastres (`disaster-recovery.sh`)](#fase-11-ciclo-de-vida-reinstalación-de-nodos-y-recuperación-ante-desastres-disaster-recoverysh)
-   - [Fase 12: Validación Integral, Health Check y Regresiones Automatizadas (`healthcheck.sh` & Pytest)](#fase-12-validación-integral-health-check-y-regresiones-automatizadas-healthchecksh--pytest)
+   - [Fase 9: Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF)](#fase-9-clúster-kubernetes-de-alta-disponibilidad-rke2--cilium-ebpf)
+   - [Fase 10: Ciclo de Vida, Reinstalación de Nodos y Actualizaciones Continuas](#fase-10-ciclo-de-vida-reinstalación-de-nodos-y-actualizaciones-continuas)
+   - [Fase 11: Validación Integral del Clúster y Acceso Remoto](#fase-11-validación-integral-del-clúster-y-acceso-remoto)
 6. [Matriz de Comunicación, Puertos y Reglas de Cortafuegos (nftables)](#6-matriz-de-comunicación-puertos-y-reglas-de-cortafuegos-nftables)
 7. [Seguridad Criptográfica, Secretos y Gestión de Repositorios](#7-seguridad-criptográfica-secretos-y-gestión-de-repositorios)
 8. [Gestión Estricta y Cuotas del Disco de 128 GB (Glance, Nexus, etcd)](#8-gestión-estricta-y-cuotas-del-disco-de-128-gb-glance-nexus-etcd)
-9. [Scripts Automáticos de Diagnóstico, Testing y Health Check](#9-scripts-automáticos-de-diagnóstico-testing-y-health-check)
+9. [Scripts Automáticos de Diagnóstico y Health Check](#9-scripts-automáticos-de-diagnóstico-y-health-check)
 10. [Guía Exhaustiva de Resolución de Problemas (Troubleshooting)](#10-guía-exhaustiva-de-resolución-de-problemas-troubleshooting)
 11. [Checklist Final, Estado Esperado y Hoja de Ruta (Roadmap)](#11-checklist-final-estado-esperado-y-hoja-de-ruta-roadmap)
 
@@ -79,90 +73,75 @@ El ciclo de aprovisionamiento es **completamente desatendido (Zero-Touch)** y ma
 | :--- | :--- | :--- |
 | **Bastion Host** | Nodo ID 314 (`10.100.29.10`) | • Punto único de salto SSH ProxyJump (Puerto TCP `2222`).<br>• Proxy Egress Squid para salida auditada a WAN (Puerto TCP `3128`).<br>• Servidor de sincronización horaria Chrony NTP (Puerto UDP `123`).<br>• Cortafuegos perimetral `nftables`. |
 | **Sonatype Nexus 3** | Nodo ID 315 (`10.100.29.20`) | • Proxy y Caché de paquetes Debian APT (`:8081/repository/debian-proxy/`).<br>• Docker Hub Proxy & Registro OCI Privado (`:8082` pull / `:8083` push).<br>• Proxies para npm (`:8081`) y PyPI (`:8081`).<br>• Base de datos relacional PostgreSQL 16 interna (`:5432`). |
-| **PXE / OpenStack Kolla / Ironic** | Nodo ID 306 (`10.100.29.30`) | • Concesiones DHCP estáticas por MAC y dinámicas (`dnsmasq`).<br>• Entrega de bootloader TFTP iPXE (Puerto UDP `69`).<br>• Servidor HTTP de imágenes Nginx / Glance (Puerto TCP `8089`).<br>• OpenStack Kolla-Ansible 2025.1 Epoxy (Glance `:9292`, Ironic `:6385`, Keystone `:5000`, Horizon `:8080`, Nova-Ironic, MariaDB/Galera, HAProxy). |
+| **PXE / Glance / Ironic** | Nodo ID 306 (`10.100.29.30`) | • Concesiones DHCP estáticas por MAC y dinámicas efímeras (`dnsmasq`).<br>• Entrega de bootloader TFTP iPXE (Puerto UDP `69`).<br>• Servidor HTTP de imágenes Nginx / Glance (Puerto TCP `8089`).<br>• Orquestador de hardware Ironic API (Puerto TCP `6385`). |
 | **K8s Control Plane (HA)**| Nodos ID 269, 280, 320 (`10.100.29.101..103`)| • Kubernetes API Server balanceado (Puerto TCP `6443`).<br>• Quórum de base de datos distribuida etcd (Puertos TCP `2379:2380`).<br>• API de supervisión RKE2 (Puerto TCP `9345`). |
-| **K8s Workers** | Nodos ID 321, 279 (`10.100.29.111..112`)| • Ejecución de pods de microservicios (`aplicaciones` namespace).<br>• Enrutamiento L7 perimetral mediante Ingress Controller NGINX (NodePort `30080`).<br>• Datapath de red pod-a-pod gobernado por Cilium con eBPF nativo sin kube-proxy. |
-| **Coroot CE & ClickHouse** | Nodo ID 306 (`10.100.29.30` / `192.168.29.25`)| • Coroot Community Edition Web UI y Collector (Puerto TCP `19000`).<br>• ClickHouse Columnar Database (Puertos TCP `9000` nativo / `8123` HTTP).<br>• Prometheus TSDB embebido para telemetría interna (retención 3d, cuota 5GB). |
-| **Coroot Node Agent (eBPF)** | Flota completa de 8 nodos físicos | • Agente systemd v1.37.0 con eBPF CO-RE (`127.0.0.1:19080`).<br>• Rastreo de llamadas de kernel, I/O, CPU, memoria, caídas TCP y tráfico de red de aplicaciones sin instrumentación en código. |
-| **Observabilidad en K8s (OTel & Storage)** | Namespace `monitoring` en clúster K8s | • OpenTelemetry Operator v0.104.0 + Gateway Deployment (2 réplicas, NodePort `30317` gRPC / `30318` HTTP).<br>• VictoriaMetrics Single TSDB (NodePort `30428`).<br>• Grafana Loki Logs (NodePort `30100`).<br>• Grafana Tempo Traces (NodePort `30200`). |
-| **Prometheus & Grafana Host** | Nodo ID 306 (`10.100.29.30` / `192.168.29.25`)| • Prometheus TSDB local (Puerto TCP `9090`) con remote_write a VictoriaMetrics.<br>• Grafana Dashboards (Puerto TCP `3000`).<br>• Alertmanager (`:9093`), Blackbox Exporter (`:9115`) y Node Exporter (`:9100` en todos los nodos). |
+| **K8s Workers** | Nodos ID 321, 279 (`10.100.29.111..112`)| • Ejecución de pods de aplicaciones contenerizadas.<br>• Enrutamiento L7 perimetral mediante Ingress Controller NGINX (`80/443`).<br>• Datapath de red pod-a-pod gestionado por Cilium con eBPF. |
 
 ---
 
-### 1.3 Estructura Limpia del Repositorio: Documentación (`docs/`), Playbooks y Scripts
+### 1.3 Estructura Limpia del Repositorio: Documentación (`docs/`) y Scripts (`scripts/`)
 
-El repositorio mantiene una separación estricta entre la **orquestación declarativa con Ansible Core**, la **documentación técnica (`docs/`)**, los **scripts utilitarios (`scripts/`)**, la **definición de imágenes doradas Packer (`cloud-init/packer/`)** y las **pruebas automatizadas (`tests/`)**:
+El repositorio mantiene una separación estricta entre la **documentación técnica (`docs/`)** y los **scripts ejecutables de automatización (`scripts/`)**:
 
 ```text
 infra-scripts/
-├── README.md                          # Guía Maestra de Arquitectura, Operación y Despliegue
-├── INSTALL.md                         # Guía rápida de ejecución directa paso a paso (copiar/pegar)
-├── ansible.cfg                        # Configuración optimizada de Ansible (forks=8, pipelining, vault)
-├── inventory/                         # INVENTARIO REAL Y VARIABLES POR ENTORNO
-│   ├── env                            # Variables maestras del entorno activo (chmod 0600)
-│   ├── env.example                    # Plantilla de referencia de variables y credenciales
-│   ├── nodes.csv                      # Inventario canónico de los 8 nodos (ID, MAC, IP, RAM, Disco)
-│   ├── lab/                           # Entorno de Laboratorio / Edge Cluster
+├── README.md                          # Guía Maestra de Arquitectura y Despliegue
+├── ejecutar-desde-laptop.sh           # Orquestador DevOps Remoto (Motor Ansible Core)
+├── .gitignore                         # Exclusión de claves, certificados, respaldos e ISOs
+├── todo.md                            # Control de Tareas y Auditoría del Proyecto
+│
+├── ansible/                           # MOTOR DE ORQUESTACIÓN DECLARATIVO E IDEMPOTENTE
+│   ├── ansible.cfg                    # Optimización SSH, forks=8, pipelining y ControlPersist
+│   ├── inventory/
 │   │   ├── hosts.yml                  # Inventario estructurado en YAML de los 8 nodos físicos
-│   │   └── group_vars/                # Variables del inventario (all/vars.yml, observability.yml)
-│   └── prod/                          # Entorno de Producción
-│       └── hosts.yml                  # Definición de inventario para producción
-│
-├── ansible/                           # MOTOR DE AUTOMATIZACIÓN DECLARATIVO E IDEMPOTENTE
-│   ├── site.yml                       # Orquestador maestro integral (soporta tags modulares)
-│   ├── keys/                          # Par de llaves SSH privadas del clúster (chmod 0600)
+│   │   └── group_vars/all/vars.yml    # Variables maestras del clúster (IPs, subredes, puertos)
 │   ├── roles/                         # ROLES MODULARES DE ANSIBLE
-│   │   ├── common/                    # Base OS, /etc/hosts, networkd, Swap off, Chrony, APT Nexus
-│   │   ├── bastion/                   # Bastion Host, SSH hardening :2222, Squid :3128, nftables
-│   │   ├── nexus/                     # PostgreSQL 16 + Sonatype Nexus 3 OSS (Tuning JVM 4GB)
-│   │   ├── pxe_controller/            # dnsmasq con reservas MAC fijas, TFTP, Nginx :8089
-│   │   ├── ironic/                    # OpenStack Kolla / Ironic Standalone y baremetal.yml
+│   │   ├── common/                    # Base OS, /etc/hosts, networkd, Swap, Chrony, APT Nexus
+│   │   ├── bastion/                   # Bastion Host, SSH hardening :22, Squid :3128, nftables NAT
+│   │   ├── nexus/                     # PostgreSQL 16 + Sonatype Nexus 3 OSS (Tuning 4GB RAM)
+│   │   ├── pxe_controller/            # dnsmasq con reservas MAC dinámicas, TFTP, Nginx :8089
+│   │   ├── ironic/                    # OpenStack Ironic Standalone en Podman y baremetal.yaml
 │   │   ├── rke2_ha/                   # Clúster Kubernetes HA (3 CPs + 2 Workers) con Cilium eBPF
-│   │   ├── monitoring/                # Prometheus TSDB, Grafana, Alertmanager y Node Exporter
-│   │   └── coroot_node_agent/         # Agente Coroot v1.37.0 systemd con eBPF CO-RE en los 8 nodos
-│   └── playbooks/                     # PLAYBOOKS EJECUTABLES POR FASE O COMPONENTE
-│       ├── 00-preflight/              # 00_ping.yml, 01_audit_ports.yml, 02_system_summary.yml
-│       ├── 10-base/                   # 01_os_base.yml, 02_bastion_hardening.yml
-│       ├── 20-services/               # 01_nexus.yml, 02_pxe_controller.yml, 03_ironic_deploy.yml
-│       ├── 30-platform/               # 01_rke2_cluster.yml
-│       ├── 40-observability/          # 01_monitoring.yml, 02_coroot_agent.yml, 99_rollback.yml
-│       ├── 50-validation/             # 01_healthcheck.yml
-│       └── 90-operations/             # 01_disaster_recovery.yml
+│   │   └── monitoring/                # Prometheus TSDB, Grafana y Node Exporter en la flota
+│   ├── playbooks/                     # PLAYBOOKS EJECUTABLES POR FASE O COMPONENTE
+│   │   ├── 00_ping.yml                # Validación de conectividad SSH paralela
+│   │   ├── 01_system_summary.yml      # Telemetría de hardware (RAM, Disco, CPU, Kernel)
+│   │   ├── 02_base_config.yml         # Homologación del SO (invoca rol common)
+│   │   ├── 03_bastion.yml             # Despliegue perimetral en Nodo 314
+│   │   ├── 04_nexus.yml               # Despliegue de Nexus y PostgreSQL en Nodo 315
+│   │   ├── 05_pxe_controller.yml      # Servicios PXE, dnsmasq e iPXE en Nodo 306
+│   │   ├── 06_ironic_deploy.yml       # OpenStack Ironic Standalone en Nodo 306
+│   │   ├── 07_kubernetes_ha.yml       # Clúster Kubernetes HA RKE2 + Cilium
+│   │   ├── 08_monitoring.yml          # Suite de Monitoreo Centralizado
+│   │   └── 09_healthcheck.yml         # Auditoría integral de puertos y servicios
+│   └── site.yml                       # Orquestador maestro integral (soporta tags)
 │
-├── cloud-init/                        # CONSTRUCCIÓN DE IMÁGENES DORADAS Y CONFIGDRIVE
-│   ├── packer/
-│   │   ├── debian13-coroot.pkr.hcl    # Plantilla Packer HCL2 con inyección eBPF Coroot y Cloud-Init
-│   │   └── packer.pkr.hcl             # Plantilla legacy alternativa de preseed
-│   ├── templates/                     # user-data.j2, meta-data.j2, network-config.j2
-│   └── scripts/                       # generate_configdrive.sh
+├── config/                            # Parámetros, variables y catálogo de red
+│   ├── env                            # Variables maestras activas del clúster (chmod 600)
+│   ├── env.example                    # Plantilla de variables de entorno y puertos
+│   ├── nodes.csv                      # Inventario físico de los 8 nodos con MACs normalizadas
+│   └── dnsmasq.conf                   # Plantilla de referencia para reservas DHCP y PXE
 │
-├── scripts/                           # SCRIPTS UTILITARIOS COMPLEMENTARIOS
-│   ├── client/
-│   │   ├── ejecutar-desde-laptop.sh   # Orquestador DevOps remoto con banderas modulares y dry-run
-│   │   ├── setup-client-workstation.sh# Configuración de workstation local (ansible, kubectl, ssh)
-│   │   └── tunnels.sh                 # Apertura de túneles SSH para Grafana, Nexus, Coroot, K8s
-│   ├── diagnostics/
-│   │   ├── healthcheck.sh             # Auditoría visual integral de la flota y clúster K8s en vivo
-│   │   ├── 00-preflight.sh            # Comprobaciones de red y puertos
-│   │   └── kubernetes-prerequisites.sh# Validación de kernel y módulos en nodos
-│   ├── ops/
-│   │   ├── disaster-recovery.sh       # Respaldo y restauración automatizada (etcd, Nexus, PostgreSQL)
-│   │   ├── levantar-todo.sh           # Encendido masivo Wake-on-LAN secuencial
-│   │   └── 07-cloud-init.sh           # Generación de medios de instalación
-│   └── bootstrap/
-│       ├── bootstrap_node.py          # Script de rescate e inyección de llaves SSH de emergencia
-│       └── setup_keys.sh              # Generación de llaves Ed25519
+├── docs/                              # DOCUMENTACIÓN TÉCNICA Y OPERATIVA (.md)
+│   ├── env.md                         # Cheat-sheet de IPs, claves, BIOS y alias SSH
+│   ├── estructura.md                  # Manual de operación y trazabilidad del repositorio
+│   ├── manual_maestro_infraestructura_pxe_openstack.md # Manual técnico exhaustivo
+│   ├── arranque_e_instalacion_por_red_pxe.md # Guía e investigación técnica de arranque por red PXE
+│   ├── monitoreo_prometheus_grafana.md # Manual Maestro de Monitoreo (Prometheus, Grafana, Alertmanager)
+│   ├── redes/                         # Arquitectura y seguridad de redes
+│   ├── runbooks/                      # Procedimientos operativos estándar (SOP)
+│   └── openstack/                     # Decisiones de diseño y arquitectura bare-metal
 │
-├── tests/                             # SUITE DE PRUEBAS AUTOMATIZADAS (PYTEST)
-│   ├── test_cli_regressions.py        # Pruebas de regresión CLI para ejecutar-desde-laptop.sh
-│   └── test_backup_pipeline.py        # Validación de integridad de pipelines de respaldo y DR
+├── lib/                               # Biblioteca compartida
+│   └── common.sh                      # Logging, comprobaciones, traps y carga de configuración
 │
-└── docs/                              # DOCUMENTACIÓN TÉCNICA Y OPERATIVA (.md)
-    ├── adr/                           # Decisiones de Arquitectura (0001-Ansible, 0002-Cilium, etc.)
-    ├── architecture/                  # Manuales de arquitectura y arranque PXE detallado
-    ├── observability/                 # Manuales maestros de Monitoreo, Coroot eBPF y OpenTelemetry
-    ├── runbooks/                      # Procedimientos de operación estándar (SOP), DR y rotación
-    └── reference/                     # Auditorías de proyecto, cheatsheets de variables y puertos
+└── scripts/                           # SCRIPTS UTILITARIOS COMPLEMENTARIOS (.sh / .py)
+    ├── 00-preflight.sh                # Auditoría previa de compatibilidad y hardware en Debian 13
+    ├── 07-cloud-init.sh               # Compilación de plantillas Packer HCL y ConfigDrive
+    ├── 09-verificacion.sh             # Validación interactiva integral de 14 pruebas
+    ├── bootstrap_node.py              # Inyección de claves y bootstrap de emergencia
+    ├── compilar-ipxe-custom.sh        # Compilación modular de binarios iPXE embebidos
+    └── healthcheck.sh                 # Auditoría de estado en vivo y tabla visual en consola
 ```
 
 ---
@@ -497,138 +476,57 @@ Este diagrama resume el dimensionamiento preventivo de memoria RAM y almacenamie
 
 ---
 
-#### Diagrama 6: Arquitectura Unificada de Observabilidad, Telemetría eBPF y OpenTelemetry
+## 2. Investigación Comparativa: OpenStack Kolla-Ansible vs Bifrost/Ironic Standalone
 
-```mermaid
-flowchart TB
-    subgraph FLOTA ["🖥️ FLOTA DE 8 NODOS FÍSICOS (Bare-Metal Debian 13)"]
-        direction LR
-        A1["Nodo 314 (Bastion)
-coroot-node-agent :19080
-node_exporter :9100"]
-        A2["Nodo 315 (Nexus)
-coroot-node-agent :19080
-node_exporter :9100"]
-        A3["Nodos K8s CP (269, 280, 320)
-coroot-node-agent :19080
-node_exporter :9100"]
-        A4["Nodos K8s Workers (321, 279)
-coroot-node-agent :19080
-node_exporter :9100"]
-    end
+### 2.1 Análisis de la Guía de Referencia (Kolla-Ansible en Debian)
 
-    subgraph COROOT_STACK ["🔍 COROOT CE & CLICKHOUSE (Nodo 306 - Docker Compose)"]
-        direction TB
-        CH["ClickHouse Columnar DB
-Puertos: 9000 (nativo) / 8123 (HTTP)"]
-        CTSDB["Embedded Prometheus TSDB
-Retención: 3 días | Cuota: 5 GB"]
-        CCE["Coroot Community Edition (:19000)
-Collector OTLP & Web UI
-Análisis Causal eBPF"]
-        CH --> CCE
-        CTSDB --> CCE
-    end
+Se analizó en profundidad el artículo de referencia (*Install OpenStack on Debian 12 with Kolla-Ansible*, ComputingForGeeks), el cual documenta el despliegue de **OpenStack 2025.2 (Flamingo) / 2024.x** mediante contenedores Docker orquestados con `kolla-ansible` en **Debian 12 (Bookworm)**.
 
-    subgraph K8S_OBS ["☸️ SUITE DE TELEMETRÍA EN KUBERNETES (Namespace: monitoring)"]
-        direction TB
-        OTEL_GW["OpenTelemetry Gateway (Deployment 2 réplicas)
-OTLP gRPC :30317 | OTLP HTTP :30318"]
-        VM["VictoriaMetrics Single (:30428)
-TSDB Métricas a Largo Plazo (30d)"]
-        LOKI["Grafana Loki (:30100)
-Ingesta Centralizada de Logs (7d)"]
-        TEMPO["Grafana Tempo (:30200)
-Almacén de Trazas Distribuidas (3d)"]
-        OTEL_GW --> VM
-        OTEL_GW --> LOKI
-        OTEL_GW --> TEMPO
-    end
+#### Componentes que Despliega Kolla-Ansible según la Guía:
+1. **Infraestructura Base**: MariaDB (puerto `3306`), RabbitMQ (mensajería AMQP en puerto `5672`), Memcached (caché en memoria puerto `11211`), ProxySQL.
+2. **Servicios Centrales de OpenStack**:
+   - **Keystone**: Servicio de identidad y catálogo de endpoints (puerto `5000`).
+   - **Glance**: Catálogo y almacenamiento de imágenes de máquinas virtuales (puerto `9292`).
+   - **Placement**: Rastreo de recursos de cómputo y asignaciones (puerto `8778`).
+   - **Nova**: Planificador y controlador de hipervisores KVM/QEMU (puerto `8774`).
+   - **Neutron**: Agentes de red Open vSwitch (OVS) y control de puentes virtuales (puerto `9696`).
+   - **Horizon**: Panel gráfico de gestión web (puerto `80`/`443`).
 
-    subgraph APPS ["📦 MICROSERVICIOS (Namespace: aplicaciones)"]
-        direction LR
-        SVC["Frontend / Backend / Orders / Redis
-Auto-Instrumentación OTel CRD"]
-    end
-
-    subgraph HOST_MON ["📊 MONITOREO CENTRAL HOST (Nodo 306)"]
-        direction LR
-        PROM["Prometheus Server (:9090)
-Scraping 8 nodos + remote_write"]
-        GRAF["Grafana Dashboards (:3000)
-Datasources Correlacionados"]
-        PROM --> GRAF
-        VM -.-> GRAF
-        LOKI -.-> GRAF
-        TEMPO -.-> GRAF
-    end
-
-    %% Conexiones
-    A1 & A2 & A3 & A4 -- "eBPF Traces & Metrics HTTP" --> CCE
-    A1 & A2 & A3 & A4 -- "Scrape :9100" --> PROM
-    PROM -- "remote_write" --> VM
-    SVC -- "OTLP Traces / Spans" --> OTEL_GW
-
-    style COROOT_STACK fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#ffffff
-    style K8S_OBS fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#ffffff
-    style HOST_MON fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#ffffff
-    style FLOTA fill:#1f2937,stroke:#9ca3af,stroke-width:1px,color:#ffffff
-    style APPS fill:#312e81,stroke:#a78bfa,stroke-width:1px,color:#ffffff
-```
-
-**Explicación simple del diagrama:**  
-La plataforma cuenta con un stack de telemetría de doble nivel complementario:
-1. **Nivel Kernel con eBPF (Coroot CE + ClickHouse)**: Un agente ligero `coroot-node-agent` v1.37.0 corre como servicio de sistema en cada uno de los 8 servidores físicos. Mediante eBPF CO-RE intercepta llamadas al sistema sin overhead, auditando cuellos de botella en disco NVMe, latencia de red TCP, caídas de paquetes y consumo de memoria, enviándolos al motor de análisis causal en Coroot (puerto 19000).
-2. **Nivel Aplicación y Clúster (OTel + VictoriaMetrics + Loki + Tempo + Grafana)**: Los microservicios en Kubernetes son inyectados transparentemente por el OpenTelemetry Operator; las trazas viajan al OpenTelemetry Gateway (2 réplicas) y se canalizan hacia Tempo (trazas), Loki (logs) y VictoriaMetrics (métricas), visualizándose de forma correlacionada en Grafana (puerto 3000).
+#### Requisitos y Reglas de Kolla-Ansible en Debian:
+- **Exigencia de Red Dual (2 NICs)**: Una interfaz de gestión (`network_interface: "ens3"`) y una interfaz externa de Neutron (`neutron_external_interface: "ens4"`). La guía advierte severamente: **si se usa la misma interfaz para ambas, el agente Open vSwitch de Neutron secuestra la tarjeta y provoca el bloqueo inmediato de SSH (*SSH lockout*)**.
+- **Consumo de Memoria**: Mínimo 16 GB de RAM (32 GB recomendados) únicamente para levantar los contenedores del plano de control de OpenStack.
+- **Almacenamiento Mínimo**: 80 GB de disco dedicados al plano de control.
+- **Entorno Python**: Requiere `python3 -m venv --system-site-packages` para permitir acceso al módulo del sistema `dbus`.
 
 ---
 
-## 2. Investigación Comparativa y Arquitectura OpenStack Kolla-Ansible vs Ironic Standalone
+### 2.2 Viabilidad de OpenStack Completo frente a Limitaciones de Hardware
 
-### 2.1 Análisis de la Guía de Referencia y Kolla-Ansible en Producción
-
-Se evaluó el despliegue de **OpenStack 2025.1 (Epoxy)** mediante contenedores Docker gestionados con `kolla-ansible` en **Debian 13 (Trixie)**:
-
-#### Componentes Desplegados por Kolla-Ansible en el Nodo 306:
-1. **Infraestructura Base de Alta Resiliencia**:
-   - **MariaDB / Galera**: Base de datos transaccional interna para metadatos de OpenStack.
-   - **RabbitMQ**: Cola de mensajería AMQP de alto rendimiento para comunicación inter-servicios.
-   - **Memcached & ProxySQL**: Aceleración de consultas de identidad y equilibrio SQL.
-   - **HAProxy & Keepalived**: Balanceo de endpoints internos de APIs.
-2. **Servicios de Identidad, Catálogo y Bare-Metal**:
-   - **Keystone (`:5000`)**: Servicio de autenticación, catálogo y tokens Fernet.
-   - **Glance (`:9292`)**: Catálogo y distribución de imágenes doradas pre-compiladas con Packer (`debian13-coroot-lab`).
-   - **Placement (`:8778`)**: Rastreo de asignación de recursos.
-   - **Ironic API (`:6385`) & Conductor**: Orquestación directa de servidores bare-metal, control de energía y streaming de discos.
-   - **Nova Compute Ironic (`:8774`)**: Adaptador de cómputo para gobernar los nodos físicos a través del driver Ironic.
-   - **Neutron / OVN (`:9696`)**: Agentes Open vSwitch y OVN para aprovisionamiento L2.
-   - **Horizon Dashboard (`:8080`)**: Panel gráfico web accesible para supervisión visual de instancias físicas.
-
----
-
-### 2.2 Viabilidad y Contención de Recursos frente al Límite de 128 GB de Disco
-
-El despliegue de Kolla-Ansible se adaptó con precisión quirúrgica para convivir armoniosamente con el clúster en los Dell OptiPlex de 128 GB de disco y 16 GB de RAM del Nodo 306:
+Al cruzar los requerimientos de la guía con nuestro hardware real (nodos con **128 GB de disco** y nodos de **8 GB / 16 GB de RAM**), se concluye lo siguiente:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│             ESTRATEGIA DE CONTENCIÓN KOLLA-ANSIBLE EN HARDWARE BARE-METAL         │
+│                   EVALUACIÓN DE VIABILIDAD ARQUITECTÓNICA                        │
 ├────────────────────────────┬─────────────────────────────┬───────────────────────┤
-│ COMPONENTE / RECURSO       │ DESPLIEGUE ESTÁNDAR KOLLA   │ NUESTRA ADAPTACIÓN    │
+│ PARÁMETRO                  │ OPENSTACK COMPLETO (KOLLA)  │ BIFROST / IRONIC      │
 ├────────────────────────────┼─────────────────────────────┼───────────────────────┤
-│ Consumo de Memoria RAM     │ > 14 GB (Saturación)        │ ~ 6.5 GB (Acotado)    │
-│ Registro de Imágenes OCI   │ Descarga continua desde WAN │ Nexus 3 Local (:8082) │
-│ Enrutamiento de Red        │ Multi-NIC con riesgo lockout│ Single-NIC L2 Bridge  │
-│ Aprovisionamiento Físico   │ Nova Libvirt / QEMU VMs     │ Ironic Bare-Metal puro│
-│ Retención de Imágenes      │ Ilimitada en Glance         │ 1 Imagen Dorada activa│
-│ Monitoreo / Logging        │ OpenSearch / Ceph masivo    │ Prometheus + Coroot   │
+│ Consumo de Memoria RAM     │ 14 GB a 16 GB (Crítico)     │ 1.5 GB a 2 GB (Bajo)  │
+│ Consumo de Disco Base      │ 65 GB a 85 GB (Peligroso)   │ 8 GB a 12 GB (Seguro) │
+│ Propósito en el Proyecto   │ Virtualización (Crear VMs)  │ Bare-Metal (Servidores)│
+│ Complejidad de Red         │ Open vSwitch / Bridges      │ dnsmasq L2 nativo     │
+│ Riesgo de Bloqueo SSH      │ Muy Alto (Neutron takeover) │ Nulo (No usa Neutron) │
+│ Viabilidad en Nuestro Lab  │ 🔴 INVIABLE / INEFICIENTE   │ 🟢 ÓPTIMO Y ADOPTADO  │
 └────────────────────────────┴─────────────────────────────┴───────────────────────┘
 ```
 
-#### Medidas de Estabilidad Aplicadas:
-1. **Pull Exclusivo desde Nexus Local (`10.100.29.20:8082`)**: Todas las imágenes de contenedores (`openstack.kolla/*:2025.1-ubuntu-noble`) se almacenan en la caché del Nexus local, garantizando que el aprovisionamiento de Kolla nunca sature la conexión WAN.
-2. **Glance Depurado (1 Imagen Activa)**: Solo se mantiene activa en Glance la imagen dorada validada (`debian13-coroot-lab`, 598 MB comprimida). Las versiones obsoletas se purgan inmediatamente para no comprometer el almacenamiento NVMe.
-3. **Desacoplamiento de Servicios**: Los servicios de monitoreo central (Coroot CE en `:19000` y Grafana en `:3000`) se ejecutan en puertos independientes sin colisionar con HAProxy (`:8080`), Glance (`:9292`) ni Keystone (`:5000`).
+#### ¿Por qué OpenStack completo no es viable ni necesario?
+1. **El objetivo no es crear Máquinas Virtuales**: Nuestro objetivo es desplegar un clúster Kubernetes sobre **metal desnudo (bare-metal)**. Instalar Nova, Neutron, Cinder y Horizon añade 20 contenedores pesados que no aportan ninguna utilidad a Kubernetes y compiten ferozmente por los escasos 128 GB de disco.
+2. **Agotamiento de RAM**: El nodo de aprovisionamiento cuenta con 16 GB de RAM. Kolla-Ansible consumiría más de 14 GB, impidiendo que el nodo ejecute tareas esenciales como compilar imágenes con Packer o gestionar el servidor de repositorios.
+3. **Peligro de Bloqueo de Red**: En servidores bare-metal con una sola tarjeta conectada al switch privado, Neutron Open vSwitch rompería la conectividad de administración.
+
+#### La Solución Adoptada: OpenStack Ironic Standalone + Glance HTTP
+Se implementa **OpenStack Ironic en modo independiente (*noauth*)**, respaldado por el motor de distribución de imágenes de **Glance/Nginx**. Esta solución:
+* Consume menos de **2 GB de RAM**.
 * Requiere menos de **10 GB de disco**.
 * Gestiona directamente el arranque PXE, encendido de hardware, formateo de discos NVMe y despliegue inmutable sin intermediarios.
 
@@ -756,71 +654,57 @@ A continuación se analizan los cuatro métodos estándar para aprovisionar serv
 
 | Componente | Versión Exacta | Soporte Nativo en Debian 13 | Conflicto / Detalle Técnico | Mitigación Arquitectónica |
 | :--- | :--- | :--- | :--- | :--- |
-| **Kernel Linux** | 6.12.x-amd64 | ✅ **Oficial / Estable** | Ninguno. Soporte maduro para eBPF CO-RE y cgroups v2. | Kernel oficial Debian sin parches. |
-| **OpenStack Kolla**| 2025.1 (Epoxy) | ✅ **En Contenedores** | Dependencias complejas de Python resueltas en Docker. | Contenedores Kolla sobre Docker en Nodo 306. |
-| **Sonatype Nexus** | 3.75.x OSS | ⚠️ **Ajustes Requeridos** | OrientDB retirado; requiere OpenJDK 17 LTS y tuning. | Backend relacional PostgreSQL 16 y JVM 4GB. |
-| **PostgreSQL** | 16.x | ✅ **Oficial / Estable** | Ninguno. Motor relacional de alto rendimiento. | Servicio nativo systemd en Debian 13 (Nodo 315).|
-| **containerd** | 2.3.4-k3s1 | ✅ **Oficial / Estable** | cgroups v2 activo por defecto en toda la flota. | Embebido en RKE2 con driver systemd. |
-| **Kubernetes RKE2**| v1.36.5+rke2r1 | ✅ **Totalmente Probado**| Requiere deshabilitar swap y cargar módulos overlay/br_netfilter. | Roles Ansible y drop-ins en `/etc/sysctl.d/`. |
-| **CNI (Red K8s)** | Cilium (eBPF) | 🌟 **Óptimo** | Evita colisiones de iptables-nft eliminando kube-proxy. | Datapath eBPF directo en kernel con host-routing.|
-| **Cloud-Init** | 24.x | ✅ **Oficial / Estable** | Sin metadata server local en red aislada L2. | Datasource `ConfigDrive` (`config-2`) / NoCloud. |
-| **Packer + QEMU** | 1.10+ / QEMU 9+ | ✅ **Oficial / Estable** | Requiere aceleración KVM en hardware Dell. | Build headless con inyección cidata en laptop. |
-| **Coroot Node Agent**| v1.37.0 (eBPF) | ✅ **Oficial / Estable** | Requiere BTF en kernel para eBPF CO-RE. | Soportado nativamente por Kernel 6.12 de Debian 13.|
-| **Ansible Core** | 2.17+ | ✅ **Oficial / Estable** | Pipelining SSH y gestión de secretos centralizada. | Ejecución con `ansible.cfg` y vault passwords. |
+| **Kernel Linux** | 6.12.x-amd64 | ✅ **Oficial / Estable** | Ninguno. Soporte maduro para eBPF y cgroups v2. | Kernel oficial Debian sin parches. |
+| **OpenStack Ironic** | 2024.1 (Caracal) | 🔴 **No Nativo** | Pip y paquetes fallan por Python 3.12/3.13 en Trixie. | Ejecución en contenedor Podman sobre Debian 13. |
+| **Sonatype Nexus** | 3.70.x - 3.75.x | ⚠️ **Ajustes Requeridos** | OrientDB retirado; requiere OpenJDK 17 LTS. | Base de datos externa PostgreSQL 16 y JVM 17. |
+| **PostgreSQL** | 16.x | ✅ **Oficial / Estable** | Ninguno. Motor relacional de alto rendimiento. | Servicio nativo systemd en Debian 13. |
+| **containerd** | 1.7.x / 2.0.x | ✅ **Oficial / Estable** | cgroups v2 activo por defecto. | Embebido en RKE2 con driver systemd. |
+| **Kubernetes RKE2**| v1.30.x+rke2r1 | ✅ **Totalmente Probado**| Requiere módulos del kernel y AppArmor. | Script `/etc/modules-load.d/k8s.conf`. |
+| **CNI (Red K8s)** | Cilium (eBPF) | 🌟 **Óptimo** | Canal/Flannel fallan por iptables-nft. | Cilium reemplaza `kube-proxy` directo en kernel. |
+| **Cloud-Init** | 24.x | ✅ **Oficial / Estable** | Sin metadata server local en red aislada. | Datasource `ConfigDrive` (`config-2`). |
 
 ---
 
 ### 4.2 Estrategia de Ejecución de Servicios en Debian 13
 
-1. **Homogeneidad Absoluta (Debian 13 Trixie)**: Todos los 8 nodos físicos operan con Debian 13 (Kernel 6.12+), garantizando que las llamadas eBPF CO-RE sean 100% compatibles y que los parches de seguridad APT de Nexus apliquen uniformemente.
-2. **Aislamiento de Cargas Críticas**: 
-   - OpenStack Kolla opera encapsulado en Docker sobre el Nodo 306 (`--net=host` en servicios de aprovisionamiento).
-   - Nexus 3 y PostgreSQL 16 operan nativamente como servicios systemd optimizados en el Nodo 315.
-   - Coroot CE y ClickHouse operan desacoplados en Docker Compose en `/opt/coroot` del Nodo 306 en el puerto `:19000`.
-   - `coroot-node-agent` corre como servicio del sistema en los 8 nodos físicos con acceso a `/sys/kernel/debug`.
+1. **No se degrada ningún equipo a Debian 12**: Todos los 8 nodos operan con **Debian 13 (Trixie)**, garantizando uniformidad en el despliegue de paquetes, compatibilidad con drivers modernos y homogeneidad de parches de seguridad.
+2. **Aislamiento mediante Contenedores para Ironic**: En el Nodo 306 (`pxe-controller`), el demonio de Ironic se ejecuta en un contenedor Podman/Docker con acceso a los sockets de red del host (`--net=host`), desacoplando el ciclo de vida de Python del sistema operativo base.
 
 ---
 
 ## 5. Fases Cronológicas de Instalación Paso a Paso
 
-### 5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh` & Ansible Core)
+### 5.0 Orquestación Remota desde Laptop (`ejecutar-desde-laptop.sh`)
 
 > [!TIP]
-> **Modo Operativo Modernizado**: No es necesario iniciar sesión manualmente en cada uno de los servidores ni copiar scripts por USB. Todo el aprovisionamiento, hardening y configuración se realiza desde la estación DevOps mediante **Ansible Core** y el orquestador `scripts/client/ejecutar-desde-laptop.sh`.
+> **Modo Operativo Recomendado**: No es necesario iniciar sesión manualmente en cada uno de los servidores ni copiar archivos a mano con memorias USB. Todo el ciclo de aprovisionamiento, sincronización de código y ejecución de fases se orquesta desde la **laptop de administración conectada por Wi-Fi** a través del script maestro `./ejecutar-desde-laptop.sh`.
 
 #### Flujo Operativo y Comandos Principales
 ```bash
-# 1. Auditar conectividad y verificar qué nodos están encendidos y alcanzables (Ping paralelo)
-./scripts/client/ejecutar-desde-laptop.sh --check
-# O directamente con Ansible:
-ansible baremetal -i inventory/lab/hosts.yml -m ping
+# 1. Auditar conectividad y verificar qué nodos están encendidos y alcanzables
+./ejecutar-desde-laptop.sh --check
 
-# 2. Ejecutar fases modulares mediante roles Ansible idempotentes:
-./scripts/client/ejecutar-desde-laptop.sh --fase 1    # Base OS Debian 13 (roles/common en toda la flota)
-./scripts/client/ejecutar-desde-laptop.sh --fase 2    # Bastión Gateway, SSH :2222, Squid y nftables (roles/bastion)
-./scripts/client/ejecutar-desde-laptop.sh --fase 3    # Sonatype Nexus 3 OSS y PostgreSQL 16 (roles/nexus)
-./scripts/client/ejecutar-desde-laptop.sh --fase 4    # Clientes APT apuntando a Nexus local (roles/common)
-./scripts/client/ejecutar-desde-laptop.sh --fase 5    # Servidor PXE, DHCP dnsmasq e iPXE HTTP (roles/pxe_controller)
-./scripts/client/ejecutar-desde-laptop.sh --fase 6    # OpenStack Ironic Standalone y Bare-Metal (roles/ironic)
-./scripts/client/ejecutar-desde-laptop.sh --fase 7    # Plantillas Cloud-Init, ConfigDrive y Packer
-./scripts/client/ejecutar-desde-laptop.sh --fase 8    # Clúster Kubernetes HA RKE2 + Cilium eBPF (roles/rke2_ha)
-./scripts/client/ejecutar-desde-laptop.sh --fase 9    # Auditoría integral y comprobación de clúster
-./scripts/client/ejecutar-desde-laptop.sh --fase 10   # Suite de Monitoreo Prometheus, Grafana y Node Exporter
+# 2. Sincronizar el repositorio de scripts hacia /tmp/infra-scripts en los nodos remotos
+./ejecutar-desde-laptop.sh --sync
 
-# 3. Despliegue de Agente Coroot eBPF en los 8 nodos físicos:
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/40-observability/02_coroot_agent.yml
+# 3. Ejecutar fases modulares de instalación:
+./ejecutar-desde-laptop.sh --fase 1    # 01-base-servidores.sh (Flota completa)
+./ejecutar-desde-laptop.sh --fase 2    # 02-bastion.sh (Nodo 314 - Bastion Host)
+./ejecutar-desde-laptop.sh --fase 3    # 03-nexus.sh (Nodo 315 - Sonatype Nexus 3)
+./ejecutar-desde-laptop.sh --fase 4    # 04-clientes-nexus.sh (Configurar mirrors APT)
+./ejecutar-desde-laptop.sh --fase 5    # 05-pxe-dhcp-tftp.sh (Nodo 306 - PXE/TFTP/dnsmasq)
+./ejecutar-desde-laptop.sh --fase 6    # 06-openstack-glance-bifrost.sh (Glance / Ironic)
+./ejecutar-desde-laptop.sh --fase 7    # 07-cloud-init.sh (Cloud-Init y ConfigDrive)
+./ejecutar-desde-laptop.sh --fase 8    # 08-kubernetes.sh (Clúster RKE2 + Cilium)
+./ejecutar-desde-laptop.sh --fase 9    # 09-verificacion.sh (Auditoría final)
 
-# 4. Auditoría de salud visual en consola en tiempo real
-./scripts/client/ejecutar-desde-laptop.sh --health
-# O ejecutando el diagnóstico directo:
-bash scripts/diagnostics/healthcheck.sh
-
-# 5. Ejecución del pipeline completo de principio a fin (Idempotente):
-./scripts/client/ejecutar-desde-laptop.sh --all
-
-# 6. Modo Simulación Segura (Dry-Run con diff de Ansible sin aplicar cambios):
-./scripts/client/ejecutar-desde-laptop.sh --all --dry-run
+# 4. Auditoría de salud general del clúster en tiempo real
+./ejecutar-desde-laptop.sh --health
 ```
+
+#### Parámetros Avanzados
+- `--dry-run`: Simula todas las conexiones SSH y despliegue de comandos sin alterar el estado de los nodos.
+- `--all`: Ejecuta el pipeline completo de principio a fin de manera secuencial e idempotente.
 
 ---
 
@@ -1272,7 +1156,7 @@ initrd http://10.100.29.30:8089/ipa/ipa.initramfs
 boot
 EOF
 
-# [PXE] Obligatorio: Servidor HTTP Nginx en puerto 8089
+# [PXE] ✅ Obligatorio: Servidor HTTP Nginx en puerto 8089
 sudo tee /etc/nginx/sites-available/httpboot << 'EOF'
 server {
     listen 8089;
@@ -1300,48 +1184,50 @@ curl -I http://10.100.29.30:8089/boot.ipxe
 
 ---
 
-### FASE 6: OpenStack Kolla-Ansible (Glance, Ironic, Keystone, Horizon) para Servidores Físicos
+### FASE 6: OpenStack Glance e Ironic Standalone para Servidores Físicos
 
-* **Objetivo**: Desplegar y operar el stack de Ironic y Glance en el Nodo 306 (`10.100.29.30`) mediante contenedores optimizados de OpenStack Kolla-Ansible 2025.1 Epoxy, enrolar los 8 servidores físicos por MAC y registrar la imagen dorada en Glance.
-* **Requisitos Previos**: Docker y dependencias instaladas en el Nodo 306; imágenes OCI sincronizadas en Nexus (`10.100.29.20:8082`).
-* **Rol Ansible**: `ansible/roles/ironic/` invocado desde `ansible/playbooks/20-services/03_ironic_deploy.yml`.
+* **Objetivo**: Desplegar Ironic Standalone y Glance en el Nodo 306 (`10.100.29.30`) para orquestar el hardware físico, registrar el inventario completo de los 8 nodos por dirección MAC y distribuir imágenes inmutables.
+* **Requisitos Previos**: Podman instalado en el Nodo 306.
 
-#### 6.1 Despliegue de Kolla-Ansible en Modo Bare-Metal
-El despliegue ejecuta los servicios de aprovisionamiento físico: `keystone`, `glance_api`, `ironic_api`, `ironic_conductor`, `nova_compute_ironic`, `horizon`, `mariadb` y `haproxy`:
-
+#### 6.1 Desplegar Ironic Standalone con Podman
 ```bash
-# [PXE] Cargar credenciales de administración OpenStack
-source /etc/kolla/admin-openrc.sh
+# [PXE] ✅ Obligatorio: Instalar Podman
+sudo apt update && sudo apt install -y podman
 
-# Verificar estado de los servicios OpenStack Kolla
-openstack endpoint list
-openstack compute service list
+# [PXE] ✅ Obligatorio: Levantar Ironic Standalone
+sudo podman run -d --name ironic-conductor   --net=host   --privileged   --restart=always   -v /httpboot:/httpboot:shared   -v /tftpboot:/tftpboot:shared   -v /var/lib/ironic:/var/lib/ironic:rw   -e HTTP_PORT=8089   -e IRONIC_IP=10.100.29.30   -e OS_AUTH_TYPE=none   quay.io/metal3-io/ironic:latest
 ```
 
 #### 6.2 Descarga del Ramdisk IPA Oficial
 ```bash
 # [PXE] ✅ Obligatorio: Descargar ramdisk oficial de Ironic Python Agent
 cd /httpboot/ipa
-sudo wget -c https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.kernel -O ipa.kernel
-sudo wget -c https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.initramfs -O ipa.initramfs
+sudo wget https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.kernel -O ipa.kernel
+sudo wget https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-centos9-stable-2024.1.initramfs -O ipa.initramfs
 sudo chmod 644 /httpboot/ipa/ipa.*
 ```
 
-#### 6.3 Registro de Imagen Dorada en Glance CLI
-```bash
-# [PXE / LAPTOP] Subir imagen dorada pre-compilada con Coroot eBPF integrado
-openstack image create "debian13-coroot-lab" \
-  --file /httpboot/images/debian13-coroot-compressed.qcow2 \
-  --disk-format qcow2 \
-  --container-format bare \
-  --public \
-  --property os_distro=debian \
-  --property os_version=13 \
-  --property architecture=x86_64
+#### 6.3 Gestión de Imágenes en Glance CLI (Formatos QCOW2 vs ISO)
 
-# Verificar estado activo en el catálogo
-openstack image list --name debian13-coroot-lab
+##### Caso A: Creación de Imagen Inmutable Estándar (`--disk-format qcow2`)
+Este es el formato oficial adoptado. Permite streaming de bloques e inyección directa de `ConfigDrive`:
+```bash
+# [PXE] Registrar imagen QCOW2 en el catálogo
+openstack image create "debian-13-baremetal-v1.0"   --file /httpboot/images/debian-baremetal.qcow2   --disk-format qcow2   --container-format bare   --public   --property os_distro=debian   --property os_version=13   --property architecture=x86_64
 ```
+
+##### Caso B: Registro de Imagen ISO (`--disk-format iso`) y sus Limitaciones Críticas
+Glance permite registrar imágenes ISO crudas con el siguiente comando:
+```bash
+# [PXE] Registrar imagen ISO de instalación
+openstack image create "debian-13-netinst-iso"   --file /httpboot/images/debian-13-netinst.iso   --disk-format iso   --container-format bare   --public
+```
+
+> [!WARNING]
+> **Limitaciones Técnicas Severas de las Imágenes ISO en Bare-Metal**:  
+> 1. **Falta de Inyección de ConfigDrive**: Una ISO está diseñada como un medio óptico de solo lectura. Ironic no puede adjuntar una partición local `config-2` formateada en VFAT en el mismo disco duro durante el arranque ISO, obligando a recurrir a medios virtuales (vMedia) por BMC o servidores de metadatos de red externos.  
+> 2. **Instalación Interactiva vs Inmutabilidad**: Una ISO arranca el instalador del sistema operativo (`debian-installer`), el cual debe particionar, formatear y descargar paquetes en tiempo real, tardando 20 a 30 minutos por nodo y generando deriva de paquetes, a diferencia de los 3 minutos de volcado de una imagen `.qcow2`.  
+> 3. **Bucle de Reinicio**: Si la placa base arranca desde la ISO grabada en disco y la BIOS no conmuta automáticamente a la partición del sistema, el servidor entrará en bucle continuo de instalación.
 
 ---
 
@@ -1528,92 +1414,72 @@ openstack baremetal node list
 
 ### FASE 7: Plantillas Cloud-Init, ConfigDrive y Compilación Inmutable con Packer
 
-* **Objetivo**: Generar la imagen inmutable `.qcow2` mediante **HashiCorp Packer** con el agente de observabilidad eBPF Coroot v1.37.0 pre-instalado, comprimirla a menos de 600 MB y registrarla en Glance para aprovisionamiento masivo con ConfigDrive (`config-2`).
-* **Requisitos Previos**: HashiCorp Packer 1.10+ y QEMU/KVM en la estación DevOps / laptop.
-* **Archivo Fuente**: `cloud-init/packer/debian13-coroot.pkr.hcl`.
+* **Objetivo**: Generar la imagen inmutable `.qcow2` con Packer y preconfigurar el volumen `config-2` de máx. 64 MB para inyectar configuración sin servidores de metadatos.
+* **Requisitos Previos**: HashiCorp Packer y QEMU instalados en el Nodo 306.
 
-#### 7.1 Plantilla HCL2 de Packer con eBPF Coroot (`debian13-coroot.pkr.hcl`)
+#### 7.1 Plantilla HCL2 de Packer (`packer.pkr.hcl`)
 ```hcl
+# [PXE] /opt/infra/packer/packer.pkr.hcl
 packer {
+  required_version = ">= 1.8.0"
   required_plugins {
     qemu = {
+      version = ">= 1.0.0"
       source  = "github.com/hashicorp/qemu"
-      version = ">= 1.1.0"
     }
   }
 }
 
-variable "image_path"     { type = string }
-variable "image_checksum" { type = string }
+variable "nexus_ip" {
+  type    = string
+  default = "10.100.29.20"
+}
 
-source "qemu" "debian13" {
-  iso_url              = var.image_path
-  iso_checksum         = var.image_checksum
-  disk_image           = true
-  output_directory     = "output-debian13-coroot"
-  vm_name              = "debian13-coroot.qcow2"
-  format               = "qcow2"
-  disk_size            = "20G"
-  accelerator          = "kvm"
-  headless             = true
-  memory               = 2048
-  cpus                 = 2
-  disk_interface       = "virtio"
-  net_device           = "virtio-net"
-  cd_files             = ["seed/user-data", "seed/meta-data"]
-  cd_label             = "cidata"
-  ssh_username         = "packer"
-  ssh_private_key_file = "build_key"
-  ssh_timeout          = "15m"
-  shutdown_command     = "sudo sh -c 'rm -f /home/packer/.ssh/authorized_keys /etc/sudoers.d/90-packer; usermod -s /usr/sbin/nologin packer; cloud-init clean --logs --machine-id --seed; shutdown -P now'"
+source "qemu" "debian_baremetal" {
+  iso_url          = "https://cdimage.debian.org/cdimage/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso"
+  iso_checksum     = "none"
+  output_directory = "/opt/infra/packer/output-debian"
+  vm_name          = "debian-baremetal.qcow2"
+  disk_size        = "20G"
+  format           = "qcow2"
+  disk_interface   = "virtio"
+  cpus             = 2
+  memory           = 2048
+  accelerator      = "kvm"
+  headless         = true
+  ssh_username     = "debian"
+  ssh_password     = "temporaryPackerPass2026!"
+  ssh_timeout      = "20m"
+  boot_wait        = "5s"
+  boot_command = [
+    "<esc><wait>",
+    "install auto=true priority=critical preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg<enter>"
+  ]
 }
 
 build {
-  sources = ["source.qemu.debian13"]
-  provisioner "shell" {
-    inline = ["sudo cloud-init status --wait"]
-  }
-  provisioner "file" {
-    source      = "coroot-node-agent"
-    destination = "/tmp/coroot-node-agent"
-  }
-  provisioner "file" {
-    source      = "coroot-node-agent.service"
-    destination = "/tmp/coroot-node-agent.service"
-  }
+  sources = ["source.qemu.debian_baremetal"]
+
   provisioner "shell" {
     inline = [
       "sudo apt-get update",
-      "sudo apt-get install -y ca-certificates curl",
-      "sudo install -m 0755 /tmp/coroot-node-agent /usr/local/bin/coroot-node-agent",
-      "sudo install -m 0644 /tmp/coroot-node-agent.service /etc/systemd/system/coroot-node-agent.service",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl enable coroot-node-agent",
-      "sudo rm -f /etc/ssh/ssh_host_*",
-      "sudo rm -f /var/lib/dbus/machine-id"
+      "sudo apt-get install -y cloud-init cloud-initramfs-growpart gdisk curl openssh-server",
+      "sudo sed -i 's/.*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config",
+      "sudo cloud-init clean --logs"
+    ]
+  }
+
+  post-processor "shell-local" {
+    inline = [
+      "cp /opt/infra/packer/output-debian/debian-baremetal.qcow2 /httpboot/images/",
+      "sha256sum /httpboot/images/debian-baremetal.qcow2 > /httpboot/images/debian-baremetal.sha256",
+      "rm -rf /opt/infra/packer/output-debian"
     ]
   }
 }
 ```
 
-#### 7.2 Compilación, Compresión y Publicación de la Imagen Dorada
-```bash
-# 1. Compilar la imagen dorada en la laptop
-cd cloud-init/packer
-packer build -var="image_path=debian-13-genericcloud-amd64.qcow2" -var="image_checksum=none" debian13-coroot.pkr.hcl
-
-# 2. Comprimir la imagen para streaming rápido y ahorro de disco en Glance (reduce de ~2.2GB a 598MB)
-qemu-img convert -c -O qcow2 output-debian13-coroot/debian13-coroot.qcow2 debian13-coroot-compressed.qcow2
-
-# 3. Subir la imagen dorada hacia OpenStack Glance
-openstack image create "debian13-coroot-lab" \
-  --file debian13-coroot-compressed.qcow2 \
-  --disk-format qcow2 \
-  --container-format bare \
-  --public
-```
-
-#### 7.3 Inyección de Metadatos en el Volumen `config-2`
+#### 7.2 Inyección de Metadatos en el Volumen `config-2`
 
 La partición `config-2` es un volumen VFAT de 64 MB con etiqueta `config-2` que Ironic genera y escribe en el disco local antes del reinicio:
 
@@ -1916,21 +1782,14 @@ Para equipos que gestionen la infraestructura mediante Ansible:
 
 ---
 
-### FASE 9: Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF) y Microservicios
+### FASE 9: Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF)
 
-* **Objetivo**: Desplegar el clúster RKE2 v1.36.5+rke2r1 HA sobre Debian 13 gobernado por 3 Control Planes (Nodos 269, 280, 320), unir los Workers (321, 279), configurar el datapath eBPF de Cilium sin `kube-proxy`, desplegar cert-manager, Ingress Controller en NodePort 30080 y la suite de microservicios en el namespace `aplicaciones`.
+* **Objetivo**: Inicializar el plano de control HA de 3 nodos (269, 280, 320) y unir los 2 workers (321, 279) usando RKE2 con Cilium eBPF en Debian 13.
 * **Requisitos Previos**: Nodos 4 al 8 booteados en disco NVMe con red y cloud-init finalizado.
-* **Rol Ansible**: `ansible/roles/rke2_ha/` invocado desde `ansible/playbooks/30-platform/01_rke2_cluster.yml`.
 
-#### 9.1 Despliegue Automatizado con Ansible Core
+#### 9.1 Despliegue del Primer Control Plane (`k8s-cp-01`, Nodo 269)
 ```bash
-# [LAPTOP / BASTION] Desplegar el clúster completo de 3 CPs y 2 Workers
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke2_cluster.yml
-```
-
-#### 9.2 Configuración del Primer Control Plane (`k8s-cp-01`, Nodo 269)
-```bash
-# [CONTROL-PLANE-01] ✅ Configuración maestra en /etc/rancher/rke2/config.yaml
+# [CONTROL-PLANE-01] ✅ Obligatorio: Configuración inicial
 sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
 write-kubeconfig-mode: "0644"
@@ -1939,32 +1798,34 @@ tls-san:
   - "k8s-cp-01.lab.local"
   - "k8s-api.lab.local"
 
-# Token de unión cifrado
+# Token estático para el clúster
 token: "ClusterUltraSeguroToken2026!"
 
-# Red eBPF Cilium nativa (sin kube-proxy)
+# Red eBPF Cilium
 cni: cilium
 disable-kube-proxy: true
 
-# Mitigación estricta para disco de 128 GB: Compactación agresiva de etcd
+# Mitigación para disco de 128 GB: Compactación agresiva de etcd
 etcd-arg:
   - "auto-compaction-retention=1"
   - "quota-backend-bytes=4294967296"
 EOF
 
-# Iniciar servicio RKE2 Server
+# [CONTROL-PLANE-01] ✅ Obligatorio: Instalar e iniciar rke2-server
+curl -sfL https://get.rke2.io | sh -
 sudo systemctl enable --now rke2-server.service
 ```
 
-#### 9.3 Incorporación de CPs Secundarios (`k8s-cp-02` y `k8s-cp-03`, Nodos 280 y 320)
+#### 9.2 Incorporación de CPs Secundarios (`k8s-cp-02` y `k8s-cp-03`, Nodos 280 y 320)
 ```bash
-# [CONTROL-PLANE-02 y 03] Configurar y unirse al cluster
+# [CONTROL-PLANE-02 y 03] ✅ Obligatorio: Configurar y arrancar
 sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << 'EOF'
 server: https://10.100.29.101:9345
 token: "ClusterUltraSeguroToken2026!"
 write-kubeconfig-mode: "0644"
 tls-san:
+  - "10.100.29.102"
   - "k8s-api.lab.local"
 cni: cilium
 disable-kube-proxy: true
@@ -1973,12 +1834,13 @@ etcd-arg:
   - "quota-backend-bytes=4294967296"
 EOF
 
+curl -sfL https://get.rke2.io | sh -
 sudo systemctl enable --now rke2-server.service
 ```
 
-#### 9.4 Incorporación de Nodos Workers (`k8s-worker-01` y `k8s-worker-02`, Nodos 321 y 279)
+#### 9.3 Incorporación de Nodos Workers (`k8s-worker-01` y `k8s-worker-02`, Nodos 321 y 279)
 ```bash
-# [WORKER-01 y 02] Configurar agente y mitigación de imágenes GC
+# [WORKER-01 y 02] ✅ Obligatorio: Configurar agente y arrancar
 sudo mkdir -p /etc/rancher/rke2
 sudo tee /etc/rancher/rke2/config.yaml << EOF
 server: https://10.100.29.101:9345
@@ -1989,160 +1851,155 @@ kubelet-arg:
   - "image-gc-low-threshold=60"
 EOF
 
+curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
 sudo systemctl enable --now rke2-agent.service
 ```
 
-#### 9.5 Extracción de Kubeconfig y Despliegue de Ingress y Aplicaciones
+#### 9.4 Configuración de Kubeconfig en el Bastión
 ```bash
-# [BASTION] Extraer kubeconfig desde el Control Plane 1
+# [BASTION] ✅ Obligatorio: Extraer kubeconfig desde el Control Plane 1
 mkdir -p ~/.kube
-ssh -i ansible/keys/cluster_key debian@10.100.29.101 "sudo cat /etc/rancher/rke2/rke2.yaml" > ~/.kube/config
+ssh -i ~/.ssh/id_ed25519_nodes debian@10.100.29.101 "sudo cat /etc/rancher/rke2/rke2.yaml" > ~/.kube/config
 sed -i 's/127.0.0.1/10.100.29.101/g' ~/.kube/config
 chmod 0600 ~/.kube/config
+sudo apt install -y kubectl
+```
 
-# Verificar nodos y pods del sistema Cilium
+#### 9.5 Validación de Fase 9
+```bash
+# [BASTION] Comprobar el estado de convergencia de los 5 nodos K8s
 kubectl get nodes -o wide
-kubectl get pods -n kube-system -l k8s-app=cilium
-
-# Desplegar microservicios en namespace aplicaciones
-kubectl get pods -n aplicaciones -o wide
 ```
-* **Resultado Esperado**: 7 nodos de Kubernetes en estado `Ready`, 7 pods de Cilium en estado `Running` y microservicios expuestos a través de NodePort `30080`.
+* **Resultado Esperado**: 3 nodos de control plane y 2 nodos workers en estado `Ready` con runtime `containerd`.
 
 ---
 
-### FASE 10: Suite Unificada de Observabilidad y Telemetría eBPF (Prometheus, Grafana, Coroot CE, OTel, VictoriaMetrics, Loki, Tempo)
+### FASE 10: Ciclo de Vida, Reinstalación de Nodos y Actualizaciones Continuas
 
-* **Objetivo**: Integrar la suite completa de observabilidad (métricas, trazas, logs y telemetría causal eBPF de kernel) en dos capas complementarias:
-  1. **Capa Bare-Metal / Host**: Prometheus (`:9090`), Grafana (`:3000`), Coroot CE (`:19000`), ClickHouse (`:9000`) y `coroot-node-agent` v1.37.0 eBPF CO-RE en los 8 nodos físicos.
-  2. **Capa Kubernetes**: VictoriaMetrics TSDB (`:30428`), Loki Logs (`:30100`), Tempo Traces (`:30200`), OpenTelemetry Operator y OTel Gateway Deployment (2 réplicas, `:30317` gRPC / `:30318` HTTP).
-* **Roles Ansible**: `ansible/roles/monitoring/` y `ansible/roles/coroot_node_agent/`.
+* **Objetivo**: Documentar los procedimientos de reconstrucción (*rebuild*) de un nodo averiado, ciclo de actualización inmutable de imágenes mediante Glance, actualizaciones continuas de seguridad con Nexus y actualización progresiva de Kubernetes sin pérdida de quórum.
 
-#### 10.1 Monitoreo Central Host en Nodo 306 (`01_monitoring.yml`)
+#### 10.1 Reinstalación Rápida de un Nodo Individual (*Bare-Metal Rebuild*)
+Si un servidor físico sufre corrupción o reemplazo de disco NVMe:
+
 ```bash
-# [LAPTOP / BASTION] Desplegar Prometheus, Grafana, Alertmanager y Node Exporter
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/40-observability/01_monitoring.yml
-```
-* **Verificar**:
-```bash
-curl -s http://10.100.29.30:9090/-/ready && echo "Prometheus Host OK"
-curl -s -o /dev/null -w "%{http_code}\n" http://10.100.29.30:3000/login | grep -E '200|302'
-```
+# [PXE] 1. Colocar el nodo en estado de mantenimiento o desinstalar
+export OS_AUTH_TYPE=none
+export OS_ENDPOINT=http://10.100.29.30:6385
 
-#### 10.2 Servidor Central Coroot CE + ClickHouse en Docker Compose
-Desplegado en `/opt/coroot` del Nodo 306, desacoplado de las colisiones de puertos de OpenStack:
-```bash
-# [PXE-CONTROLLER (Nodo 306)] Comprobar contenedores Coroot
-cd /opt/coroot && docker compose ps
-```
-* **Endpoints Activos**:
-  - Web UI y Colector OTLP Coroot: `http://10.100.29.30:19000` (o `http://192.168.29.25:19000`).
-  - Base de Datos ClickHouse: Puertos `9000` (TCP nativo) y `8123` (HTTP).
-  - Prometheus TSDB embebido: Puerto `9090` interno del contenedor (retención 3 días, cuota máx 5 GB).
-
-#### 10.3 Despliegue del Agente Coroot eBPF en los 8 Nodos Físicos
-El rol `ansible/roles/coroot_node_agent/` instala el binario `coroot-node-agent` v1.37.0 y crea la unidad systemd apuntando al colector central:
-```bash
-# [LAPTOP / BASTION] Desplegar coroot-node-agent en toda la flota
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/40-observability/02_coroot_agent.yml
-```
-* **Verificar servicio en los nodos**:
-```bash
-ansible baremetal -i inventory/lab/hosts.yml -m shell -a "systemctl is-active coroot-node-agent"
-```
-* **Resultado Esperado**: `active` en los 8 nodos físicos.
-
-#### 10.4 Suite de Telemetría en Kubernetes (OTel Operator, VictoriaMetrics, Loki, Tempo)
-```bash
-# [BASTION] Auditar pods de la suite en el namespace monitoring y opentelemetry-operator-system
-kubectl get pods -n monitoring -o wide
-kubectl get pods -n opentelemetry-operator-system -o wide
-```
-* **Componentes Validados**:
-  - `victoriametrics-0` (1/1 Running, NodePort `30428`, retención 30 días con cuota 25 GiB).
-  - `loki-0` (1/1 Running, NodePort `30100`, retención 7 días con cuota 20 GiB).
-  - `tempo-0` (1/1 Running, NodePort `30200`, retención 3 días con cuota 15 GiB).
-  - `otel-gateway-collector` (2/2 réplicas Running, NodePort `30317` gRPC / `30318` HTTP).
-  - Auto-instrumentación OTel inyectada en pods del namespace `aplicaciones`.
-
----
-
-### FASE 11: Ciclo de Vida, Reinstalación de Nodos y Recuperación ante Desastres (`disaster-recovery.sh`)
-
-* **Objetivo**: Garantizar la resiliencia operativa de la infraestructura mediante procedimientos de reconstrucción física (*Bare-Metal Rebuild*), respaldos atómicos y recuperación ante desastres (DR) para `etcd`, Sonatype Nexus y PostgreSQL 16.
-* **Archivos Fuente**: `scripts/ops/disaster-recovery.sh` y `ansible/playbooks/90-operations/01_disaster_recovery.yml`.
-
-#### 11.1 Reinstalación Rápida de un Nodo Individual (*Bare-Metal Rebuild*)
-Si un servidor físico sufre corrupción de disco o fallo de hardware:
-```bash
-# [BASTION] 1. Drenar y retirar carga del nodo en Kubernetes
+# Retirar carga del nodo en Kubernetes desde el Bastión
 kubectl drain k8s-worker-02 --ignore-daemonsets --delete-emptydir-data
 kubectl delete node k8s-worker-02
 
-# [PXE] 2. Desaprovisionar y reinstalar imagen dorada mediante Ironic
+# En el PXE Controller: undeploy del nodo físico
 openstack baremetal node undeploy k8s-worker-02
+
+# 2. Re-desplegar la imagen inmutable limpia
 openstack baremetal node deploy k8s-worker-02
 
-# 3. Al reiniciar, cloud-init reconstruye la red y el agente RKE2 se une automáticamente
-```
-
-#### 11.2 Automatización de Respaldos y Disaster Recovery
-El script `scripts/ops/disaster-recovery.sh` realiza respaldos consistentes y compactados:
-```bash
-# 1. Crear respaldo completo de bases de datos y quórum etcd
-bash scripts/ops/disaster-recovery.sh --backup
-
-# 2. Verificar integridad del respaldo generado
-ls -lh /opt/infra/backups/
-
-# 3. Restaurar ante contingencia total
-bash scripts/ops/disaster-recovery.sh --restore /opt/infra/backups/backup_latest.tar.gz
-```
-* **O mediante el Playbook de Operaciones de Ansible**:
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup
-```
-
-#### 11.3 Actualización Progresiva de Kubernetes Nodo por Nodo (*Rolling Upgrade*)
-```bash
-# [BASTION] Aislar worker
-kubectl cordon k8s-worker-01
-kubectl drain k8s-worker-01 --ignore-daemonsets --delete-emptydir-data
-
-# [WORKER-01] Actualizar binario de RKE2 y reiniciar
-curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=v1.36.5+rke2r1 INSTALL_RKE2_TYPE="agent" sh -
-sudo systemctl restart rke2-agent
-
-# [BASTION] Habilitar worker tras validar salud
-kubectl uncordon k8s-worker-01
+# 3. Al reiniciar, cloud-init reconstruye la configuración y el agente RKE2 se une automáticamente
 ```
 
 ---
 
-### FASE 12: Validación Integral, Health Check y Regresiones Automatizadas (`healthcheck.sh` & Pytest)
+#### 10.2 Ciclo de Vida y Publicación de Nuevas Imágenes en Glance
+Para desplegar parches mayores del kernel 6.12+ o actualizar librerías base:
 
-* **Objetivo**: Probar la conectividad entre pods (datapath eBPF), balanceo de servicios, auditoría visual en tiempo real y validación de regresiones con la suite automatizada Pytest.
+1. **Compilar la nueva imagen con Packer**:
+   ```bash
+   # [PXE] Generar versión v1.1.0
+   cd /opt/infra/packer
+   packer build -var "image_version=v1.1" packer.pkr.hcl
+   ```
+2. **Publicar en Glance / Servidor HTTP**:
+   ```bash
+   # [PXE] Registrar versión v1.1 en Glance
+   openstack image create "debian-13-baremetal-v1.1"      --file /httpboot/images/debian-baremetal-v1.1.qcow2      --disk-format qcow2      --container-format bare      --public
+   ```
+3. **Despliegue Piloto Canary (Worker 02)**:
+   - Se actualiza la referencia de imagen únicamente en `k8s-worker-02`.
+   - Se ejecuta el *rebuild*. Si tras 24 horas no hay errores de kernel ni regresiones, se aprueba la imagen para el resto de la flota.
+4. **Purga de la Imagen Anterior (128 GB Disk Management)**:
+   ```bash
+   # [PXE] Eliminar versión v1.0 para liberar espacio en disco de 128 GB
+   openstack image delete debian-13-baremetal-v1.0
+   rm -f /httpboot/images/debian-baremetal-v1.0.qcow2
+   ```
 
-#### 12.1 Prueba de Datapath Cilium y Balanceo de Carga
+---
+
+#### 10.3 Actualizaciones Continuas del Sistema Operativo con Nexus y `unattended-upgrades`
+
+Para parches de seguridad menores que no requieran reconstruir toda la imagen `.qcow2`:
+
 ```bash
-# [BASTION] Validar balanceo de microservicios en namespace aplicaciones
-curl -I http://10.100.29.101:30080/
+# [ALL NODES] Configurar actualizaciones automáticas de seguridad hacia Nexus
+sudo apt install -y unattended-upgrades
+sudo tee /etc/apt/apt.conf.d/50unattended-upgrades << 'EOF'
+Unattended-Upgrade::Origins-Pattern {
+    "origin=Debian,codename=${distro_codename}-updates";
+    "origin=Debian,codename=${distro_codename},label=Debian-Security";
+};
+Unattended-Upgrade::Package-Blacklist {
+    "rke2-*";
+    "linux-image-*";
+};
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::InstallOnShutdown "false";
+EOF
+```
+
+---
+
+#### 10.4 Actualización Progresiva de Kubernetes Nodo por Nodo (*Rolling Upgrade*)
+
+Para actualizar RKE2 de una versión menor a otra (ej. `v1.30.2` a `v1.30.4`):
+
+1. **Actualizar Workers Secuencialmente**:
+   ```bash
+   # [BASTION] Aislar worker
+   kubectl cordon k8s-worker-01
+   kubectl drain k8s-worker-01 --ignore-daemonsets --delete-emptydir-data
+
+   # [WORKER-01] Actualizar binario y reiniciar
+   curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=v1.30.4+rke2r1 INSTALL_RKE2_TYPE="agent" sh -
+   sudo systemctl restart rke2-agent
+
+   # [BASTION] Habilitar worker
+   kubectl uncordon k8s-worker-01
+   ```
+2. **Actualizar Nodos de Control Plane Uno a Uno**:
+   - Se actualiza primero `k8s-cp-01`.
+   - Se valida el quórum de `etcd` antes de avanzar al siguiente:
+     ```bash
+     sudo /var/lib/rancher/rke2/bin/etcdctl --cacert /var/lib/rancher/rke2/server/tls/etcd/server-ca.crt        --cert /var/lib/rancher/rke2/server/tls/etcd/server-client.crt        --key /var/lib/rancher/rke2/server/tls/etcd/server-client.key        endpoint health
+     ```
+   - Se repite de forma secuencial en `k8s-cp-02` y luego en `k8s-cp-03`.
+
+---
+
+### FASE 11: Validación Integral del Clúster y Acceso Remoto
+
+* **Objetivo**: Probar la conectividad entre pods (datapath eBPF), balanceo de servicios y acceso administrativo mediante túnel SSH ProxyJump.
+
+#### 11.1 Prueba de Datapath Cilium y Balanceo de Carga
+```bash
+# [BASTION] Desplegar 4 réplicas de Nginx en los workers
+kubectl create deployment test-app --image=10.100.29.20:8082/nginx:alpine --replicas=4
+kubectl expose deployment test-app --port=80 --target-port=80
+
+# Obtener IP del servicio y realizar curl desde contenedor efímero
+SERVICE_IP=$(kubectl get svc test-app -o jsonpath='{.spec.clusterIP}')
+kubectl run curl-test --image=10.100.29.20:8082/curlimages/curl --rm -it --restart=Never -- curl -I http://${SERVICE_IP}
 ```
 * **Resultado Esperado**: Código HTTP `200 OK` demostrando que Cilium enruta el tráfico entre los nodos sin requerir `kube-proxy`.
 
-#### 12.2 Auditoría Visual en Vivo de la Flota (`healthcheck.sh`)
+#### 11.2 Validación del Acceso Administrativo vía ProxyJump
+Desde la estación DevOps externa:
 ```bash
-# [ESTACIÓN DEVOPS / LAPTOP]
-bash scripts/diagnostics/healthcheck.sh
+# [ESTACIÓN DEVOPS] Saltar directamente a un nodo interno sin pasar manualmente por el Bastión
+ssh debian@10.100.29.101 "hostname && uptime"
 ```
-* **Resultado Esperado**: Tabla con los 8 nodos en `ONLINE` / `UP`, disco `<35%`, Nexus `200 OK`, Prometheus `Ready`, Grafana `200 OK`, quórum etcd convergido y 7 pods Cilium en `Running`.
-
-#### 12.3 Suite de Pruebas Automatizadas de Regresión (Pytest)
-```bash
-# [LAPTOP] Ejecutar pruebas de regresión CLI y de pipeline de respaldo
-pytest tests/ -v
-```
-* **Resultado Esperado**: `11 passed` (validando comportamiento CLI de flags `--dry-run`, `--all`, subtests de DR e inyección de inventario sin errores).
+* **Resultado Esperado**: Comando ejecutado transparentemente a través del túnel SSH del puerto 2222.
 
 ---
 
@@ -2160,28 +2017,12 @@ pytest tests/ -v
 | Tarjetas PXE | PXE (`10.100.29.30`) | **67 / 68**| UDP | dnsmasq DHCP (Concesiones de red por MAC) |
 | Tarjetas PXE | PXE (`10.100.29.30`) | **69** | UDP | TFTP Bootloader (Entrega de ipxe.efi / undionly.kpxe) |
 | Nodos en Boot | PXE (`10.100.29.30`) | **8089** | TCP | Glance / Nginx HTTP (Streaming de kernel IPA e imágenes)|
-| OpenStack Clients | PXE (`10.100.29.30`) | **5000** | TCP | OpenStack Keystone Identity API |
-| OpenStack Clients | PXE (`10.100.29.30`) | **9292** | TCP | OpenStack Glance Image Registry API |
 | Agente IPA | Ironic (`10.100.29.30`) | **6385** | TCP | Ironic REST API (Heartbeat y callbacks de despliegue) |
-| DevOps / Browser | PXE (`10.100.29.30`) | **8080** | TCP | OpenStack Horizon Web Dashboard / HAProxy |
 | Nodos K8s | Control Plane | **6443** | TCP | Kubernetes API Server (Endpoint principal de K8s) |
 | Nodos K8s | Control Plane | **9345** | TCP | RKE2 Supervisor API (Registro y renovación de TLS) |
 | Control Planes | Control Planes | **2379-2380**| TCP | etcd Client / Peer (Consenso de base distribuida Raft) |
 | Control Planes | Nodos K8s | **10250** | TCP | Kubelet API (Métricas y ejecución de comandos) |
-| Clientes Externos| Workers K8s | **30080** | TCP | Ingress NGINX NodePort (Microservicios en `aplicaciones`)|
-| Flota de Nodos | Nodo 306 | **19000** | TCP | Coroot CE Collector OTLP & Web UI Dashboard |
-| Coroot Server | ClickHouse (`127.0.0.1`)| **9000 / 8123**| TCP | ClickHouse Columnar Database (nativo y HTTP) |
-| Localhost | Nodos (1..8) | **19080** | TCP | `coroot-node-agent` métricas internas del host |
-| Prometheus | Nodos (1..8) | **9100** | TCP | Node Exporter métricas del sistema operativo |
-| DevOps / Grafana | Nodo 306 | **9090** | TCP | Prometheus TSDB Server (Host) |
-| DevOps / Browser | Nodo 306 | **3000** | TCP | Grafana Unified Observability Dashboard |
-| Prometheus | Alertmanager (`306`)| **9093** | TCP | Prometheus Alertmanager |
-| Prometheus | Blackbox (`306`) | **9115** | TCP | Blackbox Exporter Probing ICMP/HTTP |
-| K8s Pods / Prom | Workers K8s | **30428** | TCP | VictoriaMetrics TSDB NodePort (Almacén a largo plazo) |
-| K8s Pods / Prom | Workers K8s | **30100** | TCP | Grafana Loki Logs Ingest NodePort |
-| K8s Pods / OTel | Workers K8s | **30200** | TCP | Grafana Tempo Traces NodePort |
-| Microservicios | Workers K8s | **30317** | TCP | OpenTelemetry Gateway OTLP gRPC NodePort |
-| Microservicios | Workers K8s | **30318** | TCP | OpenTelemetry Gateway OTLP HTTP NodePort |
+| Clientes Externos| Workers K8s | **80 / 443**| TCP | Ingress NGINX (Puntos de entrada de aplicaciones web) |
 
 ---
 
@@ -2277,26 +2118,44 @@ Para garantizar que ningún servicio sature los **128 GB de disco** por nodo, se
 
 ---
 
-## 9. Scripts Automáticos de Diagnóstico, Testing y Health Check
+## 9. Scripts Automáticos de Diagnóstico y Health Check
 
-### 9.1 Diagnóstico Visual de la Flota en Tiempo Real (`healthcheck.sh`)
-Ubicación: `scripts/diagnostics/healthcheck.sh`. Audita conectividad ICMP, SSH, recursos libres (RAM y % de disco NVMe sobre el límite de 128 GB), Nexus 3, HTTPBoot, Ironic, Prometheus (:9090), Grafana (:3000), Alertmanager (:9093), Blackbox (:9115), nodos RKE2 y pods de red Cilium:
+Depositar en el Bastión (`/opt/infra/scripts/`):
 
+### 9.1 `check_cluster_health.sh`
 ```bash
-# Ejecutar desde la estación DevOps / laptop conectada a la red o Wi-Fi
-bash scripts/diagnostics/healthcheck.sh
-```
+#!/usr/bin/env bash
+# [BASTION] /opt/infra/scripts/check_cluster_health.sh
+set -euo pipefail
 
-### 9.2 Suite de Pruebas Automatizadas de Regresión y Validación (Pytest)
-Ubicación: `tests/test_cli_regressions.py` y `tests/test_backup_pipeline.py`. Evalúa sin efectos colaterales (modo mock y dry-run) que ningún script CLI ni pipeline de respaldo sufra regresiones operativas:
+echo "=========================================================="
+echo "   AUDITORÍA DE SALUD: FLOTA BARE-METAL Y KUBERNETES HA   "
+echo "=========================================================="
 
-```bash
-# Ejecutar la suite completa de pruebas
-pytest tests/ -v
+echo "--> [1/4] Verificando Conectividad con los 8 Nodos..."
+NODES=("10.100.29.10" "10.100.29.20" "10.100.29.30" "10.100.29.101" "10.100.29.102" "10.100.29.103" "10.100.29.111" "10.100.29.112")
+for ip in "${NODES[@]}"; do
+    if ping -c 1 -W 1 "$ip" > /dev/null 2>&1; then
+        echo " [+] $ip : ONLINE"
+    else
+        echo " [-] $ip : OFFLINE / UNREACHABLE"
+    fi
+done
+
+echo "--> [2/4] Verificando Sonatype Nexus y PostgreSQL..."
+curl -s -o /dev/null -w "%{http_code}
+" http://10.100.29.20:8081/service/rest/v1/status | grep 200 && echo " [+] Nexus 3 Core: SALUDABLE"
+
+echo "--> [3/4] Estado del Quórum etcd y Nodos Kubernetes..."
+export KUBECONFIG=~/.kube/config
+kubectl get nodes -o wide
+
+echo "--> [4/4] Verificando Espacio en Disco en Nodos (Límite 128 GB)..."
+for ip in "${NODES[@]}"; do
+    echo "--- Nodo $ip ---"
+    ssh -o ConnectTimeout=2 debian@$ip "df -h / | awk 'NR==2 {print \$3 " usado de " \$2 " (" \$5 " lleno)"}'"
+done
 ```
-* **Cobertura de Pruebas**:
-  - `test_cli_regressions.py`: Verifica que `--dry-run` no pause interactividad, manejo de argumentos trailing inválidos, validación de MACs antes de reprovisionar y llamadas consistentes al inventario Ansible.
-  - `test_backup_pipeline.py`: Verifica que respaldos vacíos o parciales fallen limpiamente y no se publiquen como exitosos, garantizando consistencia atómica en DR.
 
 ---
 
@@ -2339,61 +2198,35 @@ pytest tests/ -v
 
 ---
 
-### Caso 4: El Agente Coroot eBPF reporta error al conectar con el colector
-* **Síntoma**: `systemctl status coroot-node-agent` muestra error de conexión o reinicios continuos.
-* **Causa**: El puerto `19000` de Coroot CE no está accesible desde la LAN privada `10.100.29.0/24` o el servicio en Node 306 está detenido.
-* **Diagnóstico**: `curl -I http://10.100.29.30:19000/api/collector` desde el nodo afectado.
-* **Solución**:
-  1. Verificar que el stack Compose esté levantado en el Nodo 306:
-     ```bash
-     cd /opt/coroot && docker compose ps
-     ```
-  2. Comprobar que el firewall `nftables` en el Nodo 306 permita tráfico TCP al puerto `19000`.
-  3. Reiniciar el agente en el nodo:
-     ```bash
-     sudo systemctl restart coroot-node-agent
-     ```
-
----
-
 ## 11. Checklist Final, Estado Esperado y Hoja de Ruta (Roadmap)
 
 ### 11.1 Checklist de Validación Pre-Producción
 
-- [x] **Asignación de Roles**: Nodos de 16 GB asignados a Nexus, PXE y Control Planes HA; nodos de 8 GB asignados a Bastión y Workers.
-- [x] **Mitigación de Disco (128 GB)**: Tareas de limpieza de Nexus activas, etcd configurado con `auto-compaction` y journald limitado a 2 GB.
-- [x] **Red y Perímetro**: Bastion accesible exclusivamente por puerto 2222; ProxyJump validado hacia los 8 nodos.
-- [x] **Nexus y Base de Datos**: Sonatype Nexus 3 OSS conectado a PostgreSQL 16 con Anonymous Access activo y proxy Docker `:8082`.
-- [x] **Arranque PXE**: `dnsmasq` respondiendo reservas estáticas por MAC para las 8 interfaces físicas.
-- [x] **OpenStack Kolla-Ansible**: Contenedores 2025.1 Epoxy activos en Nodo 306 (Glance, Keystone, Ironic, Horizon, HAProxy).
-- [x] **Imagen Dorada Glance**: `debian13-coroot-lab` (598 MB) activa en catálogo con agente Coroot eBPF pre-instalado.
-- [x] **Clúster Kubernetes HA**: 7 nodos en estado `Ready` gobernados por RKE2 v1.36.5+rke2r1.
-- [x] **Red eBPF**: Cilium gobernando el datapath sin `kube-proxy` (7 pods Cilium en estado `Running`).
-- [x] **Microservicios**: Aplicaciones activas en namespace `aplicaciones` expuestas en NodePort `30080`.
-- [x] **Suite de Observabilidad Bare-Metal**: Coroot CE (:19000) y ClickHouse (:9000) en Docker Compose; `coroot-node-agent` v1.37.0 activo en los 8 nodos.
-- [x] **Suite de Observabilidad K8s**: VictoriaMetrics (:30428), Loki (:30100), Tempo (:30200) y OpenTelemetry Operator + Gateway (2 réplicas) con auto-instrumentación.
-- [x] **Validación y DR**: Pipeline `disaster-recovery.sh` funcional y 11 pruebas de regresión Pytest pasando (`11 passed`).
+- [ ] **Asignación de Roles**: Nodos de 16 GB asignados a Nexus, PXE y Control Planes HA; nodos de 8 GB asignados a Bastión y Workers.
+- [ ] **Mitigación de Disco**: Tareas de limpieza de Nexus activas, etcd configurado con `auto-compaction` y journald limitado a 2 GB.
+- [ ] **Red y Perímetro**: Bastion accesible exclusivamente por puerto 2222; ProxyJump validado hacia los 8 nodos.
+- [ ] **Nexus y Base de Datos**: Sonatype Nexus en ejecución conectado a PostgreSQL 16 con Anonymous Access activo.
+- [ ] **Arranque PXE**: `dnsmasq` respondiendo reservas estáticas por MAC para las 8 interfaces físicas.
+- [ ] **Aprovisionamiento Físico**: Ironic standalone volcando `.qcow2` e inyectando `ConfigDrive` (`config-2`).
+- [ ] **Despliegue "Un Solo Botón"**: Script `deploy_all_nodes.sh` probado y validado con monitorización de estados.
+- [ ] **Clúster Kubernetes**: Quórum etcd de 3 nodos (`k8s-cp-01..03`) y 2 workers en estado `Ready`.
+- [ ] **Red eBPF**: Cilium gobernando el datapath sin `kube-proxy`.
 
 ---
 
 ### 11.2 Estado Esperado de la Infraestructura Final
 
 ```
-===========================================================================================================
-ESTADO FINAL DE PRODUCCIÓN: CLÚSTER BARE-METAL EDGE 8 NODOS OPERATIVO
-===========================================================================================================
-NODO 314 (10.100.29.10)  : BASTION GATEWAY & SQUID PROXY        [8 GB RAM / 128 GB] -> ONLINE (SSH :2222)
-NODO 315 (10.100.29.20)  : SONATYPE NEXUS 3 & POSTGRESQL 16      [16 GB RAM / 128 GB] -> ONLINE (APT :8081, OCI :8082)
-NODO 306 (10.100.29.30)  : PXE CONTROLLER, KOLLA & COROOT CE    [16 GB RAM / 128 GB] -> ONLINE (Glance :9292, Ironic :6385, Coroot :19000)
-NODO 269 (10.100.29.101) : K8S CONTROL PLANE 01 (ETCD LÍDER)    [16 GB RAM / 128 GB] -> READY (RKE2 v1.36.5, Cilium eBPF)
-NODO 280 (10.100.29.102) : K8S CONTROL PLANE 02 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY (RKE2 v1.36.5, Cilium eBPF)
-NODO 320 (10.100.29.103) : K8S CONTROL PLANE 03 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY (RKE2 v1.36.5, Cilium eBPF)
-NODO 321 (10.100.29.111) : K8S WORKER NODE 01 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY (Aplicaciones / Ingress NodePort :30080)
-NODO 279 (10.100.29.112) : K8S WORKER NODE 02 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY (Aplicaciones / Ingress NodePort :30080)
------------------------------------------------------------------------------------------------------------
-TELEMETRÍA EBPF FLOTA   : 8/8 NODOS ACTIVOS (coroot-node-agent v1.37.0 @ 127.0.0.1:19080 -> http://10.100.29.30:19000)
-OBSERVABILIDAD K8S      : OTel Gateway (2 réplicas), VictoriaMetrics (:30428), Loki (:30100), Tempo (:30200)
-OPENSTACK GLANCE IMAGE  : debian13-coroot-lab (598 MB QCOW2 comprimida, UUID 8db05194-f48e-498f-a463-4618fab3c760)
-SUITE DE REGRESIONES    : pytest tests/ (11 PASSED / 0 FAILURES)
-===========================================================================================================
+========================================================================================
+ESTADO FINAL: CLÚSTER BARE-METAL EDGE 8 NODOS OPERATIVO
+========================================================================================
+NODO 314 (10.100.29.10)  : BASTION GATEWAY & SQUID PROXY        [8 GB RAM / 128 GB] -> ONLINE
+NODO 315 (10.100.29.20)  : SONATYPE NEXUS 3 & POSTGRESQL 16      [16 GB RAM / 128 GB] -> ONLINE
+NODO 306 (10.100.29.30)  : PXE CONTROLLER & IRONIC STANDALONE   [16 GB RAM / 128 GB] -> ONLINE
+NODO 269 (10.100.29.101) : K8S CONTROL PLANE 01 (ETCD LÍDER)    [16 GB RAM / 128 GB] -> READY
+NODO 280 (10.100.29.102) : K8S CONTROL PLANE 02 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
+NODO 320 (10.100.29.103) : K8S CONTROL PLANE 03 (ETCD MIEMBRO)  [16 GB RAM / 128 GB] -> READY
+NODO 321 (10.100.29.111) : K8S WORKER NODE 01 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
+NODO 279 (10.100.29.112) : K8S WORKER NODE 02 (CONTAINERD/PODS) [8 GB RAM / 128 GB]  -> READY
+========================================================================================
 ```

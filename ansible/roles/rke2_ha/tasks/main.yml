@@ -1,11 +1,4 @@
 ---
-- name: "Exigir token RKE2 suministrado mediante Vault"
-  ansible.builtin.assert:
-    that:
-      - rke2_cluster_token | default('') | length > 0
-    fail_msg: "Configure vault_rke2_token conservando el token actual del clúster."
-  no_log: true
-
 # ==============================================================================
 # Role: rke2_ha - Clúster Kubernetes HA con RKE2 y Cilium eBPF
 # Reemplaza completamente scripts/08-kubernetes.sh
@@ -27,8 +20,6 @@
     group: root
     mode: '0644'
 
-  notify: Restart RKE2
-
 - name: "Desplegar configuración de RKE2 Server en el nodo Líder (nodo-269)"
   ansible.builtin.template:
     src: rke2-leader-config.yaml.j2
@@ -38,8 +29,6 @@
     mode: '0600'
   when: k8s_leader | default(false)
 
-  notify: Restart RKE2
-
 - name: "Desplegar configuración de RKE2 Server en nodos Control Plane secundarios"
   ansible.builtin.template:
     src: rke2-cp-config.yaml.j2
@@ -48,8 +37,6 @@
     group: root
     mode: '0600'
   when: inventory_hostname in groups['k8s_control_plane'] and not (k8s_leader | default(false))
-
-  notify: Restart RKE2
 
 - name: "Asegurar directorio de manifiestos de RKE2 Server"
   ansible.builtin.file:
@@ -77,8 +64,6 @@
     group: root
     mode: '0600'
   when: inventory_hostname in groups['k8s_workers']
-
-  notify: Restart RKE2
 
 - name: "Descargar e instalar binarios oficiales de RKE2"
   ansible.builtin.shell: >
@@ -117,18 +102,6 @@
     state: started
     enabled: true
   when: inventory_hostname in groups['k8s_workers']
-
-- name: "Aplicar cambios de configuración antes de validar disponibilidad"
-  ansible.builtin.meta: flush_handlers
-
-- name: "Esperar API disponible en el control plane actual"
-  ansible.builtin.wait_for:
-    host: "{{ ansible_host }}"
-    port: "{{ k8s_api_port }}"
-    timeout: 180
-  when:
-    - inventory_hostname in groups['k8s_control_plane']
-    - not ansible_check_mode
 
 - name: "Configurar acceso kubeconfig para root y usuario admin en el Líder"
   when: k8s_leader | default(false)

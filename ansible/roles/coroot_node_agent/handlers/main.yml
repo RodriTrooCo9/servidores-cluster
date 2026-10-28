@@ -1,9 +1,0 @@
----
-- name: Reload systemd
-  ansible.builtin.systemd:
-    daemon_reload: true
-
-- name: Restart Coroot Agent
-  ansible.builtin.systemd:
-    name: coroot-node-agent
-    state: restarted
