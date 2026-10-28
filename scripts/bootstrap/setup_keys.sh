@@ -5,8 +5,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KEYS_DIR="${SCRIPT_DIR}/keys"
-VAULT_PASS_FILE="${SCRIPT_DIR}/.vault_pass"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+export ANSIBLE_CONFIG="${REPO_DIR}/ansible.cfg"
+KEYS_DIR="${REPO_DIR}/ansible/keys"
+VAULT_PASS_FILE="${REPO_DIR}/.vault_pass"
 SOURCE_KEY="${HOME}/.ssh/id_ed25519"
 
 echo " [1/4] Asegurando permisos del directorio de llaves..."
@@ -35,7 +37,7 @@ else
 fi
 
 echo "[4/4] Probando conectividad con Ansible..."
-cd "${SCRIPT_DIR}"
+cd "${REPO_DIR}"
 ansible -m ping baremetal -o
 
 echo "================================================================================"

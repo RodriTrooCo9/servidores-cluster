@@ -11,7 +11,6 @@
         port: 9100
         timeout: 3
         state: started
-      ignore_errors: true
       register: exporter_check
 
     - name: "Reportar estado de métricas"
@@ -30,7 +29,6 @@
       loop:
         - { name: "OpenSSH Perimetral", port: "{{ bastion_ssh_port }}", host: "127.0.0.1" }
         - { name: "Squid Proxy Egress", port: "{{ squid_port }}", host: "{{ bastion_ip }}" }
-      ignore_errors: true
       register: bastion_services
 
     - name: "Reportar estado de Bastion"
@@ -50,7 +48,6 @@
         - { name: "Nexus 3 Web UI / APT Proxy", port: "{{ nexus_port }}" }
         - { name: "Nexus Docker Group Pull", port: "{{ nexus_docker_group_port }}" }
         - { name: "PostgreSQL Database", port: "{{ postgres_port }}" }
-      ignore_errors: true
       register: nexus_services
 
     - name: "Reportar estado de Nexus"
@@ -74,7 +71,6 @@
         - { name: "OpenStack Ironic HTTPBoot", host: "{{ pxe_ip }}", port: "{{ pxe_httpboot_port }}" }
         - { name: "Prometheus TSDB", host: "127.0.0.1", port: "{{ prometheus_port }}" }
         - { name: "Grafana Web", host: "127.0.0.1", port: "{{ grafana_port }}" }
-      ignore_errors: true
       register: core_services
 
     - name: "Reportar estado de servicios en Nodo 306"
@@ -93,7 +89,6 @@
       loop:
         - { name: "Kube-API Server", port: "{{ k8s_api_port }}" }
         - { name: "RKE2 Supervisor", port: "{{ k8s_supervisor_port }}" }
-      ignore_errors: true
       register: k8s_services
 
     - name: "Reportar estado de APIs de Kubernetes"

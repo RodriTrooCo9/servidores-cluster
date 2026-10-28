@@ -21,8 +21,8 @@ fi
 
 load_config 2>/dev/null || true
 
-DRY_RUN_ARG=""
-USE_LEGACY=false
+DRY_RUN_ARGS=()
+export ANSIBLE_CONFIG="${REPO_DIR}/ansible.cfg"
 
 echo -e "${COLOR_BLUE}==================================================================${COLOR_NC}"
 echo -e "${COLOR_BLUE}   ORQUESTADOR DEVOPS: DESPLIEGUE REMOTO CON ANSIBLE CORE        ${COLOR_NC}"
@@ -47,7 +47,6 @@ Comandos Principales (Motor Ansible Core):
   --health              Ejecutar auditoría de salud visual rápida en vivo
   --all                 Ejecutar todas las fases de manera ordenada y secuencial
   --dry-run             Simular ejecución con verificación Ansible (--check --diff)
-  --legacy              Forzar ejecución mediante scripts Bash secuenciales antiguos
   -h, --help            Mostrar esta ayuda
 
 Ejemplos:
@@ -64,14 +63,14 @@ run_ansible() {
     shift
     local extra_args=("$@")
     
-    cd "${ANSIBLE_DIR}"
-    log_info "Ejecutando: ansible-playbook -i ${INVENTORY} ${playbook} ${extra_args[*]} ${DRY_RUN_ARG}"
-    ansible-playbook -i "${INVENTORY}" "${playbook}" "${extra_args[@]}" ${DRY_RUN_ARG}
+    cd "${REPO_DIR}"
+    log_info "Ejecutando: ansible-playbook -i ${INVENTORY} ${playbook} ${extra_args[*]} ${DRY_RUN_ARGS[*]}"
+    ansible-playbook -i "${INVENTORY}" "${playbook}" "${extra_args[@]}" "${DRY_RUN_ARGS[@]}"
 }
 
 cmd_check() {
     log_info "Verificando conectividad y autenticación SSH en paralelo (8 nodos)..."
-    cd "${ANSIBLE_DIR}"
+    cd "${REPO_DIR}"
     if ansible baremetal -i "${INVENTORY}" -m ping; then
         log_success "Todos los nodos bare-metal respondieron exitosamente."
     else
@@ -108,8 +107,10 @@ cmd_fase() {
             ;;
         7)
             log_info "FASE 7: Generar Plantillas Cloud-Init, ConfigDrive y Packer en Nodo 306..."
-            if [[ -f "${SCRIPT_DIR}/scripts/07-cloud-init.sh" ]]; then
-                bash "${SCRIPT_DIR}/scripts/07-cloud-init.sh" -y
+            if [[ "${DRY_RUN}" == true ]]; then
+                log_info "[DRY-RUN] Prepararía Cloud-Init en el controlador PXE."
+            else
+                bash "${REPO_DIR}/scripts/ops/07-cloud-init.sh" -y
             fi
             ;;
         8)
@@ -131,55 +132,29 @@ cmd_fase() {
     esac
 }
 
-# Parseo de argumentos
-if [[ $# -eq 0 ]]; then
-    show_help
-    exit 0
-fi
-
+# Validar toda la línea antes de ejecutar acciones.
+[[ $# -gt 0 ]] || { show_help; exit 0; }
+ACTIONS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --check)
-            cmd_check
-            shift
-            ;;
+        --check|--health|--all) ACTIONS+=("$1"); shift ;;
         --fase)
-            cmd_fase "$2"
-            shift 2
-            ;;
-        --health)
-            if [[ -f "${SCRIPT_DIR}/scripts/healthcheck.sh" ]]; then
-                "${SCRIPT_DIR}/scripts/healthcheck.sh"
-            else
-                "${SCRIPT_DIR}/healthcheck.sh"
-            fi
-            shift
-            ;;
+            [[ $# -ge 2 && "$2" =~ ^([1-9]|10)$ ]] || { log_error "--fase requiere un número entre 1 y 10"; exit 2; }
+            ACTIONS+=("fase:$2"); shift 2 ;;
+        --dry-run) DRY_RUN=true; DRY_RUN_ARGS=(--check --diff); shift ;;
+        -h|--help) show_help; exit 0 ;;
+        *) log_error "Opción no reconocida: $1"; exit 2 ;;
+    esac
+done
+[[ ${#ACTIONS[@]} -gt 0 ]] || { log_error "Indique una acción"; exit 2; }
+for action in "${ACTIONS[@]}"; do
+    case "${action}" in
+        --check) cmd_check ;;
+        --health) bash "${REPO_DIR}/scripts/diagnostics/healthcheck.sh" ;;
         --all)
-            log_info "Iniciando orquestación de la flota completa mediante Ansible Core..."
             cmd_check
             confirm_action "¿Desea iniciar el despliegue secuencial de todas las fases con Ansible?"
-            run_ansible "${SITE_PLAYBOOK}"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN_ARG="--check --diff"
-            log_warn "Modo Dry-Run activado (--check --diff en Ansible)."
-            shift
-            ;;
-        --legacy)
-            USE_LEGACY=true
-            log_warn "Modo Legacy activado. Usando scripts imperativos secuenciales."
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            log_error "Opción no reconocida: $1"
-            show_help
-            exit 1
-            ;;
+            run_ansible "${SITE_PLAYBOOK}" ;;
+        fase:*) cmd_fase "${action#fase:}" ;;
     esac
 done
