@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# SCRIPT DE DESCARGA DE RAMDISK IRONIC PYTHON AGENT (IPA)
-# Descarga e instala deterministamente los binarios de booteo bare-metal
-# sin comprometer el tamaño del repositorio Git.
-#
-# Uso: ./artifacts/download_ipa.sh [--force]
-# ==============================================================================
 
 set -Eeuo pipefail
 

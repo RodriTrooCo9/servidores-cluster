@@ -60,7 +60,7 @@ nexus_docker_hosted_port: 8083
 postgres_port: 5432
 postgres_nexus_db: "nexus"
 postgres_nexus_user: "nexus"
-postgres_nexus_password: "NexusPgSecret2026_lab!"
+postgres_nexus_password: "{{ vault_postgres_password }}"
 nexus_jvm_heap_mb: 4096
 nexus_blobstore_quota_gb: 60
 
@@ -83,7 +83,7 @@ k8s_leader_ip: "10.100.29.101"
 k8s_supervisor_port: 9345
 k8s_api_port: 6443
 rke2_version: "v1.30.2+rke2r1"
-rke2_cluster_token: "cluster-agetic"
+rke2_cluster_token: "{{ vault_rke2_token }}"
 rke2_cni: "cilium"
 etcd_quota_backend_bytes: "4294967296"           # 4 GB
 etcd_compaction_retention: "1h"

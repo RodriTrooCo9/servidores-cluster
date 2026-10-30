@@ -1,11 +1,52 @@
 ---
-# ==============================================================================
-# Playbook: 07_kubernetes_ha.yml
-# Objetivo: Desplegar Clúster Kubernetes de Alta Disponibilidad (RKE2 + Cilium eBPF)
-# Invoca: Rol 'rke2_ha' en grupos k8s_control_plane y k8s_workers
-# ==============================================================================
-- name: "Clúster Kubernetes RKE2 Alta Disponibilidad (CPs y Workers)"
-  hosts: k8s_cluster
+- name: "Actualizar control planes RKE2 de uno en uno"
+  hosts: k8s_control_plane
+  serial: 1
+  any_errors_fatal: true
   become: true
+  pre_tasks:
+    - name: "Comprobar si el nodo ya ejecuta RKE2 como agente"
+      ansible.builtin.command: systemctl is-active --quiet rke2-agent
+      register: existing_rke2_agent
+      changed_when: false
+      failed_when: existing_rke2_agent.rc not in [0, 3, 4]
+      check_mode: false
+      tags: [always]
+
+    - name: "Impedir la conversión accidental de un agente a control plane"
+      ansible.builtin.assert:
+        that:
+          - existing_rke2_agent.rc != 0
+        fail_msg: >-
+          El inventario asigna este nodo a control plane, pero rke2-agent está
+          activo. Reconcilie el inventario con el clúster real antes de continuar.
+      tags: [always]
+
+  roles:
+    - rke2_ha
+
+- name: "Actualizar workers tras los control planes"
+  hosts: k8s_workers
+  serial: 1
+  any_errors_fatal: true
+  become: true
+  pre_tasks:
+    - name: "Comprobar si el nodo ya ejecuta RKE2 como servidor"
+      ansible.builtin.command: systemctl is-active --quiet rke2-server
+      register: existing_rke2_server
+      changed_when: false
+      failed_when: existing_rke2_server.rc not in [0, 3, 4]
+      check_mode: false
+      tags: [always]
+
+    - name: "Impedir la conversión accidental de un servidor a agente"
+      ansible.builtin.assert:
+        that:
+          - existing_rke2_server.rc != 0
+        fail_msg: >-
+          El inventario asigna este nodo a worker, pero rke2-server está activo.
+          Reconcilie el inventario con el clúster real antes de continuar.
+      tags: [always]
+
   roles:
     - rke2_ha
