@@ -85,6 +85,11 @@
     - name: "Tomar Snapshot de etcd en el líder activo"
       when: k8s_leader | default(false)
       block:
+        - name: "Comprobar que el líder del inventario ejecuta RKE2 Server"
+          ansible.builtin.command: systemctl is-active --quiet rke2-server
+          changed_when: false
+          check_mode: false
+
         - name: "Crear directorio local de snapshots si no existe"
           ansible.builtin.file:
             path: /var/lib/rancher/rke2/server/db/snapshots
@@ -132,6 +137,20 @@
   become: true
   tags: [backup, backup_openstack]
   tasks:
+    - name: "Comprobar si existe el archivo de credenciales Kolla esperado"
+      ansible.builtin.stat:
+        path: /etc/kolla/passwords.yml
+      register: dr_kolla_passwords_file
+
+    - name: "Exigir credenciales Kolla antes de iniciar el respaldo"
+      ansible.builtin.assert:
+        that:
+          - dr_kolla_passwords_file.stat.exists
+          - dr_kolla_passwords_file.stat.isreg | default(false)
+        fail_msg: >-
+          No se encuentra /etc/kolla/passwords.yml en el controlador. Identifique
+          la ubicación segura de las credenciales antes de respaldar OpenStack.
+
     - name: "Crear directorio para volcados de OpenStack en el Controller"
       ansible.builtin.file:
         path: /var/backups/openstack
