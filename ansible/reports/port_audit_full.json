@@ -1,0 +1,1948 @@
+[
+    {
+        "ansible_host": "10.100.29.10",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-314",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.10/24 fe80::6600:6aff:fe2a:6062/64 ",
+            "wlp3s0           DOWN           "
+        ],
+        "role": "Basti\u00f3n SSH y Proxy Perimetral",
+        "routes": [
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.10 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "45762",
+                "proc": "users:((\"squid\",pid=1112,fd=9))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=835,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "*",
+                "port": "51634",
+                "proc": "users:((\"squid\",pid=1112,fd=8))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=835,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=882,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=230524,fd=246))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.10",
+                "port": "3128",
+                "proc": "users:((\"squid\",pid=1112,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=721,fd=3))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.20",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-315",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.20/24 fe80::6600:6aff:fe2a:5f99/64 ",
+            "wlp3s0           DOWN           ",
+            "cilium_net@cilium_host UP             fe80::94ff:86ff:fe78:4588/64 ",
+            "cilium_host@cilium_net UP             10.42.1.56/32 fe80::48c8:8aff:fea6:2c46/64 ",
+            "lxc_health@if6   UP             fe80::643d:f4ff:fe1e:149e/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::7c11:dfff:fed6:9c9b/64 ",
+            "lxc1b52c5f35fd0@if19 UP             fe80::4cfe:1cff:fedb:5bc3/64 ",
+            "lxc426b09ba831e@if21 UP             fe80::e86f:33ff:fef9:380e/64 "
+        ],
+        "role": "Servidor de Paquetes Nexus 3 OSS",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 proto static ",
+            "10.42.0.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 ",
+            "10.42.1.56 dev cilium_host proto kernel scope link ",
+            "10.42.2.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.1.56 dev cilium_host proto kernel src 10.42.1.56 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.20 "
+        ],
+        "sockets": [
+            {
+                "ip": "127.0.0.1",
+                "port": "34165",
+                "proc": "users:((\"cilium-agent\",pid=3328,fd=55))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=740,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=740,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9234",
+                "proc": "users:((\"cilium-operator\",pid=2884,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "34165",
+                "proc": "users:((\"cilium-agent\",pid=3328,fd=54))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=3328,fd=60))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=3328,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9891",
+                "proc": "users:((\"cilium-operator\",pid=2884,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=2474,fd=15))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.20",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=3328,fd=151))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=2501,fd=17))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=2596,fd=23))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=2596,fd=15))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=321316,fd=260))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "5432",
+                "proc": "users:((\"postgres\",pid=1028,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=1026,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=2048,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=2048,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "8081",
+                "proc": "users:((\"java\",pid=1437,fd=483))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "8082",
+                "proc": "users:((\"java\",pid=1437,fd=495))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "8083",
+                "proc": "users:((\"java\",pid=1437,fd=489))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "5432",
+                "proc": "users:((\"postgres\",pid=1028,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=2048,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=2048,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::ffff:127.0.0.1]",
+                "port": "35747",
+                "proc": "users:((\"java\",pid=1437,fd=111))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=2501,fd=22))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=675,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=1026,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9963",
+                "proc": "users:((\"cilium-operator\",pid=2884,fd=8))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.30",
+        "docker_containers": [
+            {
+                "image": "c82386b38a34",
+                "name": "coroot-cluster-agent-1",
+                "ports": ""
+            },
+            {
+                "image": "2317f5b2bf61",
+                "name": "coroot-coroot-1",
+                "ports": "0.0.0.0:19000->8080/tcp, [::]:19000->8080/tcp"
+            },
+            {
+                "image": "85b97f63dcff",
+                "name": "coroot-clickhouse-1",
+                "ports": "8123/tcp, 9000/tcp, 9009/tcp"
+            },
+            {
+                "image": "7a34573f0b9c",
+                "name": "coroot-prometheus-1",
+                "ports": "9090/tcp"
+            },
+            {
+                "image": "d5d281301c13",
+                "name": "coroot-node-agent-1",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/horizon:2025.1-ubuntu-noble",
+                "name": "horizon",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ironic-neutron-agent:2025.1-ubuntu-noble",
+                "name": "ironic_neutron_agent",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/neutron-metadata-agent:2025.1-ubuntu-noble",
+                "name": "neutron_ovn_metadata_agent",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/neutron-server:2025.1-ubuntu-noble",
+                "name": "neutron_server",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-compute-ironic:2025.1-ubuntu-noble",
+                "name": "nova_compute_ironic",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-novncproxy:2025.1-ubuntu-noble",
+                "name": "nova_novncproxy",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-conductor:2025.1-ubuntu-noble",
+                "name": "nova_conductor",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-api:2025.1-ubuntu-noble",
+                "name": "nova_metadata",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-api:2025.1-ubuntu-noble",
+                "name": "nova_api",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/nova-scheduler:2025.1-ubuntu-noble",
+                "name": "nova_scheduler",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ovn-northd:2025.1-ubuntu-noble",
+                "name": "ovn_northd",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ovn-sb-db-relay:2025.1-ubuntu-noble",
+                "name": "ovn_sb_db_relay_1",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ovn-sb-db-server:2025.1-ubuntu-noble",
+                "name": "ovn_sb_db",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ovn-nb-db-server:2025.1-ubuntu-noble",
+                "name": "ovn_nb_db",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ovn-controller:2025.1-ubuntu-noble",
+                "name": "ovn_controller",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/openvswitch-vswitchd:2025.1-ubuntu-noble",
+                "name": "openvswitch_vswitchd",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/openvswitch-db-server:2025.1-ubuntu-noble",
+                "name": "openvswitch_db",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ironic-conductor:2025.1-ubuntu-noble",
+                "name": "ironic_conductor",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/placement-api:2025.1-ubuntu-noble",
+                "name": "placement_api",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/dnsmasq:2025.1-ubuntu-noble",
+                "name": "ironic_dnsmasq",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ironic-pxe:2025.1-ubuntu-noble",
+                "name": "ironic_http",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ironic-pxe:2025.1-ubuntu-noble",
+                "name": "ironic_tftp",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/ironic-api:2025.1-ubuntu-noble",
+                "name": "ironic_api",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/glance-api:2025.1-ubuntu-noble",
+                "name": "glance_api",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/keystone:2025.1-ubuntu-noble",
+                "name": "keystone",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/keystone-fernet:2025.1-ubuntu-noble",
+                "name": "keystone_fernet",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/keystone-ssh:2025.1-ubuntu-noble",
+                "name": "keystone_ssh",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/rabbitmq:2025.1-ubuntu-noble",
+                "name": "rabbitmq",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/memcached:2025.1-ubuntu-noble",
+                "name": "memcached",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/mariadb-server:2025.1-ubuntu-noble",
+                "name": "mariadb",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/keepalived:2025.1-ubuntu-noble",
+                "name": "keepalived",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/proxysql:2025.1-ubuntu-noble",
+                "name": "proxysql",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/haproxy:2025.1-ubuntu-noble",
+                "name": "haproxy",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/cron:2025.1-ubuntu-noble",
+                "name": "cron",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/kolla-toolbox:2025.1-ubuntu-noble",
+                "name": "kolla_toolbox",
+                "ports": ""
+            },
+            {
+                "image": "10.100.29.20:8082/openstack.kolla/fluentd:2025.1-ubuntu-noble",
+                "name": "fluentd",
+                "ports": ""
+            }
+        ],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-306",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.0.1.30/24 192.168.21.30/24 10.100.29.30/24 10.100.29.5/32 fe80::6600:6aff:fe2a:6242/64 ",
+            "wlp3s0           UP             192.168.29.25/23 fe80::3305:76ca:bc2a:450a/64 ",
+            "veth-neutron     UNKNOWN        fe80::804c:40ff:fe34:f971/64 ",
+            "ovs-system       DOWN           ",
+            "br-int           DOWN           ",
+            "br-ex            DOWN           ",
+            "cilium_net@cilium_host UP             fe80::ccad:eaff:fe6e:9b6/64 ",
+            "cilium_host@cilium_net UP             10.42.0.75/32 fe80::3850:dbff:fe68:d007/64 ",
+            "lxcd8eb5e08f24c@if10 UP             fe80::5c26:67ff:febf:999/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::9895:13ff:fed3:2ad8/64 ",
+            "lxc_health@if13  UP             fe80::40d5:bfff:fe96:509a/64 ",
+            "lxc2cc2c4d6dc79@if17 UP             fe80::d8c3:b1ff:fe83:326d/64 ",
+            "lxc1a68b3e9f0f4@if19 UP             fe80::247d:4eff:fefc:45c1/64 ",
+            "br-b80a3954701a  UP             172.17.0.1/16 fe80::889d:4cff:fec0:dbe3/64 ",
+            "veth0bd9a87@if2  UP             fe80::5857:93ff:fe41:d253/64 ",
+            "veth132849c@if2  UP             fe80::c61:9ff:fe72:4c8c/64 ",
+            "veth676757a@if2  UP             fe80::a83a:13ff:fe15:918d/64 ",
+            "vethb09c873@if2  UP             fe80::454:cfff:fe3a:3ca9/64 ",
+            "vethebb973a@if2  UP             fe80::80e6:feff:fe67:acd9/64 "
+        ],
+        "role": "PXE, DHCP dnsmasq, HTTPBoot, Prometheus y Grafana",
+        "routes": [
+            "default via 192.168.28.1 dev wlp3s0 proto dhcp src 192.168.29.25 metric 600 ",
+            "10.0.1.0/24 dev enp2s0 proto kernel scope link src 10.0.1.30 ",
+            "10.42.0.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 ",
+            "10.42.0.75 dev cilium_host proto kernel scope link ",
+            "10.42.1.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.0.75 dev cilium_host proto kernel src 10.42.0.75 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.30 ",
+            "172.17.0.0/16 dev br-b80a3954701a proto kernel scope link src 172.17.0.1 ",
+            "192.168.21.0/24 dev enp2s0 proto kernel scope link src 192.168.21.30 ",
+            "192.168.28.0/23 dev wlp3s0 proto kernel scope link src 192.168.29.25 metric 600 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "57379",
+                "proc": "users:((\"haproxy\",pid=4212,fd=24))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0%enp2s0",
+                "port": "67",
+                "proc": "users:((\"dnsmasq\",pid=4078,fd=4))",
+                "proto": "udp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "69",
+                "proc": "users:((\"in.tftpd\",pid=3436,fd=3))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=877,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "34561",
+                "proc": "users:((\"cilium-agent\",pid=10987,fd=63))",
+                "proto": "udp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "5140",
+                "proc": "users:((\"ruby\",pid=5967,fd=71),(\"fluentd\",pid=3673,fd=24))",
+                "proto": "udp"
+            },
+            {
+                "ip": "*",
+                "port": "55365",
+                "proc": "users:((\"cloudflared\",pid=1634,fd=4))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=877,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "*",
+                "port": "9094",
+                "proc": "users:((\"prometheus-aler\",pid=720,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "*",
+                "port": "43695",
+                "proc": "users:((\"cloudflared\",pid=2760879,fd=14))",
+                "proto": "udp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "8089",
+                "proc": "users:((\"apache2\",pid=5894,fd=3),(\"apache2\",pid=5893,fd=3),(\"apache2\",pid=3912,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "8023",
+                "proc": "users:((\"sshd\",pid=3691,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "20242",
+                "proc": "users:((\"cloudflared\",pid=1634,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "20241",
+                "proc": "users:((\"cloudflared\",pid=2760879,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "15672",
+                "proc": "users:((\"beam.smp\",pid=4910,fd=45))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "61313",
+                "proc": "users:((\"haproxy\",pid=4212,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=1279,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "6643",
+                "proc": "users:((\"ovsdb-server\",pid=4524,fd=23))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "6644",
+                "proc": "users:((\"ovsdb-server\",pid=4526,fd=26))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "3306",
+                "proc": "users:((\"proxysql\",pid=4617,fd=34))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "3306",
+                "proc": "users:((\"proxysql\",pid=4617,fd=33))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "3306",
+                "proc": "users:((\"proxysql\",pid=4617,fd=32))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "3306",
+                "proc": "users:((\"proxysql\",pid=4617,fd=31))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "2379",
+                "proc": "users:((\"etcd\",pid=7962,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "2382",
+                "proc": "users:((\"etcd\",pid=7962,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "2380",
+                "proc": "users:((\"etcd\",pid=7962,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "2381",
+                "proc": "users:((\"etcd\",pid=7962,fd=17))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "6385",
+                "proc": "users:((\"apache2\",pid=4789,fd=3),(\"apache2\",pid=4788,fd=3),(\"apache2\",pid=4370,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "35013",
+                "proc": "users:((\"uwsgi\",pid=4639,fd=3),(\"uwsgi\",pid=4638,fd=3),(\"uwsgi\",pid=4637,fd=3),(\"uwsgi\",pid=4636,fd=3),(\"uwsgi\",pid=4306,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=6338,fd=15))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=6662,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10258",
+                "proc": "users:((\"cloud-controlle\",pid=7736,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10259",
+                "proc": "users:((\"kube-scheduler\",pid=6732,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=6662,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10257",
+                "proc": "users:((\"kube-controller\",pid=7734,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "6080",
+                "proc": "users:((\"nova-novncproxy\",pid=3472,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "6032",
+                "proc": "users:((\"proxysql\",pid=4617,fd=38))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "34561",
+                "proc": "users:((\"cilium-agent\",pid=10987,fd=55))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=6241,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "8780",
+                "proc": "users:((\"haproxy\",pid=4212,fd=19))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "8774",
+                "proc": "users:((\"haproxy\",pid=4212,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "8775",
+                "proc": "users:((\"haproxy\",pid=4212,fd=17))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=10987,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9891",
+                "proc": "users:((\"cilium-operator\",pid=12757,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=10987,fd=64))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "5672",
+                "proc": "users:((\"beam.smp\",pid=4910,fd=46))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "80",
+                "proc": "users:((\"haproxy\",pid=4212,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9234",
+                "proc": "users:((\"cilium-operator\",pid=12757,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "5000",
+                "proc": "users:((\"apache2\",pid=4569,fd=3),(\"apache2\",pid=4568,fd=3),(\"apache2\",pid=4014,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "4567",
+                "proc": "users:((\"mariadbd\",pid=5498,fd=8))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "9292",
+                "proc": "users:((\"haproxy\",pid=4212,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "4369",
+                "proc": "users:((\"epmd\",pid=6014,fd=5))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "9696",
+                "proc": "users:((\"haproxy\",pid=4212,fd=15))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "19000",
+                "proc": "users:((\"docker-proxy\",pid=1669029,fd=8))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=10987,fd=73))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "32777",
+                "proc": "users:((\"uwsgi\",pid=4102,fd=3),(\"uwsgi\",pid=4101,fd=3),(\"uwsgi\",pid=4100,fd=3),(\"uwsgi\",pid=4099,fd=3),(\"uwsgi\",pid=3288,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "61313",
+                "proc": "users:((\"haproxy\",pid=4212,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "6385",
+                "proc": "users:((\"haproxy\",pid=4212,fd=13))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "40301",
+                "proc": "users:((\"code-6d62b1d5da\",pid=1855770,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "3306",
+                "proc": "users:((\"mariadbd\",pid=5498,fd=42))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "11211",
+                "proc": "users:((\"memcached\",pid=4070,fd=26))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6640",
+                "proc": "users:((\"ovsdb-server\",pid=4641,fd=17))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "2379",
+                "proc": "users:((\"etcd\",pid=7962,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "2380",
+                "proc": "users:((\"etcd\",pid=7962,fd=8))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "15672",
+                "proc": "users:((\"haproxy\",pid=4212,fd=20))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "1984",
+                "proc": "users:((\"haproxy\",pid=4212,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "5000",
+                "proc": "users:((\"haproxy\",pid=4212,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "9696",
+                "proc": "users:((\"neutron-server:\",pid=7938,fd=6),(\"neutron-server:\",pid=7928,fd=6),(\"neutron-server:\",pid=7923,fd=6),(\"neutron-server:\",pid=7914,fd=6),(\"neutron-server:\",pid=7903,fd=6),(\"neutron-server:\",pid=7886,fd=6),(\"neutron-server:\",pid=7884,fd=6),(\"neutron-server:\",pid=7883,fd=6),(\"neutron-server:\",pid=7878,fd=15),(\"neutron-server:\",pid=7878,fd=6),(\"neutron-server:\",pid=7877,fd=15),(\"neutron-server:\",pid=7877,fd=6),(\"neutron-server:\",pid=7876,fd=15),(\"neutron-server:\",pid=7876,fd=6),(\"neutron-server:\",pid=7875,fd=15),(\"neutron-server:\",pid=7875,fd=6),(\"/var/lib/kolla/\",pid=3608,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "7681",
+                "proc": "users:((\"ttyd\",pid=1259,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "25672",
+                "proc": "users:((\"beam.smp\",pid=4910,fd=23))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "9292",
+                "proc": "users:((\"glance-api\",pid=6151,fd=11),(\"glance-api\",pid=6150,fd=11),(\"glance-api\",pid=6149,fd=11),(\"glance-api\",pid=6148,fd=11),(\"glance-api\",pid=3689,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "9101",
+                "proc": "users:((\"haproxy\",pid=4212,fd=8))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "6641",
+                "proc": "users:((\"ovsdb-server\",pid=4524,fd=21))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "6642",
+                "proc": "users:((\"ovsdb-server\",pid=4526,fd=23))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "45829",
+                "proc": "users:((\"uwsgi\",pid=4160,fd=3),(\"uwsgi\",pid=4142,fd=3),(\"uwsgi\",pid=4140,fd=3),(\"uwsgi\",pid=4138,fd=3),(\"uwsgi\",pid=3907,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "6032",
+                "proc": "users:((\"proxysql\",pid=4617,fd=39))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.5",
+                "port": "6080",
+                "proc": "users:((\"haproxy\",pid=4212,fd=18))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "8774",
+                "proc": "users:((\"uwsgi\",pid=4103,fd=4),(\"uwsgi\",pid=3288,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "8775",
+                "proc": "users:((\"uwsgi\",pid=4640,fd=4),(\"uwsgi\",pid=4306,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "8780",
+                "proc": "users:((\"uwsgi\",pid=4162,fd=4),(\"uwsgi\",pid=3907,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "4369",
+                "proc": "users:((\"epmd\",pid=6014,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "16641",
+                "proc": "users:((\"ovsdb-server\",pid=4077,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.30",
+                "port": "80",
+                "proc": "users:((\"apache2\",pid=5022,fd=3),(\"apache2\",pid=5021,fd=3),(\"apache2\",pid=4421,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9345",
+                "proc": "users:((\"rke2\",pid=1649,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9963",
+                "proc": "users:((\"cilium-operator\",pid=12757,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=1279,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9115",
+                "proc": "users:((\"prometheus-blac\",pid=722,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9093",
+                "proc": "users:((\"prometheus-aler\",pid=720,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9094",
+                "proc": "users:((\"prometheus-aler\",pid=720,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9090",
+                "proc": "users:((\"prometheus\",pid=1249,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=728,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=6338,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "3000",
+                "proc": "users:((\"grafana\",pid=1630,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "19000",
+                "proc": "users:((\"docker-proxy\",pid=1669035,fd=8))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "4369",
+                "proc": "users:((\"epmd\",pid=6014,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "6443",
+                "proc": "users:((\"kube-apiserver\",pid=13450,fd=4))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.101",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-269",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.101/24 fe80::6600:6aff:fe2a:5ff9/64 ",
+            "wlp3s0           DOWN           ",
+            "cilium_net@cilium_host UP             fe80::4cc:d4ff:fe47:e9f1/64 ",
+            "cilium_host@cilium_net UP             10.42.2.130/32 fe80::4870:64ff:fe56:e050/64 ",
+            "lxc_health@if6   UP             fe80::cff:42ff:fe64:7772/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::fcbc:97ff:fe02:81b6/64 ",
+            "lxc8ec8e03fb237@if9 UP             fe80::40ca:acff:fef6:83b/64 ",
+            "lxc944aebd7c6bd@if11 UP             fe80::4835:63ff:fef6:3ae4/64 ",
+            "lxc178dacc788d4@if15 UP             fe80::e9:93ff:feeb:a0b8/64 ",
+            "lxc23cd5b796801@if27 UP             fe80::c4aa:a3ff:fee0:16ca/64 "
+        ],
+        "role": "baremetal,k8s_cluster,k8s_control_plane",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 onlink ",
+            "default via 10.100.29.30 dev enp2s0 proto static ",
+            "10.42.0.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 ",
+            "10.42.2.130 dev cilium_host proto kernel scope link ",
+            "10.42.3.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.2.130 dev cilium_host proto kernel src 10.42.2.130 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.101 "
+        ],
+        "sockets": [
+            {
+                "ip": "127.0.0.1",
+                "port": "42897",
+                "proc": "users:((\"cilium-agent\",pid=2518,fd=59))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=791,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=791,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=815,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=345876,fd=249))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=1745,fd=13))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=1837,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=1837,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "42897",
+                "proc": "users:((\"cilium-agent\",pid=2518,fd=57))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=1716,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=2518,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=2518,fd=64))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1105,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1105,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.101",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=2518,fd=155))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=660,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=815,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1105,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1105,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=1745,fd=18))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.102",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-280",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.102/24 fe80::6600:6aff:fe2a:6063/64 ",
+            "wlp3s0           DOWN           ",
+            "cilium_net@cilium_host UP             fe80::241f:8cff:fe4d:40b4/64 ",
+            "cilium_host@cilium_net UP             10.42.7.236/32 fe80::8887:11ff:fe95:80e3/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::284a:ff:febd:566d/64 ",
+            "lxc_health@if7   UP             fe80::84d6:5bff:fe82:6313/64 ",
+            "lxc69e6a6a607b7@if11 UP             fe80::2ca3:afff:fefb:9b64/64 ",
+            "lxcdc031c6384d4@if13 UP             fe80::504f:adff:fe81:7d4a/64 ",
+            "lxccf4fd542eb69@if15 UP             fe80::34d4:3fff:fe2b:4355/64 ",
+            "lxc92bf528adb77@if23 UP             fe80::b805:92ff:fe27:b10a/64 ",
+            "lxcedda591fb5be@if25 UP             fe80::2ca5:1bff:fe56:7175/64 ",
+            "lxc2fa3a4b87ff2@if27 UP             fe80::340d:f1ff:fe86:f34e/64 "
+        ],
+        "role": "baremetal,k8s_cluster,k8s_control_plane",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 onlink ",
+            "default via 10.100.29.30 dev enp2s0 proto static ",
+            "10.42.0.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.7.236 dev cilium_host proto kernel src 10.42.7.236 ",
+            "10.42.7.236 dev cilium_host proto kernel scope link ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.102 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=687,fd=4))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "43667",
+                "proc": "users:((\"cilium-agent\",pid=2200,fd=55))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=687,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1098,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1098,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.102",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=2200,fd=133))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "43667",
+                "proc": "users:((\"cilium-agent\",pid=2200,fd=54))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=1518,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=1427,fd=13))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=1518,fd=17))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=177588,fd=242))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=2200,fd=66))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=2200,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=1401,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=923,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=1427,fd=19))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=696,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=923,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1098,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1098,fd=10))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.103",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-320",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.103/24 fe80::6600:6aff:fe2a:2c75/64 ",
+            "wlp3s0           DOWN           ",
+            "cilium_net@cilium_host UP             fe80::7c86:60ff:fe26:7c55/64 ",
+            "cilium_host@cilium_net UP             10.42.3.238/32 fe80::fcff:ccff:fe91:942c/64 ",
+            "lxc_health@if6   UP             fe80::2061:6aff:fe9f:5782/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::b013:45ff:fe5e:11ec/64 ",
+            "lxc15f850d28958@if11 UP             fe80::98c3:4aff:fec0:86ee/64 ",
+            "lxc69033df62cce@if17 UP             fe80::c00d:d0ff:fef4:fe55/64 ",
+            "lxc02967a27ddcc@if31 UP             fe80::d4ad:15ff:fe5a:4222/64 ",
+            "lxcbc1f579b71b2@if33 UP             fe80::3823:bdff:fe15:5e42/64 ",
+            "lxc76fe8dab8fab@if35 UP             fe80::e471:aeff:fe01:9a09/64 "
+        ],
+        "role": "baremetal,k8s_cluster,k8s_control_plane",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 onlink ",
+            "default via 10.100.29.30 dev enp2s0 proto static ",
+            "10.42.0.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 ",
+            "10.42.3.238 dev cilium_host proto kernel scope link ",
+            "10.42.4.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.3.238 dev cilium_host proto kernel src 10.42.3.238 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.103 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=826,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "33375",
+                "proc": "users:((\"cilium-agent\",pid=2231,fd=55))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=826,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=838,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.103",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=2231,fd=150))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1102,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1102,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=2231,fd=73))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=2231,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=1407,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "33375",
+                "proc": "users:((\"cilium-agent\",pid=2231,fd=54))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=1536,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=1442,fd=20))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=1536,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=253809,fd=39))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=699,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=838,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=1442,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1102,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1102,fd=10))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.111",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-321",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.111/24 fe80::6600:6aff:fe2a:62a4/64 ",
+            "wlp3s0           DOWN           ",
+            "cilium_net@cilium_host UP             fe80::3c0a:9bff:fee8:ad98/64 ",
+            "cilium_host@cilium_net UP             10.42.4.76/32 fe80::746b:9eff:fee4:eeeb/64 ",
+            "lxc_health@if6   UP             fe80::4c44:67ff:feeb:5687/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::c814:3eff:fed7:d63e/64 ",
+            "lxc3b71175bafa4@if9 UP             fe80::406d:f5ff:fe2b:f367/64 ",
+            "lxc29714229eaa9@if11 UP             fe80::3086:f1ff:fe04:4954/64 ",
+            "lxc73466e16f064@if19 UP             fe80::58fc:b2ff:feb2:1237/64 ",
+            "lxc0bbc4245ded7@if23 UP             fe80::7ce1:caff:fe6a:eab7/64 "
+        ],
+        "role": "baremetal,k8s_cluster,k8s_workers",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 onlink ",
+            "default via 10.100.29.30 dev enp2s0 proto static ",
+            "10.42.0.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 ",
+            "10.42.4.76 dev cilium_host proto kernel scope link ",
+            "10.42.5.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.42.7.0/24 via 10.42.4.76 dev cilium_host proto kernel src 10.42.4.76 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.111 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=829,fd=5))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "41853",
+                "proc": "users:((\"cilium-agent\",pid=2284,fd=55))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "323",
+                "proc": "users:((\"chronyd\",pid=829,fd=6))",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=1517,fd=16))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=2284,fd=58))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=2284,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=838,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "41853",
+                "proc": "users:((\"cilium-agent\",pid=2284,fd=54))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.111",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=2284,fd=152))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1113,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1113,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=1641,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=1549,fd=23))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=1641,fd=10))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=183733,fd=237))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=838,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=705,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=1113,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=1113,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=1549,fd=17))",
+                "proto": "tcp"
+            }
+        ]
+    },
+    {
+        "ansible_host": "10.100.29.112",
+        "docker_containers": [],
+        "ephemeral_range": "32768\t60999",
+        "host": "nodo-279",
+        "network_interfaces": [
+            "lo               UNKNOWN        127.0.0.1/8 ::1/128 ",
+            "enp2s0           UP             10.100.29.112/24 fe80::6600:6aff:fe2a:2fcb/64 ",
+            "cilium_net@cilium_host UP             fe80::682e:cbff:fe59:c3dc/64 ",
+            "cilium_host@cilium_net UP             10.42.5.190/32 fe80::f4fc:a4ff:fe56:b0ff/64 ",
+            "cilium_vxlan     UNKNOWN        fe80::e896:a8ff:fe37:a516/64 ",
+            "lxc_health@if6   UP             fe80::a448:5aff:fea8:822c/64 ",
+            "lxc5bea84bafc21@if14 UP             fe80::d84b:e1ff:fee2:8bf6/64 ",
+            "lxc39d01bea9773@if20 UP             fe80::509c:b0ff:fe5b:e0f1/64 "
+        ],
+        "role": "baremetal,k8s_cluster,k8s_workers",
+        "routes": [
+            "default via 10.100.29.30 dev enp2s0 ",
+            "10.42.0.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.42.1.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.42.2.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.42.3.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.42.4.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.42.5.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 ",
+            "10.42.5.190 dev cilium_host proto kernel scope link ",
+            "10.42.7.0/24 via 10.42.5.190 dev cilium_host proto kernel src 10.42.5.190 mtu 1450 ",
+            "10.100.29.0/24 dev enp2s0 proto kernel scope link src 10.100.29.112 "
+        ],
+        "sockets": [
+            {
+                "ip": "0.0.0.0",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "43391",
+                "proc": "users:((\"cilium-agent\",pid=5310,fd=55))",
+                "proto": "udp"
+            },
+            {
+                "ip": "[::]",
+                "port": "8472",
+                "proc": "-",
+                "proto": "udp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10010",
+                "proc": "users:((\"containerd\",pid=4489,fd=15))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9879",
+                "proc": "users:((\"cilium-agent\",pid=5310,fd=73))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "9890",
+                "proc": "users:((\"cilium-agent\",pid=5310,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "0.0.0.0",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=706,fd=6))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "10.100.29.112",
+                "port": "4240",
+                "proc": "users:((\"cilium-agent\",pid=5310,fd=156))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=4458,fd=4))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=4458,fd=11))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "43391",
+                "proc": "users:((\"cilium-agent\",pid=5310,fd=54))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10256",
+                "proc": "users:((\"kube-proxy\",pid=4723,fd=9))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10248",
+                "proc": "users:((\"kubelet\",pid=4552,fd=19))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10249",
+                "proc": "users:((\"kube-proxy\",pid=4723,fd=14))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "127.0.0.1",
+                "port": "10300",
+                "proc": "users:((\"coroot-node-age\",pid=63724,fd=236))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "9100",
+                "proc": "users:((\"prometheus-node\",pid=6604,fd=3))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::]",
+                "port": "22",
+                "proc": "users:((\"sshd\",pid=706,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6443",
+                "proc": "users:((\"rke2\",pid=4458,fd=12))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "[::1]",
+                "port": "6444",
+                "proc": "users:((\"rke2\",pid=4458,fd=7))",
+                "proto": "tcp"
+            },
+            {
+                "ip": "*",
+                "port": "10250",
+                "proc": "users:((\"kubelet\",pid=4552,fd=17))",
+                "proto": "tcp"
+            }
+        ]
+    }
+]

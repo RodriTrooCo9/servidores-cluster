@@ -1,8 +1,5 @@
-# 🚀 Orquestación y Automatización con Ansible
 
-Entorno de automatización profesional, declarativo e idempotente para los **8 nodos físicos bare-metal** del clúster Dell OptiPlex 3020M con Debian 13.
-
-## 📁 Estructura del Entorno
+## Estructura del Entorno
 
 ```text
 ansible/
