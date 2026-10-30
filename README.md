@@ -1,5 +1,14 @@
 # Guía Maestra de Instalación Conjunta: Infraestructura Bare-Metal Edge con Bastion Host, Sonatype Nexus, OpenStack Kolla-Ansible, Clúster Kubernetes RKE2 HA (Cilium eBPF) y Suite de Observabilidad (Coroot eBPF, OTel, Prometheus, Grafana) sobre Debian 13 (Trixie)
 
+> **Aviso operativo — 30 de octubre de 2026:** la inspección del clúster en
+> funcionamiento encontró el control plane y etcd en el nodo 306, mientras que
+> los nodos 269, 280 y 320 ejecutaban RKE2 como agentes. El inventario de
+> laboratorio de este repositorio describe otra topología. No ejecutar el
+> despliegue completo, la fase de plataforma ni el respaldo etcd del repositorio
+> sobre esa infraestructura hasta reconciliar el inventario y validar los
+> procedimientos. La protección de roles del playbook RKE2 no protege las fases
+> anteriores ni sustituye esta revisión.
+
 > 🚀 **¿Solo quieres clonar y desplegar paso a paso sin teoría?**  
 > 👉 [**GUÍA DE EJECUCIÓN DIRECTA COPIAR/PEGAR (INSTALL.md)**](INSTALL.md)  
 > 👉 [**GUÍA RÁPIDA: CLONAR Y CONECTARSE AL SERVIDOR (CONECTARSE_AL_SERVIDOR.md)**](CONECTARSE_AL_SERVIDOR.md)  
