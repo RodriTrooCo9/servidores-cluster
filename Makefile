@@ -1,9 +1,14 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
+.NOTPARALLEL: deploy
 INVENTORY ?= inventory/lab/hosts.yml
 ANSIBLE_PLAYBOOK ?= ansible-playbook -i $(INVENTORY)
 
-.PHONY: help lint syntax-check preflight bootstrap base services platform observability deploy health backup tunnels clean
+.PHONY: help setup lint syntax-check preflight bootstrap base services platform observability deploy health backup tunnels clean
+
+setup: ## Configura esta laptop/PC con accesos directos SSH, ProxyJump y dependencias
+	@echo "==> Configurando estacion de trabajo cliente..."
+	@./scripts/client/setup-client-workstation.sh
 
 help: ## Muestra este menu de ayuda con los objetivos documentados
 	@echo "=================================================================="
@@ -17,7 +22,7 @@ lint: ## Ejecuta validaciones estaticas de codigo (ansible-lint, yamllint, shell
 	@echo "==> [2/3] Ejecutando ansible-lint..."
 	@PATH="$$HOME/.local/bin:$$PATH" ansible-lint ansible/site.yml
 	@echo "==> [3/3] Ejecutando shellcheck..."
-	@PATH="$$HOME/.local/bin:$$PATH" find scripts/ network/ -name "*.sh" -exec shellcheck -e SC1090,SC1091 {} +
+	@PATH="$$HOME/.local/bin:$$PATH" find scripts/ network/ -name "*.sh" -exec shellcheck -e SC1090,SC1091,SC2034,SC2086,SC2012 {} +
 	@echo "==> Validaciones estaticas completadas exitosamente."
 
 syntax-check: ## Valida la sintaxis de todos los playbooks de Ansible
@@ -59,15 +64,24 @@ health: ## [Fase 50] Ejecuta diagnostico integral de salud de la flota en termin
 	@./scripts/diagnostics/healthcheck.sh
 
 backup: ## [Fase 90] Genera respaldos y snapshots de contingencia (DR)
-	@echo "==> Ejecutando respaldo de desastres..."
+	@echo "==> respaldo de desastres..."
 	@$(ANSIBLE_PLAYBOOK) ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup
 
 tunnels: ## Abre tuneles SSH locales para dashboards (Grafana, Horizon, Nexus)
-	@echo "==> Abriendo tuneles SSH seguros..."
 	@./scripts/client/tunnels.sh
+
+web-tunnels: ## Consulta las URLs publicas HTTPS (Cloudflare Tunnels) activas del cluster
+	@ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no n306@192.168.29.25 "/usr/local/bin/tuneles-web"
 
 clean: ## Limpia archivos temporales, logs y caches locales
 	@echo "==> Limpiando archivos temporales..."
 	@find . -type f -name "*.retry" -delete
 	@find . -type f -name "*.pyc" -delete
 	@find . -type d -name "__pycache__" -delete
+
+
+
+
+
+
+

@@ -1,0 +1,78 @@
+---
+# ==============================================================================
+# Role: coroot_node_agent - Agente de Observabilidad eBPF de Coroot
+# ==============================================================================
+
+- name: "Instalar dependencias necesarias para Coroot Node Agent"
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: "Crear directorio de configuración del agente"
+  ansible.builtin.file:
+    path: /etc/coroot-node-agent
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Desplegar variables de entorno del agente (agent.env)"
+  ansible.builtin.template:
+    src: agent.env.j2
+    dest: /etc/coroot-node-agent/agent.env
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Restart Coroot Agent
+
+- name: "Descargar binario coroot-node-agent desde el servidor HTTP interno del clúster"
+  block:
+    - name: "Descarga desde el servidor HTTP local (Nodo 306)"
+      ansible.builtin.get_url:
+        url: "{{ coroot_binary_url }}"
+        dest: /usr/bin/coroot-node-agent
+        owner: root
+        group: root
+        mode: '0755'
+        checksum: "{{ coroot_binary_checksum }}"
+        timeout: 30
+  rescue:
+    - name: "Descarga fallback desde GitHub Releases oficial"
+      ansible.builtin.get_url:
+        url: "{{ coroot_binary_fallback_url }}"
+        dest: /usr/bin/coroot-node-agent
+        owner: root
+        group: root
+        mode: '0755'
+        checksum: "{{ coroot_binary_checksum }}"
+        timeout: 120
+
+- name: "Desplegar servicio systemd para coroot-node-agent"
+  ansible.builtin.template:
+    src: coroot-node-agent.service.j2
+    dest: /etc/systemd/system/coroot-node-agent.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart Coroot Agent
+
+- name: "Forzar ejecución de handlers para asegurar que el servicio esté actualizado"
+  ansible.builtin.meta: flush_handlers
+
+- name: "Asegurar que el servicio coroot-node-agent esté activo y habilitado"
+  ansible.builtin.systemd:
+    name: coroot-node-agent
+    state: started
+    enabled: true
+
+- name: "Verificar que el servicio coroot-node-agent esté respondiendo"
+  ansible.builtin.command: systemctl is-active coroot-node-agent
+  register: agent_status
+  changed_when: false
+  failed_when: agent_status.stdout != "active"

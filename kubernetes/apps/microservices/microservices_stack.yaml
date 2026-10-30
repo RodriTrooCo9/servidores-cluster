@@ -128,9 +128,9 @@ spec:
               logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] orders-service: %(message)s')
 
               orders_memory_db = [
-                  {"id": "ORD-1001", "item": "Servidor Dell R640", "qty": 2, "amount": 4200.00, "status": "CONFIRMED"},
-                  {"id": "ORD-1002", "item": "Switch Arista 7050", "qty": 1, "amount": 1850.50, "status": "SHIPPED"},
-                  {"id": "ORD-1003", "item": "Transceptor 10G SFP+", "qty": 10, "amount": 450.00, "status": "CONFIRMED"}
+                  {"id": "TSK-1001", "item": "Servidor Bare-Metal Dell 3020M", "qty": "4 Cores", "target": "worker-01.lab.local", "status": "CONFIRMED"},
+                  {"id": "TSK-1002", "item": "Switch Arista 7050 (VLAN 29)", "qty": "10 Gbps", "target": "pxe-controller.lab.local", "status": "ACTIVE"},
+                  {"id": "TSK-1003", "item": "Transceptor 10G SFP+ (OptiPlex)", "qty": "2 Puertos", "target": "worker-02.lab.local", "status": "CONFIRMED"}
               ]
 
               class OrdersHandler(http.server.BaseHTTPRequestHandler):
@@ -165,16 +165,16 @@ spec:
                           except Exception:
                               payload = {}
 
-                          order_id = f"ORD-{random.randint(1004, 9999)}"
-                          item = payload.get("item", random.choice(["Memoria RAM DDR4 32GB", "Disco NVMe 1TB", "Cable DAC 10G", "Fuente Redundante"]))
-                          qty = payload.get("qty", random.randint(1, 5))
-                          amount = payload.get("amount", round(random.uniform(50.0, 950.0), 2))
-                          new_order = {"id": order_id, "item": item, "qty": qty, "amount": amount, "status": "PROCESSING"}
+                          order_id = f"TSK-{random.randint(1004, 9999)}"
+                          item = payload.get("item", random.choice(["Memoria RAM DDR4 16GB", "Disco NVMe 128GB", "Enlace 1Gbps RTL8111G", "Cluster Node Dell 3020M"]))
+                          qty = payload.get("qty", f"{random.randint(2, 8)} Cores")
+                          target = payload.get("target", random.choice(["worker-01.lab.local", "worker-02.lab.local", "pxe-controller.lab.local", "bastion.lab.local"]))
+                          new_order = {"id": order_id, "item": item, "qty": qty, "target": target, "amount": target, "status": "PROVISIONED"}
                           orders_memory_db.append(new_order)
                           if len(orders_memory_db) > 20:
                               orders_memory_db.pop(0)
 
-                          logging.info(f"Nueva orden creada: {order_id} - Item: {item} - Total: ${amount}")
+                          logging.info(f"Nueva tarea de aprovisionamiento: {order_id} - Item: {item} - Destino: {target}")
                           
                           # Notificar asíncronamente al notifications-service si está disponible
                           try:
@@ -448,15 +448,15 @@ data:
 
         <div class="card" style="margin-bottom: 24px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">Últimas Órdenes en Tiempo Real</h3>
-            <button class="btn" onclick="crearOrden()">+ Generar Orden de Prueba</button>
+            <h3 style="margin: 0;">Últimas Tareas de Infraestructura en Tiempo Real</h3>
+            <button class="btn" onclick="crearOrden()">+ Despachar Tarea Bare-Metal</button>
           </div>
           <table id="orders-table">
             <thead>
-              <tr><th>ID Pedido</th><th>Artículo</th><th>Cantidad</th><th>Monto</th><th>Estado</th></tr>
+              <tr><th>ID Tarea</th><th>Recurso Bare-Metal</th><th>Capacidad / Cores</th><th>Nodo Destino</th><th>Estado</th></tr>
             </thead>
             <tbody id="orders-body">
-              <tr><td colspan="5" style="text-align:center; color:#8b949e;">Cargando pedidos...</td></tr>
+              <tr><td colspan="5" style="text-align:center; color:#8b949e;">Cargando tareas de aprovisionamiento...</td></tr>
             </tbody>
           </table>
         </div>
@@ -479,7 +479,8 @@ data:
             tbody.innerHTML = '';
             (data.orders || []).slice(-8).reverse().forEach(o => {
               const tr = document.createElement('tr');
-              tr.innerHTML = `<td><strong>${o.id}</strong></td><td>${o.item}</td><td>${o.qty}</td><td>$${o.amount}</td><td style="color:#58a6ff">${o.status}</td>`;
+              const targetNode = o.target || o.amount || 'worker-01.lab.local';
+              tr.innerHTML = `<td><strong>${o.id}</strong></td><td>${o.item}</td><td>${o.qty}</td><td><code>${targetNode}</code></td><td style="color:#58a6ff">${o.status}</td>`;
               tbody.appendChild(tr);
             });
           } catch(e) {
@@ -491,11 +492,11 @@ data:
             await fetch('/api/orders', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ item: "Servidor Bare-Metal Dell 3020M", qty: 1, amount: 890.00 })
+              body: JSON.stringify({ item: "Servidor Bare-Metal Dell 3020M", qty: "4 Cores", target: "worker-01.lab.local" })
             });
             await cargarOrdenes();
           } catch(e) {
-            alert('Error creando orden: ' + e);
+            alert('Error despachando tarea: ' + e);
           }
         }
         cargarOrdenes();
@@ -607,10 +608,10 @@ spec:
                 # 3. Consulta GET a Backend API Python
                 curl -s -o /dev/null -w "Backend GET: %{http_code}\n" http://backend-api.aplicaciones.svc.cluster.local:8000/api/v1/data
                 
-                # 4. Creación aleatoria POST de pedido (cada 3 ciclos)
+                # 4. Creación aleatoria POST de tarea de aprovisionamiento (cada 3 ciclos)
                 if [ $((COUNTER % 3)) -eq 0 ]; then
                   curl -s -X POST -H "Content-Type: application/json" \
-                    -d '{"item":"Hardware Node Dell Optiplex","qty":1,"amount":320.00}' \
+                    -d '{"item":"Hardware Node Dell Optiplex","qty":"4 Cores","target":"worker-01.lab.local"}' \
                     -o /dev/null -w "Orders POST: %{http_code}\n" \
                     http://orders-service.aplicaciones.svc.cluster.local:8080/api/orders
                 fi

@@ -3,10 +3,10 @@
 # Plantilla de Variables Cifradas con Ansible Vault (vault.yml)
 #
 # Para crear el archivo cifrado real:
-#   ansible-vault create inventory/group_vars/all/vault.yml
+#   ansible-vault create inventory/lab/group_vars/all/vault.yml
 #
 # Para editarlo posteriormente:
-#   ansible-vault edit inventory/group_vars/all/vault.yml
+#   ansible-vault edit inventory/lab/group_vars/all/vault.yml
 # ==============================================================================
 
 # Credenciales de acceso de emergencia / contingencia
@@ -19,3 +19,6 @@ vault_nexus_admin_password: "NexusPasswordSegura123!"
 # Tokens de API y Monitoreo
 vault_grafana_admin_password: "GrafanaAdminPassword123!"
 vault_alertmanager_webhook_url: "https://hooks.slack.com/services/XXXXX/YYYYY/ZZZZZ"
+
+# PostgreSQL: conservar el valor existente en instalaciones ya desplegadas.
+vault_postgres_password: "REEMPLAZAR_ANTES_DE_CIFRAR"
