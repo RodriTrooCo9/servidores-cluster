@@ -1,4 +1,4 @@
-# 📘 Guía Oficial de Ansible en el Proyecto: Arquitectura, Roles y Automatización Bare-Metal
+# Guía Oficial de Ansible en el Proyecto: Arquitectura, Roles y Automatización Bare-Metal
 
 Esta guía explica de forma sencilla, directa y sin rodeos cómo está diseñado, organizado y ejecutado **Ansible** para automatizar los 8 servidores físicos del clúster.
 

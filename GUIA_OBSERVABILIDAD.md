@@ -216,7 +216,7 @@ Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](
 ### Procedimiento de Despliegue
 
 #### Paso 6.1: Desplegar monitoreo en los hosts bare-metal con Ansible
-* **Dónde se ejecuta:** En tu Laptop.
+* **Dónde se ejecuta:** En la PC remota.
 * **Para qué sirve:** Instala Prometheus, Grafana, Node Exporter y Alertmanager en el sistema operativo host.
 * **Comando:**
   ```bash
@@ -225,7 +225,7 @@ Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](
 * **Resultado esperado:** Tareas en verde (`ok`), servicios systemd activos en toda la flota.
 
 #### Paso 6.2: Desplegar backends en Kubernetes (VictoriaMetrics, Loki, Tempo)
-* **Dónde se ejecuta:** En tu Laptop (o nodo con `kubectl`).
+* **Dónde se ejecuta:** En la PC remota (o nodo con `kubectl`).
 * **Para qué sirve:** Crea el namespace `observability`, los StatefulSets y los volúmenes en disco.
 * **Comando:**
   ```bash
@@ -238,7 +238,7 @@ Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](
   ```
 
 #### Paso 6.3: Desplegar OpenTelemetry Operator y Gateway Collector
-* **Dónde se ejecuta:** En tu Laptop.
+* **Dónde se ejecuta:** En la PC remota.
 * **Para qué sirve:** Levanta el colector universal para enrutar trazas a Tempo y logs a Loki.
 * **Comando:**
   ```bash
@@ -256,7 +256,7 @@ Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](
 * **Resultado esperado:** Contenedores `coroot-clickhouse-1` y `coroot-coroot-1` en estado `Up (healthy)`.
 
 #### Paso 6.5: Distribuir el agente eBPF de Coroot en la flota
-* **Dónde se ejecuta:** En tu Laptop.
+* **Dónde se ejecuta:** En la PC remota.
 * **Para qué sirve:** Instala `coroot-node-agent` en los 8 nodos físicos y despliega el agente de clúster en K8s.
 * **Comando:**
   ```bash
