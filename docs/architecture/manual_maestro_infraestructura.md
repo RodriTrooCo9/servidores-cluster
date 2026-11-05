@@ -1,3 +1,5 @@
+> **Referencia histórica del laboratorio conjunto.** Este documento mezcla ambos proyectos y conserva topologías y procedimientos anteriores. No lo uses como secuencia vigente. Consulta la [guía de Kubernetes](../../GUIA_DE_INSTALACION.md) o la [guía de instalación de sistemas operativos](../../GUIA_OPENSTACK.md). Los comandos de recuperación requieren contrastarse con el estado real.
+
 # Manual Maestro de Infraestructura, Automatización y Despliegue Bare-Metal
 ## Guía de Ingeniería: DHCP/PXE, iPXE, OpenStack Glance, Ironic, Nexus y Monitoreo
 

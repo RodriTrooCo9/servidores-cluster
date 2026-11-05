@@ -1,56 +1,37 @@
-# Runbook: Incorporación de Nuevo Nodo Bare-Metal
+# Añadir un nodo a la infraestructura Kubernetes
 
-## Objetivo
-Procedimiento para registrar, aprovisionar y anexar un nuevo servidor físico (Dell OptiPlex 3020M) a la infraestructura como Worker o Control Plane.
+Este procedimiento comienza con el sistema operativo instalado y acceso SSH disponible. La instalación del sistema operativo es [otro proyecto](../../GUIA_OPENSTACK.md).
 
-## Prerrequisitos
-- Servidor conectado físicamente al switch de la subred `10.100.29.0/24`.
-- Dirección MAC de la interfaz Gigabit Ethernet registrada.
-- Configuración de BIOS Dell (A05): UEFI activado, Secure Boot desactivado, Wake-on-LAN habilitado.
+## 1 Revisar el equipo
 
-## Procedimiento Paso a Paso
+Confirma IP, MAC, usuario, disco y rol previsto. Comprueba que el equipo nuevo no contiene datos o servicios que deban conservarse. No conviertas un agente o un control plane activo en otro rol mediante cambios de inventario.
 
-### 1. Registrar en el Inventario Físico (`inventory/nodes.csv`)
-Añadir una nueva línea con la ID, MAC, Hostname, IP y especificaciones:
-```csv
-322,64:00:6a:2a:xx:yy,k8s-worker-03,10.100.29.113,k8s-worker,8,128,<BMC_IP>
-```
+## 2 Actualizar el inventario
 
-### 2. Registrar en el Inventario YAML (`inventory/lab/hosts.yml`)
-Bajo la sección `k8s_workers`:
-```yaml
-nodo-322:
-  ansible_host: 10.100.29.113
-  ansible_user: debian
-  node_id: 322
-  cluster_hostname: k8s-worker-03
-  mac: "64:00:6a:2a:xx:yy"
-  ram_gb: 8
-  disk_gb: 128
-```
+**Dónde:** editor de la laptop, `inventory/lab/hosts.yml`. Añade el equipo al grupo `k8s_workers` o `k8s_control_plane` y asigna sus valores reales de `ansible_host`, `ansible_user`, `node_id`, `cluster_hostname`, `mac`, `ram_gb` y `disk_gb`.
 
-### 3. Actualizar Servicios PXE y DHCP
-Ejecutar el playbook del controlador PXE para registrar la reserva DHCP fija en `dnsmasq`:
+Si falta el sistema operativo, termina primero la guía de aprovisionamiento. El playbook Ironic administra el controlador; `--limit` con el nombre del nuevo nodo no ordena su instalación.
+
+## 3 Comprobar el alcance
+
+**Dónde:** laptop, raíz del repositorio, con Ansible y Vault configurados. Este comando muestra qué equipos recibirá la fase de plataforma, sin modificar servicios.
+
 ```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/20-services/02_pxe_controller.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke2_cluster.yml --list-hosts
 ```
 
-### 4. Aprovisionamiento Bare-Metal con Ironic
-Enrolar e iniciar el despliegue de imagen:
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/20-services/03_ironic_deploy.yml --limit nodo-322
-```
+**Resultado esperado:** el nodo nuevo y los miembros previstos aparecen en el grupo correcto. Revisa también que el líder corresponda al servicio real.
 
-### 5. Configuración Base y Anexión a Kubernetes
-Una vez iniciado el sistema operativo:
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/10-base/01_os_base.yml --limit nodo-322
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke2_cluster.yml --limit nodo-322
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/40-observability/01_monitoring.yml --limit nodo-322
-```
+## 4 Aplicar la configuración
 
-### 6. Validación
-Verificar que el nuevo nodo aparezca en estado `Ready`:
+Sigue las etapas de sistema base, Nexus y RKE2 de la [guía de infraestructura](../../GUIA_DE_INSTALACION.md). Revisa el alcance de cada playbook antes de aplicarlo: la incorporación requiere acceso al líder existente y no equivale a reinstalar todos los nodos.
+
+## 5 Validar
+
+**Dónde:** laptop con el kubeconfig correcto. Este comando muestra la incorporación del nodo sin modificar el clúster.
+
 ```bash
 kubectl get nodes -o wide
 ```
+
+**Resultado esperado:** el nuevo nodo aparece con su IP y estado `Ready`. Si no aparece, consulta los logs de `rke2-agent` o `rke2-server` en ese equipo y revisa su conectividad con el líder.

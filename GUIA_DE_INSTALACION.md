@@ -1,10 +1,10 @@
-# Guía de instalación paso a paso
+# Guía de instalación de infraestructura Kubernetes
 
-Fecha de preparación: 30 de octubre de 2026.
+Fecha de preparación: 30 de octubre de 2026. Separación de proyectos: 5 de noviembre de 2026.
 
 ## 1. ¿Qué vamos a instalar?
 
-Instalaremos una plataforma de servidores físicos con acceso SSH, Nexus, Kubernetes RKE2 y herramientas de monitoreo. El proyecto también permite preparar imágenes Debian y gestionar el arranque de equipos mediante PXE e Ironic, con Kolla OpenStack como alternativa. Al terminar las etapas que hayas elegido y validado, podrás abrir la aplicación de ejemplo y consultar el estado de sus servicios.
+Instalaremos Kubernetes RKE2, Nexus, aplicaciones y monitoreo sobre máquinas con Debian y SSH ya disponibles. Al terminar, podrás abrir la aplicación de ejemplo y consultar sus servicios. La instalación de sistemas operativos en máquinas físicas pertenece al [proyecto de OpenStack e Ironic](GUIA_OPENSTACK.md) y tiene su propia guía.
 
 > **Para equipos nuevos:** esta guía no debe ejecutarse como reinstalación del clúster que ya funciona. Durante la inspección, el nodo 306 era el único control plane real, pero el inventario del repositorio asignaba ese trabajo a los nodos 269, 280 y 320. Ejecutar los playbooks con un inventario incorrecto puede cambiar servicios, red y datos.
 
@@ -15,16 +15,16 @@ Instalaremos una plataforma de servidores físicos con acceso SSH, Nexus, Kubern
 ## 2. Requisitos previos
 
 - Una laptop Linux con acceso a la red de administración y un usuario con `sudo`.
-- Servidores nuevos o vacíos, consola física, disco de instalación y una llave USB de Debian. Instalar el sistema operativo puede borrar sus discos.
-- Red de aprovisionamiento aislada de la oficina. El DHCP de pruebas no debe responder en la red de oficina.
+- Servidores con Debian instalado, acceso SSH y una consola para resolver problemas de red. Si están vacíos, completa primero la guía de instalación del sistema operativo.
+- Red de administración por VLAN y Wi-Fi, con la red de aprovisionamiento aislada de la oficina. Esta guía no inicia servicios DHCP de aprovisionamiento.
 - IP, MAC, interfaz Ethernet, puerta de enlace y DNS confirmados para cada equipo.
 - Acceso a Internet para descargar paquetes, imágenes y herramientas, o copias internas verificadas.
-- Una llave SSH propia y un lugar seguro para conservar las contraseñas de Vault y de OpenStack.
+- Una llave SSH propia y un lugar seguro para conservar las contraseñas de Vault.
 - Espacio independiente para respaldos y un entorno aislado para probar la recuperación.
 
 ### Sistemas y versiones
 
-**Suposición de esta guía:** laptop Debian/Ubuntu y servidores Debian 13, salvo la decisión de compatibilidad de Kolla explicada en el paso 12.
+**Suposición de esta guía:** laptop Debian/Ubuntu y servidores con Debian 13 ya instalado.
 
 | Herramienta | Qué pide o contiene el proyecto | Cómo se usa aquí |
 |---|---|---|
@@ -33,8 +33,6 @@ Instalaremos una plataforma de servidores físicos con acceso SSH, Nexus, Kubern
 | Colecciones Ansible | `ansible/collections/requirements.yml` | Instalar ese archivo, no una ruta antigua mencionada por algunos scripts. |
 | RKE2 | `vars.yml` fija `v1.30.2+rke2r1`; el clúster observado tenía otra versión | Elegir y validar una versión antes de instalar; no copiar automáticamente la versión del clúster existente. |
 | kubectl | Debe ser compatible con la versión de Kubernetes elegida | Usar primero el cliente que instala RKE2 en el control plane. |
-| Kolla/OpenStack | `openstack/globals.yml` declara `2025.1` | Rama opcional con requisitos propios y compatibilidad pendiente. |
-| Packer y QEMU/KVM | Las guías piden Packer 1.10 o superior | Solo necesarios para fabricar imágenes; no hacen falta para instalar Debian manualmente. |
 | Nexus | El rol descarga `latest-unix.tar.gz` | Falta fijar una versión y validar su Java y sus opciones de arranque. |
 | PostgreSQL | El rol instala el paquete `postgresql` de APT | No garantiza PostgreSQL 16. La instancia observada de Nexus usaba archivos H2. |
 
@@ -44,7 +42,7 @@ Instalaremos una plataforma de servidores físicos con acceso SSH, Nexus, Kubern
 |---|---|---|
 | nodo-314 | `10.100.29.10` | Bastión y proxy |
 | nodo-315 | `10.100.29.20` | Nexus |
-| nodo-306 | `10.100.29.30`, Wi-Fi `192.168.29.25` | Provisión, OpenStack si se elige y monitoreo |
+| nodo-306 | `10.100.29.30`, Wi-Fi `192.168.29.25` | Acceso de administración y monitoreo |
 | nodo-269 | `10.100.29.101` | Primer control plane RKE2 |
 | nodo-280 | `10.100.29.102` | Segundo control plane RKE2 |
 | nodo-320 | `10.100.29.103` | Tercer control plane RKE2 |
@@ -57,29 +55,24 @@ Un **control plane** administra Kubernetes; un **worker** ejecuta las aplicacion
 
 ### Etapa A. Preparar equipos y laptop
 
-**Paso 1. Instalar Debian en los equipos nuevos**
+**Paso 1. Comprobar el sistema operativo instalado**
 
-- **Dónde:** consola física de cada servidor nuevo.
-- **Para qué:** tener un sistema básico al que Ansible pueda conectarse.
+- **Dónde:** consola de cada servidor que integrará la plataforma.
+- **Para qué:** confirmar que el equipo está preparado para recibir Ansible.
 
-**Advertencia:** el particionado del instalador puede borrar el disco. Comprueba el equipo y el disco antes de aceptar.
+Si el disco está vacío, completa primero la [guía de instalación de sistemas operativos](GUIA_OPENSTACK.md). El resultado requerido aquí es Debian arrancado, direcciones de red correctas y un usuario de administración; no se exige OpenStack.
 
-Descarga la imagen desde [Debian](https://www.debian.org/distrib/), verifica su integridad y prepara la USB según las instrucciones de Debian. Instala el sistema base, el servidor SSH y las herramientas habituales. Para esta primera instalación, instalar Debian manualmente evita depender de un PXE que todavía no existe.
-
-Crea el usuario indicado en `inventory/lab/hosts.yml`: `aget-ic`, `io`, `n306` o `debian`, según el nodo. Si usas otros nombres, cámbialos también en el inventario. Durante el instalador configura la red con las direcciones que hayas confirmado.
-
-**Comprobar:** estos comandos muestran el sistema, la red y la memoria del equipo.
+**Comprobar:** estos comandos muestran el sistema, las direcciones y la ruta de salida.
 
 ```bash
 cat /etc/os-release
 ip -br address
 ip route
-free -h
 ```
 
-**Resultado esperado:** el sistema elegido y las direcciones correctas, sin IP duplicadas.
+**Resultado esperado:** Debian instalado, IP sin duplicados y conectividad de administración disponible.
 
-**Si aparece un error:** una instalación manual de Debian no crea por sí sola el enrutamiento del nodo 306. Si los demás equipos no tienen Internet, resuelve primero la puerta de enlace y el aislamiento; no cambies rutas al azar.
+**Si aparece un error:** corrige el acceso por consola y la red antes de ejecutar los playbooks.
 
 **Paso 2. Preparar SSH, Python y sudo en cada servidor**
 
@@ -156,7 +149,7 @@ sudo apt-get update
 sudo apt-get install -y git openssh-client python3 python3-venv python3-pip openssl curl
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install "ansible-core>=2.17" ansible-lint yamllint python-openstackclient python-ironicclient
+python -m pip install "ansible-core>=2.17" ansible-lint yamllint
 ansible-galaxy collection install -r ansible/collections/requirements.yml
 ```
 
@@ -165,7 +158,6 @@ ansible-galaxy collection install -r ansible/collections/requirements.yml
 ```bash
 ansible --version
 ansible-galaxy collection list
-openstack --version
 ```
 
 **Resultado esperado:** Ansible usa `.venv` y aparecen las colecciones del archivo de requisitos.
@@ -184,9 +176,7 @@ Edita estas rutas con tu editor:
 | Archivo | Qué debes confirmar o cambiar |
 |---|---|
 | `inventory/lab/hosts.yml` | IP, usuario, MAC, hostname y pertenencia a grupos. |
-| `inventory/nodes.csv` | Los mismos equipos, direcciones y nombres para ConfigDrive. |
 | `inventory/lab/group_vars/all/vars.yml` | Llave SSH, salto SSH, subred, DNS, gateway, interfaces, IP líder y versión RKE2. |
-| `openstack/inventory/multinode` | Solo si eliges Kolla: acceso al controlador y ruta de la llave. |
 
 El DNS `192.168.26.120` y las interfaces `enp2s0` son valores del proyecto: cámbialos si no corresponden a tu red. El nodo 306 necesita una salida de administración y una red de provisión correctamente aisladas.
 
@@ -399,134 +389,16 @@ ansible k8s_cluster -i inventory/lab/hosts.yml -b -m command -a 'apt-get update'
 
 **Resultado esperado:** ningún error de repositorio, DNS, firma o conexión. Revisa también los archivos `.sources` existentes bajo `/etc/apt/sources.list.d/`: cambiar `sources.list` no los elimina.
 
-### Etapa C. Elegir la provisión: Kolla o Ironic standalone
+### Etapa C. Instalar Kubernetes y la aplicación
 
-**Paso 13. Elegir una sola alternativa activa por red y equipo**
-
-- **Dónde:** planificación y editor de la laptop.
-- **Para qué:** evitar que dos servicios administren el mismo DHCP, API y hardware.
-
-| Alternativa | Qué instala | Qué no debes ejecutar en paralelo sobre los mismos recursos |
-|---|---|---|
-| Kolla OpenStack | Ironic, Glance, Keystone y servicios OpenStack en contenedores | Los servicios locales PXE/Ironic standalone que compitan por puertos y red. |
-| Ironic standalone | El rol del proyecto intenta instalar Ironic con Podman y PXE local | El despliegue Kolla que gestione esos mismos nodos. |
-
-Puedes conservar ambas configuraciones como alternativas. No apuntes ambas a los mismos equipos físicos a la vez.
-
-**Comprobar:** este comando consulta los contenedores existentes en el nodo 306.
-
-```bash
-ssh n306@192.168.29.25 'sudo docker ps --format "{{.Names}} {{.Status}}"'
-```
-
-**Resultado esperado:** en un equipo nuevo no hay una instalación anterior que puedas confundir con la que vas a crear. Si ves Kolla activo, no continúes como si el equipo estuviera vacío.
-
-**Paso 14A. Preparar Kolla OpenStack desde cero — alternativa A**
-
-- **Dónde:** laptop para Kolla-Ansible y nodo 306 como destino.
-- **Para qué:** instalar OpenStack, no solo arrancar contenedores existentes.
-
-**ALTO — compatibilidad:** la matriz oficial de Kolla 2025.1 incluye Debian 12 y Ubuntu 24.04, pero no Debian 13. La configuración del proyecto usa imágenes Ubuntu Noble. Para una instalación nueva, decide y valida una combinación soportada antes de usar esta rama. Que el laboratorio actual funcione sobre Debian 13 no demuestra una instalación nueva soportada. Consulta la [matriz de Kolla 2025.1](https://docs.openstack.org/kolla-ansible/2025.1/user/support-matrix.html).
-
-**ALTO — red:** Kolla necesita una red de gestión y una red externa adecuadas. El proyecto declara `veth-neutron`, pero el playbook no crea ni conecta ese par de interfaces. Falta validar su configuración de red; no sustituyas esa interfaz por la NIC de administración porque podrías perder el acceso.
-
-Una vez resueltos esos requisitos, prepara un entorno separado siguiendo la [guía oficial de Kolla 2025.1](https://docs.openstack.org/kolla-ansible/2025.1/user/quickstart.html). Estos comandos instalan herramientas en un entorno nuevo de la laptop.
-
-```bash
-sudo apt-get install -y git python3-dev python3-venv libffi-dev gcc libssl-dev libdbus-glib-1-dev
-python3 -m venv .venv-kolla
-source .venv-kolla/bin/activate
-python -m pip install 'git+https://opendev.org/openstack/kolla-ansible@stable/2025.1'
-kolla-ansible install-deps
-```
-
-En la laptop de despliegue nueva prepara `/etc/kolla/globals.yml` y `/etc/kolla/passwords.yml` con la plantilla de la versión instalada. Este bloque crea el directorio únicamente si no existe; si aparece `ALTO`, revisa lo que hay antes de continuar.
-
-```bash
-if [ -e /etc/kolla ]; then
-  printf '%s\n' 'ALTO: /etc/kolla ya existe; no se sustituye su configuración.'
-else
-  sudo install -d -m 0700 -o "$USER" /etc/kolla
-  cp "$VIRTUAL_ENV/share/kolla-ansible/etc_examples/kolla/globals.yml" /etc/kolla/globals.yml
-  cp "$VIRTUAL_ENV/share/kolla-ansible/etc_examples/kolla/passwords.yml" /etc/kolla/passwords.yml
-  chmod 600 /etc/kolla/globals.yml /etc/kolla/passwords.yml
-fi
-```
-
-Usa `openstack/globals.yml` como referencia al editar la nueva configuración, corrigiendo `node_custom_config` para apuntar a tu `openstack/config`. Los archivos `passwords.yml.example` y los archivos cifrados de una instalación anterior no son un juego de credenciales listo para una nube nueva.
-
-En una instalación totalmente nueva, este comando genera las contraseñas de Kolla a partir de su plantilla; protege después el archivo y conserva una copia segura.
-
-```bash
-kolla-genpwd
-chmod 600 /etc/kolla/passwords.yml
-```
-
-No uses `kolla-genpwd` para sustituir las contraseñas de una nube en funcionamiento. Ajusta el inventario Kolla del proyecto: contiene rutas absolutas de otra laptop.
-
-**Advertencia:** estos comandos pueden instalar o reiniciar Docker y modificar red y servicios del destino. Ejecútalos solo con la compatibilidad, los archivos de configuración y las interfaces validados.
-
-```bash
-kolla-ansible -i openstack/inventory/multinode bootstrap-servers
-kolla-ansible -i openstack/inventory/multinode prechecks
-kolla-ansible -i openstack/inventory/multinode deploy
-kolla-ansible -i openstack/inventory/multinode post-deploy
-```
-
-**Comprobar:** estos comandos revisan contenedores y autenticación. El `admin-openrc.sh` debe estar en la laptop de despliegue donde `post-deploy` lo generó.
-
-```bash
-ssh n306@192.168.29.25 'sudo docker ps --format "{{.Names}} {{.Status}}"'
-source /etc/kolla/admin-openrc.sh
-openstack token issue -f value -c expires
-openstack endpoint list --service ironic -c Enabled -f value
-```
-
-**Resultado esperado:** servicios en ejecución, una fecha de caducidad para la autenticación y endpoints Ironic habilitados. La orden de token anterior no imprime el token.
-
-**Si aparece un error:** detente en `prechecks`; no lo saltes. No uses `docker start` sobre todos los contenedores como sustituto de una instalación nueva.
-
-**Paso 14B. Preparar PXE e Ironic standalone — alternativa B**
-
-- **Dónde:** laptop, raíz del proyecto, con el entorno `.venv` de Ansible activado.
-- **Para qué:** preparar la alternativa sin Kolla.
-
-**Advertencia:** DHCP puede interferir con otros equipos. Usa únicamente la VLAN aislada. Los playbooks modifican dnsmasq, Nginx y TFTP.
-
-Este comando configura los servicios PXE locales.
-
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/20-services/02_pxe_controller.yml
-```
-
-**ALTO — Ironic standalone:** el rol usa una imagen Metal3 `latest`, ignora algunos errores y genera un inventario que incluye toda la flota, también los equipos de infraestructura. Antes de ejecutarlo, fija una imagen comprobada, valida su API y limita el enrolamiento a equipos nuevos dedicados. No hay evidencia suficiente para prometer que el rol actual completo funcione desde cero.
-
-Después de resolver esos puntos, este es el playbook del proyecto que instala la alternativa standalone.
-
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/20-services/03_ironic_deploy.yml
-```
-
-**Comprobar:** este comando consulta los servicios y la cadena de arranque en el nodo 306.
-
-```bash
-ssh n306@192.168.29.25 'systemctl is-active dnsmasq nginx ironic-conductor; curl -fsSI http://10.100.29.30:8089/boot.ipxe'
-```
-
-**Resultado esperado:** servicios activos y HTTP 200. Comprueba además la respuesta de la API Ironic y el enrolamiento de un equipo de prueba; el puerto abierto no basta.
-
-**Si aparece un error:** si Kolla está activo, la prueba de los servicios locales no corresponde. No reinicies dnsmasq local para corregir un contenedor Kolla.
-
-### Etapa D. Instalar Kubernetes y la aplicación
-
-**Paso 15. Confirmar versión y roles de RKE2 antes de instalar**
+**Paso 13. Confirmar versión y roles de RKE2 antes de instalar**
 
 - **Dónde:** laptop, editor y terminal en la raíz.
 - **Para qué:** evitar instalar una versión antigua o cambiar por accidente el trabajo de un nodo.
 
 Edita `rke2_version`, `k8s_leader_ip` y los grupos del inventario solo después de elegir una versión publicada y compatible. El valor actual del archivo no se ha validado como recomendación para una instalación nueva. Consulta la [instalación RKE2](https://docs.rke2.io/install/quickstart) y las [opciones de red](https://docs.rke2.io/networking/basic_network_options).
 
-Este comando vuelve al entorno de Ansible del proyecto si antes utilizaste el entorno separado de Kolla.
+Este comando activa el entorno de Ansible de la plataforma.
 
 ```bash
 source .venv/bin/activate
@@ -542,7 +414,7 @@ ansible k8s_cluster -i inventory/lab/hosts.yml -m shell -a 'systemctl is-active 
 
 **Resultado esperado:** en servidores realmente nuevos no hay agentes ni servidores RKE2 activos. Si aparecen servicios activos, revisa el inventario antes de continuar.
 
-**Paso 16. Desplegar RKE2**
+**Paso 14. Desplegar RKE2**
 
 - **Dónde:** laptop, raíz del proyecto.
 - **Para qué:** crear los control planes y unir los workers.
@@ -563,7 +435,7 @@ ssh -J n306@192.168.29.25 debian@10.100.29.101 'sudo /var/lib/rancher/rke2/bin/k
 
 **Si aparece un error:** revisa `journalctl -u rke2-server` o `journalctl -u rke2-agent` en el nodo que falla. Una protección del playbook se detiene si detecta el rol contrario activo; resuelve el inventario, no quites la protección.
 
-**Paso 17. Preparar kubectl en la laptop**
+**Paso 15. Preparar kubectl en la laptop**
 
 - **Dónde:** laptop y primer control plane.
 - **Para qué:** administrar el clúster sin entrar por SSH en cada orden.
@@ -610,7 +482,7 @@ kubectl get pods -n kube-system -l k8s-app=cilium
 
 **Resultado esperado:** nodos `Ready` y pods Cilium listos.
 
-**Paso 18. Preparar el almacenamiento y OpenTelemetry Operator**
+**Paso 16. Preparar el almacenamiento y OpenTelemetry Operator**
 
 - **Dónde:** laptop, raíz del proyecto, con el kubeconfig correcto.
 - **Para qué:** instalar los requisitos que no incluye el overlay de aplicaciones.
@@ -629,7 +501,7 @@ bash scripts/diagnostics/kubernetes-prerequisites.sh
 
 **Si aparece un error:** instala o corrige el requisito concreto antes de aplicar el overlay. Crear un PVC no instala una StorageClass.
 
-**Paso 19. Instalar los backends de métricas, logs y trazas**
+**Paso 17. Instalar los backends de métricas, logs y trazas**
 
 - **Dónde:** laptop, raíz del proyecto.
 - **Para qué:** crear VictoriaMetrics, Loki y Tempo con sus volúmenes.
@@ -650,14 +522,14 @@ kubectl get statefulset,pods,pvc -n observability
 
 **Si aparece un error:** si un PVC está `Pending`, revisa el provisionador y el disco. Si un pod falla, usa `kubectl describe pod NOMBRE -n observability`, sustituyendo `NOMBRE` por el mostrado.
 
-**Paso 20. Configurar secretos de telemetría y desplegar el collector**
+**Paso 18. Configurar secretos de telemetría y desplegar el collector**
 
 - **Dónde:** editor y terminal de la laptop.
 - **Para qué:** enviar telemetría a los backends y al servidor Coroot que hayas elegido.
 
 **ALTO — secretos:** se encontraron valores de API incrustados en `kubernetes/observability/otel/02_otel_operator_and_collectors.yaml` y `kubernetes/observability/coroot/03_coroot_cluster_agent.yaml`. No se reproducen aquí. Sustitúyelos por credenciales nuevas gestionadas con secretos y configura sus referencias antes de aplicar los archivos. Si eran credenciales reales, deben rotarse.
 
-Confirma también el endpoint de Coroot. Si todavía no has instalado Coroot, prepara primero el paso 23 o adapta las rutas de exportación; no envíes datos a un endpoint supuesto.
+Confirma también el endpoint de Coroot. Si todavía no has instalado Coroot, prepara primero el paso 21 o adapta las rutas de exportación; no envíes datos a un endpoint supuesto.
 
 **Advertencia:** este comando crea el collector y los recursos de instrumentación una vez resueltos los puntos anteriores.
 
@@ -674,7 +546,7 @@ kubectl get deployment -n observability otel-gateway-collector
 
 **Resultado esperado:** el deployment llega a dos réplicas disponibles. Verifica ingesta real; que el pod arranque no demuestra que los exportadores estén enviando datos.
 
-**Paso 21. Instalar las aplicaciones de ejemplo**
+**Paso 19. Instalar las aplicaciones de ejemplo**
 
 - **Dónde:** laptop, raíz del proyecto.
 - **Para qué:** desplegar backend, frontend, pedidos, notificaciones y Redis.
@@ -698,9 +570,9 @@ kubectl rollout status deployment/frontend-web -n aplicaciones --timeout=180s
 
 **Si aparece un error:** ante `ImagePullBackOff`, revisa los eventos del pod. Un HTTP 401 significa que falta autorización del registro; no se soluciona reiniciando todos los nodos.
 
-### Etapa E. Monitoreo del sistema y Coroot
+### Etapa D. Monitoreo del sistema y Coroot
 
-**Paso 22. Instalar Prometheus, Grafana y Node Exporter**
+**Paso 20. Instalar Prometheus, Grafana y Node Exporter**
 
 - **Dónde:** laptop; preparación de Grafana en el nodo 306.
 - **Para qué:** ver el estado de los equipos físicos.
@@ -738,7 +610,7 @@ ansible baremetal -i inventory/lab/hosts.yml -m command -a 'systemctl is-active 
 
 En Grafana todavía tienes que configurar fuentes, dashboards y acceso. Los archivos de `kubernetes/observability/grafana/` no se instalan automáticamente en el Grafana del host y contienen nombres de servicios que debes adaptar a rutas alcanzables desde él. Confirma también la configuración y el arranque de Alertmanager antes de considerar que tienes alertas.
 
-**Paso 23. Añadir Coroot — opcional**
+**Paso 21. Añadir Coroot — opcional**
 
 - **Dónde:** VM de observabilidad y laptop; agentes en los nodos.
 - **Para qué:** observar procesos y contenedores mediante eBPF.
@@ -786,90 +658,21 @@ kubectl rollout status deployment/coroot-cluster-agent -n observability --timeou
 
 **Resultado esperado:** una réplica disponible. El namespace correcto es `observability`, no `coroot`.
 
-### Etapa F. Imágenes y provisión automática — opcional
+### Etapa E. Respaldar antes de dar por terminada la instalación
 
-**Paso 24. Construir una imagen Debian con Packer**
-
-- **Dónde:** estación Linux de construcción con KVM, espacio y memoria disponibles.
-- **Para qué:** preparar una imagen reutilizable para equipos nuevos.
-
-No es necesario reconstruir los nodos que instalaste manualmente. La plantilla `cloud-init/packer/packer.pkr.hcl` usa un preseed incompleto dentro del repositorio; para esta ruta usa `debian13-coroot.pkr.hcl` y el procedimiento completo de [Packer y Coroot](docs/observability/coroot-debian13-packer.md#8-construir-una-imagen-con-packer).
-
-Debes preparar todos estos insumos en el directorio de construcción: imagen Debian 13 `generic amd64`, checksum verificado, `seed/user-data`, `seed/meta-data`, llave temporal `build_key`, binario versionado `coroot-node-agent` y unidad `coroot-node-agent.service`. Esa guía contiene la creación del seed y de la unidad; no copies llaves de producción a la imagen. Instala Packer mediante el [procedimiento oficial de HashiCorp](https://developer.hashicorp.com/packer/install), comprobando su versión.
-
-Este comando instala QEMU y las herramientas de imagen necesarias en la estación de construcción Debian/Ubuntu.
-
-```bash
-sudo apt-get install -y qemu-system-x86 qemu-utils xorriso genisoimage
-```
-
-**Comprobar:** estos comandos muestran las herramientas y el acceso a KVM.
-
-```bash
-packer version
-qemu-system-x86_64 --version
-test -r /dev/kvm && test -w /dev/kvm && echo "KVM disponible"
-```
-
-**Resultado esperado:** versiones instaladas y `KVM disponible`. En la sesión usada para revisar el proyecto no había `/dev/kvm`; por eso no se construyó una imagen aquí.
-
-Estos comandos se ejecutan en el directorio que ya contiene los insumos y una copia de `debian13-coroot.pkr.hcl`; crean una VM y un archivo de salida nuevo.
-
-```bash
-packer init debian13-coroot.pkr.hcl
-checksum="sha512:$(sha512sum debian-13-generic-amd64.qcow2 | awk '{print $1}')"
-packer validate -var "image_path=$PWD/debian-13-generic-amd64.qcow2" -var "image_checksum=$checksum" debian13-coroot.pkr.hcl
-packer build -var "image_path=$PWD/debian-13-generic-amd64.qcow2" -var "image_checksum=$checksum" debian13-coroot.pkr.hcl
-```
-
-**Comprobar:** estos comandos verifican el archivo de salida y registran su checksum.
-
-```bash
-qemu-img check output-debian13-coroot/debian13-coroot.qcow2
-sha256sum output-debian13-coroot/debian13-coroot.qcow2
-```
-
-**Resultado esperado:** la imagen no presenta errores estructurales. También debes arrancarla en una VM de prueba; `qemu-img check` no demuestra que arranque ni que cloud-init funcione.
-
-**Paso 25. Preparar ConfigDrive y probar un solo nodo de provisión**
-
-- **Dónde:** equipo de provisión con una copia del proyecto, `genisoimage` y una llave pública real.
-- **Para qué:** entregar nombre, red y acceso SSH al nuevo equipo.
-
-ConfigDrive es un pequeño disco de configuración que cloud-init lee durante el primer arranque. Revisa `inventory/nodes.csv` y comprueba que exista tu llave pública; el generador contiene un valor de ejemplo que no debes usar como acceso real.
-
-**Advertencia:** este script crea archivos en `/tmp/configdrive/` y, si existe `/httpboot`, escribe datos bajo `/httpboot/cloud-init/`. No aplica ni formatea por sí solo una imagen en un disco físico.
-
-```bash
-test -s "$HOME/.ssh/id_ed25519.pub"
-bash cloud-init/scripts/generate_configdrive.sh 321
-```
-
-**Comprobar:** este comando comprueba la imagen de configuración del nodo de ejemplo.
-
-```bash
-test -s /tmp/configdrive/k8s-worker-01-configdrive.iso && echo "ConfigDrive creado"
-```
-
-**Resultado esperado:** `ConfigDrive creado`. Cambia `321` y el nombre del archivo si elegiste otro nodo.
-
-**ALTO — escritura del disco:** antes de desplegar una imagen con Ironic debes tener un equipo dedicado y vacío, la imagen registrada, el ramdisk IPA, el driver correcto, el ConfigDrive, el estado del nodo Ironic y su método de encendido comprobados. El repositorio no ofrece una secuencia única validada para ambas alternativas. Consulta los planes de [OpenStack e iPXE](docs/architecture/openstack/plan_maestro_instalacion_ipxe.md) y prueba primero en una VM o un equipo descartable. No uses `--reprovision` sobre toda la flota: puede sobrescribir discos y servicios existentes.
-
-### Etapa G. Respaldar antes de dar por terminada la instalación
-
-**Paso 26. Preparar un respaldo recuperable**
+**Paso 22. Preparar un respaldo recuperable**
 
 - **Dónde:** laptop y almacenamiento independiente del clúster.
 - **Para qué:** poder recuperar datos cuando falle un nodo.
 
-Protege juntos estos elementos: snapshot etcd y token RKE2; base real y blobs de Nexus; MariaDB, configuración Kolla e imágenes Glance; y datos y configuración de observabilidad. Un volcado PostgreSQL vacío no respalda una instancia Nexus que usa H2.
+Protege juntos estos elementos: snapshot etcd y token RKE2; base real y blobs de Nexus; y datos y configuración de observabilidad. Un volcado PostgreSQL vacío no respalda una instancia Nexus que usa H2.
 
-**ALTO — playbook de respaldo:** confirma que el grupo `k8s_control_plane` y su líder son reales, y que `/etc/kolla/passwords.yml` existe y contiene credenciales válidas en el controlador de OpenStack. Si no, el playbook se detendrá. El respaldo MariaDB actual del repositorio no garantiza por sí solo consistencia con Glance ni con tablas no transaccionales.
+**ALTO — playbook de respaldo:** confirma que el grupo `k8s_control_plane` y su líder coinciden con los servicios reales. Usa la etiqueta `backup_etcd` para este proyecto; `backup` también incluye el proyecto de aprovisionamiento. Este comando no respalda Nexus ni la observabilidad: prepara sus copias según el motor y los volúmenes realmente utilizados.
 
-**Advertencia:** este comando crea snapshots y volcados y copia datos y credenciales sensibles a `backups/`. Ejecútalo solo después de revisar esas condiciones y proteger el destino.
+**Advertencia:** este comando crea un snapshot y copia archivos de respaldo y el token sensible a `backups/`. Ejecútalo solo después de revisar esas condiciones y proteger el destino.
 
 ```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup
+ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup_etcd
 ```
 
 **Comprobar:** este comando muestra nombres y tamaños sin revelar el contenido.
@@ -882,9 +685,9 @@ find backups -type f ! -name README.md ! -name .gitkeep -printf '%p %s bytes\n'
 
 ## 4. Prueba final
 
-No existe un único comando que inicie todo este proyecto: systemd, Kolla y Kubernetes administran componentes diferentes.
+Los servicios del host se administran con systemd y las aplicaciones con Kubernetes; utiliza las órdenes de cada componente.
 
-**Paso 27. Abrir la aplicación mediante un túnel local**
+**Paso 23. Abrir la aplicación mediante un túnel local**
 
 - **Dónde:** primera terminal de la laptop.
 - **Para qué:** acceder al frontend sin publicar puertos adicionales en la red de oficina.
@@ -902,9 +705,9 @@ curl -fsS http://127.0.0.1:8088/
 curl -fsS http://127.0.0.1:8088/api/v1/data
 ```
 
-**Resultado esperado:** el primer comando devuelve HTML y el segundo un JSON con `status: ok` y `service: backend-api`. Abre `http://127.0.0.1:8088` en el navegador. La API de ejemplo no demuestra que Ironic pueda instalar equipos físicos.
+**Resultado esperado:** el primer comando devuelve HTML y el segundo un JSON con `status: ok` y `service: backend-api`. Abre `http://127.0.0.1:8088` en el navegador.
 
-**Paso 28. Abrir Prometheus y Grafana**
+**Paso 24. Abrir Prometheus y Grafana**
 
 - **Dónde:** otra terminal de la laptop.
 - **Para qué:** consultar el monitoreo del nodo 306.
@@ -927,7 +730,7 @@ curl -fsS http://127.0.0.1:3001/api/health
 
 **Resultado esperado:** Prometheus listo y Grafana operativo. Abre `http://127.0.0.1:9090/targets` y `http://127.0.0.1:3001`; comprueba targets, fuentes y datos recientes, usando tus credenciales nuevas.
 
-**Paso 29. Revisar el conjunto**
+**Paso 25. Revisar el conjunto**
 
 - **Dónde:** laptop, raíz del proyecto.
 - **Para qué:** comprobar nodos, aplicaciones y almacenamiento.
@@ -940,15 +743,11 @@ kubectl get pods -n aplicaciones
 kubectl get pods,pvc -n observability
 ```
 
-Si instalaste Kolla y todos los servicios esperados por el healthcheck, este comando revisa sus puertos además del resto de la infraestructura.
+**Resultado esperado:** nodos `Ready`, contenedores listos y PVC `Bound`. Comprueba también APT, Nexus y los datos de monitoreo con las verificaciones de sus etapas.
 
-```bash
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/50-validation/01_healthcheck.yml
-```
+El healthcheck integral del repositorio espera servicios de ambos proyectos. No se usa como prueba final de esta instalación independiente.
 
-**Resultado esperado:** nodos `Ready`, contenedores listos, PVC `Bound` y verificaciones sin fallos. El healthcheck presupone endpoints Kolla en `10.100.29.5` y no corresponde sin cambios a una instalación solo standalone.
-
-**Criterio para terminar:** aplicación accesible, red y repositorios comprobados, datos llegando al monitoreo, alternativa de provisión validada en un equipo descartable y restauración de respaldo probada. Si queda un paso **ALTO** sin resolver, esa parte de la plataforma todavía no está instalada y verificada.
+**Criterio para terminar:** aplicación accesible, red y repositorios comprobados, datos llegando al monitoreo y restauración de respaldo probada. Los pasos marcados **ALTO** deben quedar resueltos para los componentes que hayas elegido.
 
 ## 5. Errores frecuentes
 
@@ -962,18 +761,14 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/50-validation/01_h
 | APT da 404 | Nexus no tiene la distribución o el repositorio esperado | Verifica `trixie`, `trixie-updates` y las fuentes de seguridad antes de cambiar los clientes. |
 | Nexus no arranca | Java u opciones JVM incompatibles con la versión descargada | Revisa `journalctl -u nexus`, fija la versión y usa opciones compatibles. |
 | PostgreSQL tiene una base vacía | Nexus está usando H2 u otro almacén | Comprueba el motor real; respalda los datos activos, no solo el nombre de una base. |
-| `prechecks` de Kolla falla | Sistema, interfaces o configuración no compatibles | Resuelve el mensaje según la versión Kolla elegida; no saltes el precheck. |
-| Dos DHCP o puertos ocupados | Kolla y standalone compiten por recursos | Define una sola alternativa activa para esa red y esos equipos. |
 | Se rechaza un rol RKE2 | Inventario y servicio activo no coinciden | Reconcilia la topología; no desactives la protección para convertir nodos en uso. |
 | `kubectl` no conecta | Kubeconfig, IP líder, ruta o túnel incorrectos | Verifica el destino y prueba primero el kubectl del control plane por SSH. |
 | `snap-confine` al usar kubectl | Problema local de Snap/AppArmor | Corrige la instalación del cliente o usa otro método oficial; no cambies el clúster. |
-| `no matches for kind OpenTelemetryCollector` | Falta el CRD o el operador | Completa los requisitos del paso 18. |
+| `no matches for kind OpenTelemetryCollector` | Falta el CRD o el operador | Completa los requisitos del paso 16. |
 | PVC `Pending` | Falta provisionador, capacidad o nodo elegible | Revisa StorageClass, eventos del PVC y disco. |
 | Pod `ImagePullBackOff` con HTTP 401 | Credenciales sin acceso al registro | Valida su vigencia y permisos; usa un mecanismo seguro de `imagePullSecrets`. |
 | Collector reinicia | Configuración incompatible, secreto o endpoint erróneo | Revisa los eventos y logs protegiendo valores sensibles; valida cada exportador. |
 | Grafana no muestra datos | Fuente no alcanzable desde el host o sin ingesta | Ajusta URLs reales y comprueba targets e ingesta. |
-| Packer no llega a SSH | Seed, llave o imagen incorrectos | Completa los insumos del paso 24; no uses el preseed incompleto. |
-| ConfigDrive no se genera | Falta `genisoimage`/`mkisofs` o el ID no existe | Instala la herramienta en el equipo generador y corrige `nodes.csv`. |
 | El backup termina pero no recupera el servicio | Faltan blobs, token, base real o una copia coherente | Valida una restauración completa en aislamiento y conserva todos sus componentes juntos. |
 
 ## 6. Comandos útiles
@@ -1046,12 +841,6 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/50-validation/01_h
   sudo systemctl status rke2-server --no-pager
   ```
 
-- **Revisar Kolla:** en su controlador, este comando muestra estado sin exponer configuración interna.
-
-  ```bash
-  sudo docker ps --format '{{.Names}} {{.Status}}'
-  ```
-
 - **Revisar Coroot Compose:** en la VM donde se instaló, este comando muestra los servicios.
 
   ```bash
@@ -1065,4 +854,4 @@ No hay una orden segura de «detener todo». No uses `docker stop` sobre todos l
 
 ### Archivos que sustentan esta guía
 
-Las rutas principales son [el inventario](inventory/lab/hosts.yml), [las variables](inventory/lab/group_vars/all/vars.yml), [el orquestador](ansible/site.yml), [los roles](ansible/roles), [Kolla](openstack/globals.yml), [los manifiestos](kubernetes/base/kustomization.yaml), [los requisitos Kubernetes](scripts/diagnostics/kubernetes-prerequisites.sh), [Packer](cloud-init/packer/debian13-coroot.pkr.hcl), [las pruebas](tests) y [el estado observado](docs/reference/estado-observado-2026-10-30.md). Las fuentes oficiales enlazadas se consultaron para aclarar compatibilidad y requisitos externos; no convierten los tramos pendientes del repositorio en una instalación probada.
+Las rutas principales son [el inventario](inventory/lab/hosts.yml), [las variables](inventory/lab/group_vars/all/vars.yml), [el orquestador](ansible/site.yml), [los roles](ansible/roles), [los manifiestos](kubernetes/base/kustomization.yaml), [los requisitos Kubernetes](scripts/diagnostics/kubernetes-prerequisites.sh), [las pruebas](tests) y [el estado observado](docs/reference/estado-observado-2026-10-30.md). Las fuentes oficiales enlazadas se consultaron para aclarar compatibilidad y requisitos externos; no convierten los tramos pendientes del repositorio en una instalación probada.

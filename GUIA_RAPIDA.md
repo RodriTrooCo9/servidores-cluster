@@ -1,5 +1,7 @@
 # Guía de Conexión Rápida al Proyecto y Servidores
 
+Esta guía prepara el acceso compartido al laboratorio. Después elige la [infraestructura Kubernetes](GUIA_DE_INSTALACION.md) o la [instalación de sistemas operativos](GUIA_OPENSTACK.md).
+
 Esta guía explica paso a paso cómo descargar el código completo del repositorio y cómo conectarte a los servidores del proyecto desde tu propia computadora (laptop con Linux, macOS o Windows con WSL2).
 
 Está pensada para ser directa, clara y ordenada, como si fuera tu primer día en el laboratorio.

@@ -1,46 +1,20 @@
+# Automatización compartida con Ansible
 
-## Estructura del Entorno
+Los roles e inventarios se comparten entre dos proyectos. La [guía de Ansible](../GUIA_ANSIBLE.md) explica cómo seleccionar el alcance y preparar las herramientas.
 
-```text
-ansible/
-├── site.yml                           # Orquestador maestro integral estructurado por fases y tags
-├── collections/
-│   └── requirements.yml               # Dependencias de colecciones (community.general, posix, etc.)
-├── keys/                              # Directorio protegido de llaves SSH (chmod 700)
-│   ├── cluster_key                    # [IGNORADO POR GIT] Llave privada ed25519 (chmod 600)
-│   └── README.md
-├── playbooks/                         # Playbooks organizados por fases de ejecución
-│   ├── 00-preflight/                  # Ping, auditoría de puertos y resumen de hardware
-│   ├── 10-base/                       # Homologación SO Debian 13 y hardening del Bastión
-│   ├── 20-services/                   # Nexus 3 OSS, PXE Controller y OpenStack Ironic
-│   ├── 30-platform/                   # Clúster Kubernetes HA RKE2 + Cilium eBPF
-│   ├── 40-observability/              # Prometheus, Grafana, Node Exporter y rollback
-│   ├── 50-validation/                 # Healthcheck integral de puertos y servicios
-│   └── 90-operations/                 # Disaster Recovery y respaldos automatizados
-└── roles/                             # Roles reutilizables y modulares
-    ├── common/                        # Hostname, /etc/hosts, networkd, Chrony, fuentes APT
-    ├── bastion/                       # OpenSSH :2222, Squid :3128, nftables con NAT
-    ├── nexus/                         # PostgreSQL 16 + Sonatype Nexus 3 OSS
-    ├── pxe_controller/                # DHCP dnsmasq con reservas por MAC, TFTP, Nginx :8089
-    ├── ironic/                        # OpenStack Ironic Standalone en Podman
-    ├── rke2_ha/                       # Kubernetes RKE2 HA (Control Planes y Workers)
-    └── monitoring/                    # Node Exporter, Prometheus TSDB y Grafana
-```
+| Proyecto | Archivos principales | Guía |
+|---|---|---|
+| Instalación de sistemas operativos | Roles `pxe_controller`, `ironic` y playbooks `20-services/02_pxe_controller.yml`, `20-services/03_ironic_deploy.yml` | [OpenStack e Ironic](../GUIA_OPENSTACK.md) |
+| Infraestructura Kubernetes | Roles `common`, `bastion`, `nexus`, `rke2_ha`, `monitoring`, `coroot_node_agent`; playbooks de base, plataforma y observabilidad | [Instalación de la plataforma](../GUIA_DE_INSTALACION.md) |
 
-## ⚡ Comandos Rápidos de Uso
+Las rutas de playbooks de la tabla están bajo `ansible/playbooks/`. Kolla se configura mediante `../openstack/` y su propio entorno de Kolla-Ansible; el rol `ironic` corresponde a la alternativa standalone.
 
-Se recomienda invocar los playbooks desde la raíz del proyecto usando el `Makefile` o directamente con `ansible-playbook`:
+## Archivos compartidos
 
-```bash
-# 1. Probar conectividad con toda la flota (8 nodos en paralelo)
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/00-preflight/00_ping.yml
+- `collections/requirements.yml`: dependencias de colecciones.
+- `../inventory/lab/hosts.yml`: inventario y variables del laboratorio.
+- `site.yml`: orquestador integral que conserva imports de ambos proyectos.
+- `playbooks/50-validation/01_healthcheck.yml`: comprobaciones que esperan servicios de ambos proyectos.
+- `playbooks/90-operations/01_disaster_recovery.yml`: respaldo seleccionado mediante `backup_etcd` o `backup_openstack`.
 
-# 2. Ejecutar resumen de hardware y telemetría
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/00-preflight/02_system_summary.yml
-
-# 3. Despliegue completo por fases
-ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml
-
-# 4. Comprobación de salud post-despliegue
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/50-validation/01_healthcheck.yml
-```
+Ejecuta desde la raíz del repositorio los playbooks concretos que indique la guía elegida. No uses el despliegue integral, el healthcheck conjunto ni la etiqueta general `backup` como requisito de un proyecto independiente.

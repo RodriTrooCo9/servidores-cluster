@@ -1,5 +1,7 @@
 # Guía Oficial de Observabilidad en el Proyecto: Métricas, Logs, Trazas y eBPF
 
+Esta guía corresponde al monitoreo de la plataforma sobre sistemas operativos existentes. El aprovisionamiento de sistemas operativos tiene [otra guía](GUIA_OPENSTACK.md) y no es un requisito de este procedimiento.
+
 Esta guía explica de forma clara, directa y sin tecnicismos innecesarios cómo está diseñada, configurada y operada la plataforma de **observabilidad** en este clúster bare-metal y Kubernetes.
 
 ---
