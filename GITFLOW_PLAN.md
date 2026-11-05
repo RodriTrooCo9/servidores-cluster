@@ -4,51 +4,51 @@ Este documento describe la arquitectura oficial de ramas bajo el modelo **GitFlo
 
 ---
 
-## 1. Diagrama de Ramas (GitFlow Reconstruido)
+## 1. Diagrama de Ramas (GitFlow en Español)
 
 ```mermaid
 gitGraph
-    commit id: "bae4a29: Init"
-    commit id: "e79b1d4: v0.1.0-base" tag: "v0.1.0"
+    commit id: "92fc9b2: Init"
+    commit id: "62bcf08: v0.1.0-base" tag: "v0.1.0"
     branch develop
     checkout develop
-    commit id: "185826b: develop-ready"
+    commit id: "180444b: develop-ready"
     
     branch feature/k8s-rke2-platform
     checkout feature/k8s-rke2-platform
-    commit id: "d7bc7c0: feat(k8s): rke2 cilium"
-    commit id: "d744ef6: fix(k8s): statefulset selectors"
-    commit id: "2ecc882: feat(k8s): microservices stack"
+    commit id: "942a82b: feat(k8s): rke2 cilium"
+    commit id: "4749503: fix(k8s): selectores statefulset"
+    commit id: "86bdced: feat(k8s): microservicios"
     checkout develop
-    merge feature/k8s-rke2-platform id: "68e7dd7: MR: k8s -> develop"
+    merge feature/k8s-rke2-platform id: "5c077d2: MR: k8s -> develop"
     
     branch feature/observability-coroot-otel
     checkout feature/observability-coroot-otel
-    commit id: "617b8ca: feat(observability): nodeports"
-    commit id: "22b3e77: feat(otel): otel operator"
-    commit id: "4e24edb: feat(coroot): ebpf agent"
-    commit id: "c61b3a9: feat(otel): coroot traces"
+    commit id: "080a9d3: feat(observabilidad): nodeports"
+    commit id: "f75436b: feat(otel): operador otel"
+    commit id: "c7c9f0c: feat(coroot): agente ebpf"
+    commit id: "cd942d2: feat(otel): trazas coroot"
     checkout develop
-    merge feature/observability-coroot-otel id: "2a5e48a: MR: otel -> develop"
+    merge feature/observability-coroot-otel id: "a00182d: MR: otel -> develop"
 
     branch release/v0.2.0
     checkout release/v0.2.0
-    commit id: "ba66a3f: docs(release): architecture"
-    commit id: "1ca1cf2: chore(release): bump v0.2.0"
+    commit id: "9dfb1bf: docs(release): arquitectura"
+    commit id: "50eef10: chore(release): bump v0.2.0"
     
     checkout main
-    merge release/v0.2.0 id: "38e398f: Merge Release to Main" tag: "v0.2.0"
+    merge release/v0.2.0 id: "4193f4b: Merge Release a Main" tag: "v0.2.0"
     
     checkout develop
-    merge release/v0.2.0 id: "38143fb: Sync back to develop"
+    merge release/v0.2.0 id: "3c65b9e: Sincronizar release a develop"
 
     checkout main
     branch hotfix/fix-nftables-leak
-    commit id: "e6f8009: fix(net): nftables rule"
+    commit id: "f08649b: fix(net): regla nftables"
     checkout main
-    merge hotfix/fix-nftables-leak id: "2e5eaaf: Merge Hotfix to Main" tag: "v0.2.1"
+    merge hotfix/fix-nftables-leak id: "9f13ab3: Merge Hotfix a Main" tag: "v0.2.1"
     checkout develop
-    merge hotfix/fix-nftables-leak id: "bfdc8c2: Sync hotfix to develop"
+    merge hotfix/fix-nftables-leak id: "12d27c6: Sincronizar hotfix a develop"
 ```
 
 ---
@@ -66,27 +66,27 @@ gitGraph
 
 ---
 
-## 3. Ramas Reconstruidas y Verificadas
+## 3. Ramas Oficiales en Español
 
-| Rama Local | Hash HEAD | Commits / Merges Clave | Tags Asociados |
+| Rama Local | Hash HEAD | Mensaje del Commit HEAD | Tags Asociados |
 | :--- | :--- | :--- | :--- |
-| **`main`** | `2e5eaaf` | `Merge Hotfix to Main` $\rightarrow$ `Merge Release to Main` $\rightarrow$ `v0.1.0-base` $\rightarrow$ `Init` | `v0.1.0`, `v0.2.0`, `v0.2.1` |
-| **`develop`** | `bfdc8c2` | `Sync hotfix to develop` $\rightarrow$ `Sync back to develop` $\rightarrow$ `MR otel` $\rightarrow$ `MR k8s` $\rightarrow$ `develop-ready` | Sincronizado |
-| **`feature/k8s-rke2-platform`** | `2ecc882` | `d7bc7c0` (RKE2 Cilium) $\rightarrow$ `d744ef6` (Kustomize) $\rightarrow$ `2ecc882` (Microservices) | N/A |
-| **`feature/observability-coroot-otel`** | `c61b3a9` | `617b8ca` (NodePorts) $\rightarrow$ `22b3e77` (OTel Op) $\rightarrow$ `4e24edb` (Coroot eBPF) $\rightarrow$ `c61b3a9` (Traces) | N/A |
-| **`release/v0.2.0`** | `1ca1cf2` | `ba66a3f` (Docs Release) $\rightarrow$ `1ca1cf2` (Chore bump v0.2.0) | Base de `v0.2.0` |
-| **`hotfix/fix-nftables-leak`** | `e6f8009` | `e6f8009` (`fix(net): nftables rule to restrict observability ports and patch vlan leakage`) | Base de `v0.2.1` |
+| **`main`** | `9f13ab3` | `Merge Hotfix a Main` | `v0.1.0`, `v0.2.0`, `v0.2.1` |
+| **`develop`** | (último commit) | `docs(gitflow): actualizar GITFLOW_PLAN con hashes en espanol` | Sincronizado |
+| **`feature/k8s-rke2-platform`** | `86bdced` | `feat(k8s): stack de microservicios para monitoreo de tareas bare-metal` | N/A |
+| **`feature/observability-coroot-otel`** | `cd942d2` | `feat(otel): integracion de trazas en coroot y agente de cluster distribuido` | N/A |
+| **`release/v0.2.0`** | `50eef10` | `chore(release): incrementar version v0.2.0 y consolidar guias de despliegue` | Base de `v0.2.0` |
+| **`hotfix/fix-nftables-leak`** | `f08649b` | `fix(net): reglas nftables para restringir puertos de observabilidad y corregir fugas de vlan` | Base de `v0.2.1` |
 | **`backup/main-pre-gitflow`** | `3abcbfd` | Historial completo original inmutable (70 commits) | Respaldo seguro |
 
 ---
 
-## 4. Convención de Nombres y Commits (Conventional Commits)
+## 4. Convención de Nombres y Commits en Español (Conventional Commits)
 
 ### Formato de Ramas:
 * `feature/<modulo>-<descripcion-corta>` (ejemplo: `feature/k8s-rke2-platform`)
-* `bugfix/<modulo>-<descripcion-corta>` (ejemplo: `bugfix/ansible-port-conflict`)
-* `release/v<MAJOR>.<MINOR>.<PATCH>` (ejemplo: `release/v0.2.0`)
-* `hotfix/<incidente>-<descripcion>` (ejemplo: `hotfix/fix-nftables-leak`)
+* `bugfix/<modulo>-<descripcion-corta>` (ejemplo: `bugfix/conflicto-puertos-ansible`)
+* `release/v<MAYOR>.<MENOR>.<PARCHE>` (ejemplo: `release/v0.2.0`)
+* `hotfix/<incidente>-<descripcion>` (ejemplo: `hotfix/fuga-nftables`)
 
 ### Formato de Mensajes de Commit:
 ```text
@@ -97,11 +97,11 @@ gitGraph
 [pie opcional: referencias a tickets o issues (#12)]
 ```
 
-* **`feat`**: Nueva funcionalidad (ej: `feat(otel): coroot traces and cluster agent distributed integration`).
-* **`fix`**: Corrección de un fallo operativo o bug (ej: `fix(net): nftables rule to restrict observability ports`).
-* **`docs`**: Modificaciones solo de documentación (ej: `docs(release): update architecture manuals and installation runbooks`).
-* **`refactor`**: Refactorización de código o playbooks que no alteran la funcionalidad.
-* **`chore`**: Tareas rutinarias, bumps de versión o dependencias del Makefile (`chore(release): bump v0.2.0`).
+* **`feat`**: Nueva funcionalidad (ej: `feat(observabilidad): desplegar victoriametrics y nodeports de tempo`).
+* **`fix`**: Corrección de un fallo o bug (ej: `fix(net): reglas nftables para restringir puertos de observabilidad`).
+* **`docs`**: Modificaciones de documentación (ej: `docs(release): actualizar manuales de arquitectura`).
+* **`refactor`**: Refactorización de código que no altera la funcionalidad.
+* **`chore`**: Tareas rutinarias, ajustes de versiones o dependencias del Makefile (`chore(release): incrementar version v0.2.0`).
 
 ---
 
@@ -116,9 +116,9 @@ git pull origin develop
 # 2. Crear rama feature desde develop
 git checkout -b feature/mi-nueva-tarea develop
 
-# 3. Trabajar y commitear con Conventional Commits
+# 3. Trabajar y commitear en español
 git add .
-git commit -m "feat(modulo): descripcion clara del cambio"
+git commit -m "feat(modulo): descripcion clara del cambio en espanol"
 
 # 4. Subir a GitLab y abrir Merge Request hacia develop
 git push -u origin feature/mi-nueva-tarea
@@ -132,19 +132,19 @@ git pull origin develop
 git checkout -b release/v0.3.0 develop
 
 # 2. Hacer ajustes finales (versión en docs, changelog, tests)
-git commit -m "chore(release): bump version v0.3.0"
+git commit -m "chore(release): incrementar version v0.3.0"
 git push -u origin release/v0.3.0
 
 # 3. Fusionar en main con --no-ff y crear tag:
 git checkout main
 git pull origin main
-git merge --no-ff release/v0.3.0 -m "Merge Release to Main"
+git merge --no-ff release/v0.3.0 -m "Merge Release a Main"
 git tag -a v0.3.0 -m "release: version v0.3.0 en produccion"
 git push origin main --tags
 
 # 4. Sincronizar hacia develop con --no-ff:
 git checkout develop
-git merge --no-ff release/v0.3.0 -m "Sync back to develop"
+git merge --no-ff release/v0.3.0 -m "Sincronizar release de vuelta a develop"
 git push origin develop
 
 # 5. Limpiar rama release local y remota
@@ -164,13 +164,13 @@ git commit -m "fix(net): correccion urgente de reglas de red"
 
 # 3. Fusionar a main con --no-ff y etiquetar parche
 git checkout main
-git merge --no-ff hotfix/reparar-urgencia -m "Merge Hotfix to Main"
-git tag -a v0.2.2 -m "hotfix: resolucion de incidente en produccion"
+git merge --no-ff hotfix/reparar-urgencia -m "Merge Hotfix a Main"
+git tag -a v0.2.2 -m "hotfix: version v0.2.2 resolucion de incidente en produccion"
 git push origin main --tags
 
 # 4. Sincronizar hacia develop inmediatamente
 git checkout develop
-git merge --no-ff hotfix/reparar-urgencia -m "Sync hotfix to develop"
+git merge --no-ff hotfix/reparar-urgencia -m "Sincronizar hotfix hacia develop"
 git push origin develop
 
 # 5. Limpiar rama hotfix
@@ -190,7 +190,7 @@ Ingresa al repositorio en [GitLab AGETIC](https://gitlab.agetic.gob.bo/agetic/ag
 2. **Proteger Ramas Críticas (`main` y `develop`):**
    * Ve a **Settings** $\rightarrow$ **Repository** $\rightarrow$ **Protected branches**.
    * **Para `main`:**
-     * *Allowed to merge:* `Maintainers`.
+     * *Allowed to merge:* `Maintainers`
      * *Allowed to push and merge:* `No one` *(nadie hace push directo, solo MR)*.
    * **Para `develop`:**
      * *Allowed to merge:* `Developers + Maintainers`.
@@ -200,15 +200,3 @@ Ingresa al repositorio en [GitLab AGETIC](https://gitlab.agetic.gob.bo/agetic/ag
      * Marcar: **"Pipelines must succeed"** (el pipeline de `.gitlab-ci.yml` debe pasar en verde).
      * Marcar: **"All threads must be resolved"**.
      * Activar: **"Delete source branch"** por defecto tras aprobar el MR.
-
----
-
-## 7. Checklist de Cumplimiento
-
-- [x] **Paso 1: Diagnóstico:** `git status`, auditoría de secretos y `.gitignore` comprobados.
-- [x] **Paso 2: Respaldo:** Rama `backup/main-pre-gitflow` subida a GitLab y bundle `../backup-pre-gitflow.bundle` creado.
-- [x] **Paso 3: Historial GitFlow:** Ramas `main`, `develop`, `feature/*`, `release/*`, `hotfix/*` reconstruidas con `--no-ff`.
-- [x] **Paso 4: Preservación de Fechas:** Timestamps exactos de autor y committer conservados en orden cronológico.
-- [x] **Paso 4: Verificación del Árbol:** `git diff backup/main-pre-gitflow main` está 100% vacío (árbol de producción idéntico).
-- [x] **Paso 4: Tags Semánticos:** Tags `v0.1.0`, `v0.2.0` y `v0.2.1` fijados en los commits correspondientes.
-- [x] **Paso 7: Documentación:** Guía operativa [GITFLOW_PLAN.md](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/GITFLOW_PLAN.md) actualizada en la raíz.
