@@ -10,9 +10,10 @@
 > anteriores ni sustituye esta revisión.
 
 > 🚀 **¿Solo quieres clonar y desplegar paso a paso sin teoría?**  
-> 👉 [**GUÍA DE EJECUCIÓN DIRECTA COPIAR/PEGAR (INSTALL.md)**](INSTALL.md)  
-> 👉 [**GUÍA RÁPIDA: CLONAR Y CONECTARSE AL SERVIDOR (CONECTARSE_AL_SERVIDOR.md)**](CONECTARSE_AL_SERVIDOR.md)  
-> 👉 [**MANUAL INTEGRAL DE INSTALACIÓN Y OPERACIÓN (docs/runbooks/manual-integral-instalacion-y-recuperacion.md)**](docs/runbooks/manual-integral-instalacion-y-recuperacion.md)
+> 👉 [**GUÍA DE INSTALACIÓN PASO A PASO (GUIA_INSTALACION_PASO_A_PASO.md)**](GUIA_INSTALACION_PASO_A_PASO.md)  
+> 👉 [**GUÍA RÁPIDA: CLONAR Y CONECTARSE AL SERVIDOR (GUIA_CONEXION_RAPIDA.md)**](GUIA_CONEXION_RAPIDA.md)  
+> 👉 [**MANUAL INTEGRAL DE INSTALACIÓN Y OPERACIÓN (docs/runbooks/manual-integral-instalacion-y-recuperacion.md)**](docs/runbooks/manual-integral-instalacion-y-recuperacion.md)  
+> 👉 **GUÍAS ESPECÍFICAS POR TECNOLOGÍA**: [Ansible](GUIA_ANSIBLE_DEL_PROYECTO.md) | [Observabilidad](GUIA_OBSERVABILIDAD_DEL_PROYECTO.md) | [OpenStack](GUIA_OPENSTACK_DEL_PROYECTO.md) | [GitFlow](GITFLOW_PLAN.md)
 
 > **Documento Oficial de Infraestructura como Código (IaC), Arquitectura y Despliegue de Producción**  
 > **Sistema Operativo Base**: Debian GNU/Linux 13 (Trixie) con Kernel 6.12+ en la flota física completa de 8 nodos  
@@ -57,6 +58,9 @@
    - [Fase 12: Validación Integral, Health Check y Regresiones Automatizadas (`healthcheck.sh` & Pytest)](#fase-12-validación-integral-health-check-y-regresiones-automatizadas-healthchecksh--pytest)
 6. [Matriz de Comunicación, Puertos y Reglas de Cortafuegos (nftables)](#6-matriz-de-comunicación-puertos-y-reglas-de-cortafuegos-nftables)
 7. [Seguridad Criptográfica, Secretos y Gestión de Repositorios](#7-seguridad-criptográfica-secretos-y-gestión-de-repositorios)
+   - 7.1 [Exclusiones Obligatorias en Git (`.gitignore`)](#71-exclusiones-obligatorias-en-git-gitignore)
+   - 7.2 [Cifrado con Ansible Vault](#72-cifrado-con-ansible-vault)
+   - 7.3 [Modelo de Ramas GitFlow y Políticas en GitLab](#73-modelo-de-ramas-gitflow-y-políticas-en-gitlab)
 8. [Gestión Estricta y Cuotas del Disco de 128 GB (Glance, Nexus, etcd)](#8-gestión-estricta-y-cuotas-del-disco-de-128-gb-glance-nexus-etcd)
 9. [Scripts Automáticos de Diagnóstico, Testing y Health Check](#9-scripts-automáticos-de-diagnóstico-testing-y-health-check)
 10. [Guía Exhaustiva de Resolución de Problemas (Troubleshooting)](#10-guía-exhaustiva-de-resolución-de-problemas-troubleshooting)
@@ -93,7 +97,7 @@ El ciclo de aprovisionamiento es **completamente desatendido (Zero-Touch)** y ma
 | **K8s Workers** | Nodos ID 321, 279 (`10.100.29.111..112`)| • Ejecución de pods de microservicios (`aplicaciones` namespace).<br>• Enrutamiento L7 perimetral mediante Ingress Controller NGINX (NodePort `30080`).<br>• Datapath de red pod-a-pod gobernado por Cilium con eBPF nativo sin kube-proxy. |
 | **Coroot CE & ClickHouse** | Nodo ID 306 (`10.100.29.30` / `192.168.29.25`)| • Coroot Community Edition Web UI y Collector (Puerto TCP `19000`).<br>• ClickHouse Columnar Database (Puertos TCP `9000` nativo / `8123` HTTP).<br>• Prometheus TSDB embebido para telemetría interna (retención 3d, cuota 5GB). |
 | **Coroot Node Agent (eBPF)** | Flota completa de 8 nodos físicos | • Agente systemd v1.37.0 con eBPF CO-RE (`127.0.0.1:19080`).<br>• Rastreo de llamadas de kernel, I/O, CPU, memoria, caídas TCP y tráfico de red de aplicaciones sin instrumentación en código. |
-| **Observabilidad en K8s (OTel & Storage)** | Namespace `monitoring` en clúster K8s | • OpenTelemetry Operator v0.104.0 + Gateway Deployment (2 réplicas, NodePort `30317` gRPC / `30318` HTTP).<br>• VictoriaMetrics Single TSDB (NodePort `30428`).<br>• Grafana Loki Logs (NodePort `30100`).<br>• Grafana Tempo Traces (NodePort `30200`). |
+| **Observabilidad en K8s (OTel & Storage)** | Namespace `observability` en clúster K8s | • OpenTelemetry Operator v0.104.0 + Gateway Deployment (2 réplicas, NodePort `30317` gRPC / `30318` HTTP).<br>• VictoriaMetrics Single TSDB (NodePort `30428`).<br>• Grafana Loki Logs (NodePort `30100`).<br>• Grafana Tempo Traces (NodePort `30200`). |
 | **Prometheus & Grafana Host** | Nodo ID 306 (`10.100.29.30` / `192.168.29.25`)| • Prometheus TSDB local (Puerto TCP `9090`) con remote_write a VictoriaMetrics.<br>• Grafana Dashboards (Puerto TCP `3000`).<br>• Alertmanager (`:9093`), Blackbox Exporter (`:9115`) y Node Exporter (`:9100` en todos los nodos). |
 
 ---
@@ -105,7 +109,14 @@ El repositorio mantiene una separación estricta entre la **orquestación declar
 ```text
 infra-scripts/
 ├── README.md                          # Guía Maestra de Arquitectura, Operación y Despliegue
-├── INSTALL.md                         # Guía rápida de ejecución directa paso a paso (copiar/pegar)
+├── GUIA_INSTALACION_PASO_A_PASO.md    # Guía práctica de instalación paso a paso
+├── GUIA_CONEXION_RAPIDA.md            # Guía rápida para clonar y conectarse a los servidores
+├── GUIA_ANSIBLE_DEL_PROYECTO.md       # Guía didáctica de Ansible y automatización bare-metal
+├── GUIA_OBSERVABILIDAD_DEL_PROYECTO.md # Guía oficial de métricas, logs, trazas y eBPF
+├── GUIA_OPENSTACK_DEL_PROYECTO.md     # Guía oficial de OpenStack Kolla / Ironic
+├── GITFLOW_PLAN.md                    # Plan de ramas GitFlow y políticas de integración
+├── inventario.ini                     # Inventario plano INI para ejecuciones ad-hoc de Ansible
+├── Makefile                           # Automatización Make (preflight, deploy, tunnels, health)
 ├── ansible.cfg                        # Configuración optimizada de Ansible (forks=8, pipelining, vault)
 ├── inventory/                         # INVENTARIO REAL Y VARIABLES POR ENTORNO
 │   ├── env                            # Variables maestras del entorno activo (chmod 0600)
@@ -137,6 +148,15 @@ infra-scripts/
 │       ├── 40-observability/          # 01_monitoring.yml, 02_coroot_agent.yml, 99_rollback.yml
 │       ├── 50-validation/             # 01_healthcheck.yml
 │       └── 90-operations/             # 01_disaster_recovery.yml
+│
+├── kubernetes/                        # MANIFIESTOS DE KUBERNETES Y TELEMETRÍA
+│   ├── apps/                          # Microservicios de aplicación (namespace: aplicaciones)
+│   ├── base/                          # Definiciones base de clúster
+│   ├── observability/                 # Suite OTel, backends (VictoriaMetrics, Loki, Tempo), Coroot
+│   │   ├── backends/                  # 01_backends.yaml (VictoriaMetrics, Loki, Tempo en observability)
+│   │   ├── otel/                      # 02_otel_operator_and_collectors.yaml (OTel Gateway)
+│   │   └── coroot/                    # 03_coroot_cluster_agent.yaml (Cluster Agent eBPF)
+│   └── overlays/                      # Kustomize overlays por entorno
 │
 ├── cloud-init/                        # CONSTRUCCIÓN DE IMÁGENES DORADAS Y CONFIGDRIVE
 │   ├── packer/
@@ -539,7 +559,7 @@ Análisis Causal eBPF"]
         CTSDB --> CCE
     end
 
-    subgraph K8S_OBS ["☸️ SUITE DE TELEMETRÍA EN KUBERNETES (Namespace: monitoring)"]
+    subgraph K8S_OBS ["☸️ SUITE DE TELEMETRÍA EN KUBERNETES (Namespace: observability)"]
         direction TB
         OTEL_GW["OpenTelemetry Gateway (Deployment 2 réplicas)
 OTLP gRPC :30317 | OTLP HTTP :30318"]
@@ -829,6 +849,17 @@ bash scripts/diagnostics/healthcheck.sh
 
 # 6. Modo Simulación Segura (Dry-Run con diff de Ansible sin aplicar cambios):
 ./scripts/client/ejecutar-desde-laptop.sh --all --dry-run
+
+# 7. Atajos mediante Makefile (Automatización rápida desde la raíz):
+make preflight       # [Fase 00] Conectividad ping y resumen de hardware
+make base            # [Fase 10] Base SO y hardening del Bastion
+make services        # [Fase 20] Sonatype Nexus 3, PXE Controller e Ironic
+make platform        # [Fase 30] Clúster Kubernetes HA (RKE2 + Cilium eBPF)
+make observability   # [Fase 40] Suite de observabilidad y monitoreo host
+make deploy          # Despliegue secuencial completo end-to-end
+make health          # Diagnóstico integral de salud de la flota en terminal
+make tunnels         # Apertura de túneles SSH locales hacia dashboards
+make web-tunnels     # Consulta URLs públicas HTTPS (Cloudflare Tunnels)
 ```
 
 ---
@@ -2063,8 +2094,8 @@ ansible baremetal -i inventory/lab/hosts.yml -m shell -a "systemctl is-active co
 
 #### 10.4 Suite de Telemetría en Kubernetes (OTel Operator, VictoriaMetrics, Loki, Tempo)
 ```bash
-# [BASTION] Auditar pods de la suite en el namespace monitoring y opentelemetry-operator-system
-kubectl get pods -n monitoring -o wide
+# [BASTION] Auditar pods de la suite en el namespace observability y opentelemetry-operator-system
+kubectl get pods -n observability -o wide
 kubectl get pods -n opentelemetry-operator-system -o wide
 ```
 * **Componentes Validados**:
@@ -2215,6 +2246,24 @@ admin.password
 ansible-vault create /opt/infra/ansible/vault_passwords.yml
 # Almacenar aquí: vault_postgres_password, vault_rke2_token
 ```
+
+### 7.3 Modelo de Ramas GitFlow y Políticas en GitLab
+
+El ciclo de desarrollo y entrega de infraestructura sigue el modelo **GitFlow**, asegurando que la rama principal permanezca en un estado inmutable y desplegable en producción:
+
+* **Topología de Ramas**:
+  - `main`: Producción auditada y congelada. Solo admite cambios mediante Merge Requests (MR) provenientes de `release/*` o `hotfix/*` acompañados de tags de versión semántica (`v0.1.0`, `v0.2.0`, `v0.2.1`).
+  - `develop`: Rama central de integración continua. Punto de partida para nuevas features y receptor de sincronizaciones de releases y parches hotfix.
+  - `feature/<funcionalidad>`: Salen de `develop` para el desarrollo de módulos o componentes específicos (`feature/k8s-rke2-platform`, `feature/observability-coroot-otel`). Se integran en `develop` vía MR con merge commit (`--no-ff`).
+  - `release/<versión>`: Salen de `develop` para congelamiento y pruebas finales de versión (`release/v0.2.0`). Se fusionan a `main` (con tag) y retro-sincronizan a `develop`.
+  - `hotfix/<corrección>`: Salen directamente de `main` para parches críticos de producción (`hotfix/fix-nftables-leak`). Se fusionan a `main` (bump de versión patch) y retro-sincronizan a `develop`.
+* **Políticas de Integración**:
+  - **Fusiones con `--no-ff`**: Todo merge debe preservar explícitamente el nodo de bifurcación visual en el grafo de Git.
+  - **Convención Semántica en Español**: Mensajes de commit unificados en español (`feat(...)`, `fix(...)`, `chore(...)`, `docs(...)`).
+  - **Preservación Criptográfica de Fechas**: Se preservan los sellos `AUTHOR_DATE` y `COMMITTER_DATE` originales en cada commit y merge.
+  - **Rama de Respaldo**: Rama remota inmutable `backup/main-pre-gitflow` preservada como salvaguarda histórica antes de la reorganización.
+* **Documentación Completa**:
+  Para el diagrama visual interactivo, flujo paso a paso y comandos Git exactos, consultar [GITFLOW_PLAN.md](GITFLOW_PLAN.md).
 
 ---
 
