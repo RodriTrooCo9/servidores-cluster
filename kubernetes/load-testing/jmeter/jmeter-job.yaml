@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jmeter-carga
+  namespace: pruebas-carga
+spec:
+  completions: 3
+  parallelism: 3
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: jmeter-load
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: jmeter-load
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: jmeter
+          image: justb4/jmeter:5.5
+          args:
+            - "-n"
+            - "-t"
+            - "/tests/prueba.jmx"
+            - "-Jthreads=20"
+            - "-Jrampup=30"
+            - "-Jduration=120"
+            - "-Jhost=backend-api.aplicaciones.svc.cluster.local"
+            - "-Jport=8000"
+            - "-Jpath=/api/v1/data"
+            - "-l"
+            - "/results/resultados.jtl"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          volumeMounts:
+            - name: plan
+              mountPath: /tests
+            - name: resultados
+              mountPath: /results
+      volumes:
+        - name: plan
+          configMap:
+            name: jmeter-plan
+        - name: resultados
+          emptyDir: {}

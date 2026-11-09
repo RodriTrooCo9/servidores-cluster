@@ -5,7 +5,7 @@
 # Invoca: Rol 'bastion' (SSHD :22, Squid :3128, nftables con NAT Masquerade)
 # ==============================================================================
 - name: "Endurecimiento Perimetral y Pasarela en Bastion Host"
-  hosts: bastion
+  hosts: bastion  
   become: true
   roles:
     - bastion

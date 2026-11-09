@@ -6,6 +6,8 @@ El repositorio mantiene dos proyectos separados y herramientas compartidas.
 
 - [Instalación de RKE2, aplicaciones y monitoreo](../GUIA_DE_INSTALACION.md).
 - [Guía de observabilidad](../GUIA_OBSERVABILIDAD.md).
+- [Obtener y documentar logs y trazas de Kubernetes](observability/extraer-logs-y-trazas-kubernetes.md).
+- [Plantilla de informe de logs y trazas](observability/plantilla-informe-logs-trazas.md).
 - [Añadir un nodo con sistema operativo instalado](runbooks/anadir_nodo.md).
 - [Instalar Coroot en un sistema existente](observability/instalar-coroot-primero.md).
 
@@ -20,6 +22,7 @@ El repositorio mantiene dos proyectos separados y herramientas compartidas.
 
 ## Herramientas y datos compartidos
 
+- [Plan de trabajo: bare metal, observabilidad, carga e imágenes](plan-trabajo-baremetal.md).
 - [Conexión SSH](../GUIA_RAPIDA.md).
 - [Ansible por proyecto y respaldos separados](../GUIA_ANSIBLE.md).
 - [Red y aislamiento](architecture/network/aislamiento_red_oficina.md).
