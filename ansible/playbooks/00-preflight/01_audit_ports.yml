@@ -125,3 +125,5 @@
           - "Auditoría de puertos y servicios finalizada con éxito."
           - "Reporte CSV disponible en: reports/port_audit_inventory.csv"
           - "Reporte JSON completo en: reports/port_audit_full.json"
+
+# en desuso 

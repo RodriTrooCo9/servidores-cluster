@@ -24,3 +24,5 @@
           Disco Root Disponible: {{ disk_root_avail_gb }} GB
 
 # verifican la conectividad y que todos los nodos respondan correctamente, antes de ejecutar el playbook completo 
+
+### en desuso

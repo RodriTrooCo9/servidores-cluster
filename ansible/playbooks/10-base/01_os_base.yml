@@ -3,7 +3,7 @@
 # Playbook: 02_base_config.yml
 # Objetivo: Homologar configuración base del sistema en toda la flota
 # Invoca: Rol 'common' (Hostname, /etc/hosts, networkd, Swap, Sysctl, Chrony, APT Nexus)
-# ==============================================================================
+# ==============================================================================ansible-playbook -i inventory/hosts.ini playbooks/10-base/01_os_base.yml
 - name: "Configuración Base e Inmutabilidad de Nodos Bare-Metal"
   hosts: baremetal
   become: true
