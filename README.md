@@ -22,6 +22,7 @@ La separación es documental dentro de este repositorio. Los inventarios, roles 
 ### Instalación de sistemas operativos
 
 - [Guía de OpenStack e Ironic](GUIA_OPENSTACK.md).
+- [Instalación desatendida de Debian 13 por iPXE](network/ipxe/debian-netboot/README.md).
 - [Configuraciones del controlador de aprovisionamiento](openstack/README.md).
 - [Imágenes y metadatos de primer arranque](cloud-init/README.md).
 
@@ -37,7 +38,3 @@ La separación es documental dentro de este repositorio. Los inventarios, roles 
 El inventario describe un diseño distinto del registrado en la [inspección del 30 de octubre de 2026](docs/reference/estado-observado-2026-10-30.md). Confirma los roles e IP reales antes de modificar equipos existentes.
 
 `ansible/site.yml`, `make deploy`, `make services`, `make health` y `make backup` mantienen operaciones de ambos proyectos. Las guías usan playbooks concretos y etiquetas de respaldo para escoger el alcance. No ejecutes la secuencia conjunta como requisito de ninguno de los proyectos.
-
-## Referencia histórica
-
-La [guía conjunta anterior](REFERENCIA_HISTORICA_INFRAESTRUCTURA.md) y los manuales marcados como históricos conservan contexto del laboratorio. Sus estados observados y comandos requieren revisión antes de reutilizarlos.

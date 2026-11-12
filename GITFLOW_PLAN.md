@@ -211,4 +211,4 @@ Ingresa al repositorio en [GitLab AGETIC](https://gitlab.agetic.gob.bo/agetic/ag
 - [x] **Paso 4: Preservación de Fechas:** Timestamps exactos de autor y committer conservados en orden cronológico.
 - [x] **Paso 4: Verificación del Árbol:** `git diff backup/main-pre-gitflow main` está 100% vacío (árbol de producción idéntico).
 - [x] **Paso 4: Tags Semánticos:** Tags `v0.1.0`, `v0.2.0` y `v0.2.1` fijados en los commits correspondientes.
-- [x] **Paso 7: Documentación:** Guía operativa [GITFLOW_PLAN.md](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/GITFLOW_PLAN.md) actualizada en la raíz.
+- [x] **Paso 7: Documentación:** Guía operativa [GITFLOW_PLAN.md](GITFLOW_PLAN.md) actualizada en la raíz.

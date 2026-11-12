@@ -558,21 +558,8 @@ sudo tcpdump -i enp2s0 -n -e "port 67 or port 68 or port 69 or port 8089"
 
 ## 8. Automatización en el Repositorio de Infraestructura
 
-Toda la lógica documentada en esta guía ha sido codificada y automatizada en los scripts del repositorio:
+Consulta el procedimiento correspondiente antes de configurar un controlador.
 
-* **Configuración del Servidor PXE**:
-  - Script ejecutable: [**`scripts/05-pxe-dhcp-tftp.sh`**](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/scripts/05-pxe-dhcp-tftp.sh)
-  - Configura `dnsmasq`, Nginx, descarga bootloaders iPXE y kernel Debian 13 netinst.
-* **Configuración de Plantillas y Cloud-Init**:
-  - Script ejecutable: [**`scripts/07-cloud-init.sh`**](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/scripts/07-cloud-init.sh)
-  - Genera volúmenes ConfigDrive y endpoints NoCloud HTTP para los 8 nodos.
-* **Despliegue Masivo Bare-Metal**:
-  - Script maestro: [**`scripts/deploy-masivo.sh`**](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/scripts/deploy-masivo.sh)
-* **Ejecución Remota desde la Laptop del Administrador**:
-  ```bash
-  # Ejecutar de forma desatendida la Fase 5 (Servidor PXE)
-  ./ejecutar-desde-laptop.sh --fase 5
-
-  # Ejecutar de forma desatendida la Fase 7 (Cloud-Init y ConfigDrive)
-  ./ejecutar-desde-laptop.sh --fase 7
-  ```
+- [Debian Installer con iPXE y preseed](../../network/ipxe/debian-netboot/README.md).
+- [OpenStack e Ironic para desplegar una imagen de disco](../../GUIA_OPENSTACK.md).
+- [Generación de imágenes y metadatos Cloud-Init](../../cloud-init/README.md).

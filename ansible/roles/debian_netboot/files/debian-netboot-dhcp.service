@@ -1,0 +1,12 @@
+[Unit]
+Description=DHCP y TFTP para Debian netboot
+Wants=network-online.target
+Requires=debian-netboot-http.service
+After=network-online.target debian-netboot-http.service
+
+[Service]
+ExecStartPre=/usr/sbin/dnsmasq --test --conf-file=/etc/debian-netboot/dnsmasq.conf
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/debian-netboot/dnsmasq.conf
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+d-i debian-installer/locale string es_ES.UTF-8
+d-i keyboard-configuration/xkb-keymap select es
+d-i hw-detect/load_firmware boolean false
+
+d-i mirror/country string manual
+d-i mirror/http/hostname string {{ debian_netboot_mirror }}
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+d-i mirror/suite string trixie
+
+d-i passwd/root-login boolean false
+d-i passwd/user-fullname string Administrador Debian
+d-i passwd/username string {{ node.user }}
+d-i passwd/user-password-crypted password !
+
+d-i clock-setup/utc boolean true
+d-i clock-setup/ntp boolean true
+d-i time/zone string America/La_Paz
+
+d-i partman-auto/disk string {{ node.disk }}
+d-i partman/early_command string test -b {{ node.disk }} && debconf-set partman-auto/disk {{ node.disk }}
+d-i partman-auto/method string regular
+d-i partman-auto/choose_recipe select atomic
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+tasksel tasksel/first multiselect standard, ssh-server
+d-i pkgsel/include string openssh-server python3 sudo curl ethtool pciutils
+d-i pkgsel/upgrade select none
+popularity-contest popularity-contest/participate boolean false
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/bootdev string {{ node.disk }}
+d-i grub-installer/force-efi-extra-removable boolean true
+
+d-i preseed/late_command string \
+    set -e; \
+    ssh_dir="$(chroot /target getent passwd {{ node.user }} | cut -d: -f6)/.ssh"; \
+    test "$ssh_dir" != /.ssh; \
+    install -d -m 0700 "/target$ssh_dir"; \
+    printf '%s\n' {{ node.public_key | quote }} > "/target$ssh_dir/authorized_keys"; \
+    chmod 0600 "/target$ssh_dir/authorized_keys"; \
+    in-target chown -R {{ node.user }}: "$ssh_dir"; \
+    printf '%s\n' '{{ node.user }} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/90-debian-netboot; \
+    chmod 0440 /target/etc/sudoers.d/90-debian-netboot; \
+    in-target visudo -cf /etc/sudoers.d/90-debian-netboot; \
+    mkdir -p /target/etc/ssh/sshd_config.d; \
+    printf '%s\n' 'PasswordAuthentication no' 'KbdInteractiveAuthentication no' 'PermitRootLogin no' > /target/etc/ssh/sshd_config.d/00-debian-netboot.conf
+d-i finish-install/reboot_in_progress note

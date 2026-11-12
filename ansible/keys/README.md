@@ -1,6 +1,6 @@
 # Directorio Seguro de Llaves Criptográficas
 
-Este directorio está estrictamente protegido por el archivo [`.gitignore`](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/.gitignore).
+Este directorio está estrictamente protegido por el archivo [`.gitignore`](../../.gitignore).
 **Ninguna llave privada (`*.key`, `id_*`, `*.pem`) almacenada aquí será subida al repositorio Git.**
 
 ---

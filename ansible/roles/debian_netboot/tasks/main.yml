@@ -1,0 +1,268 @@
+---
+- name: Comprobar el alcance y los parámetros de Debian netboot
+  ansible.builtin.assert:
+    that:
+      - ansible_play_hosts_all == [debian_netboot_controller]
+      - debian_netboot_targets is mapping
+      - debian_netboot_targets | length > 0
+      - debian_netboot_targets.keys() | difference(groups.get('baremetal', [])) | length == 0
+      - inventory_hostname not in debian_netboot_targets
+      - debian_netboot_interface is match('^[A-Za-z0-9_.-]{1,15}$')
+      - debian_netboot_address is match('^[0-9.]+/[0-9]+$')
+      - debian_netboot_http_port | int >= 1024
+      - debian_netboot_http_port | int <= 65535
+      - debian_netboot_gateway is match('^[0-9.]+$')
+      - debian_netboot_dns is match('^[0-9.]+$')
+      - debian_netboot_domain is match('^[a-zA-Z0-9][a-zA-Z0-9.-]*$')
+      - debian_netboot_mirror is match('^[a-zA-Z0-9][a-zA-Z0-9.-]*$')
+    fail_msg: Selecciona un controlador y destinos del grupo baremetal con parámetros válidos.
+
+- name: Leer la llave pública de administración
+  ansible.builtin.set_fact:
+    debian_netboot_public_key: "{{ lookup('ansible.builtin.file', debian_netboot_public_key_file) }}"
+
+- name: Validar el formato de la llave pública
+  ansible.builtin.assert:
+    that:
+      - debian_netboot_public_key is match('^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)) [A-Za-z0-9+/]+={0,3}( [^\r\n]*)?$')
+    fail_msg: Indica un archivo de llave pública OpenSSH de una sola línea.
+
+- name: Verificar la llave con OpenSSH
+  ansible.builtin.command:
+    argv: [ssh-keygen, -lf, "{{ debian_netboot_public_key_file }}"]
+  delegate_to: localhost
+  become: false
+  check_mode: false
+  changed_when: false
+
+- name: Validar los destinos elegidos y sus MAC de inventario
+  ansible.builtin.assert:
+    that:
+      - item.value is mapping
+      - item.key is match('^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$')
+      - item.value.disk is match('^/dev/([sv]d[a-z]+|nvme[0-9]+n[0-9]+)$')
+      - (item.value.attempt | default('')) is match('^[A-Za-z0-9_-]{0,64}$')
+      - (item.value.address | default(hostvars[item.key].ansible_host)) is match('^[0-9.]+$')
+      - hostvars[item.key].mac is match('^(?i:[0-9a-f]{2}(:[0-9a-f]{2}){5})$')
+      - hostvars[item.key].ansible_user is match('^(?!root$)[a-z_][a-z0-9_-]{0,31}$')
+    fail_msg: "Revisa el disco, la IP, el intento, la MAC y el usuario para {{ item.key }}."
+  loop: "{{ debian_netboot_targets | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Inicializar las reservas de Debian netboot
+  ansible.builtin.set_fact:
+    debian_netboot_nodes: []
+
+- name: Derivar las reservas y cuentas desde el inventario
+  ansible.builtin.set_fact:
+    debian_netboot_nodes: >-
+      {{ debian_netboot_nodes + [{'name': item.key, 'mac': hostvars[item.key].mac | lower,
+         'address': item.value.address | default(hostvars[item.key].ansible_host),
+         'user': hostvars[item.key].ansible_user, 'disk': item.value.disk,
+         'attempt': item.value.attempt | default(''),
+         'public_key': debian_netboot_public_key.split()[:2] | join(' ')}] }}
+  loop: "{{ debian_netboot_targets | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Comprobar que las reservas usan MAC únicas
+  ansible.builtin.assert:
+    that:
+      - debian_netboot_nodes | map(attribute='mac') | unique | length == debian_netboot_nodes | length
+
+- name: Obtener el segmento y comprobar las direcciones
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - -c
+      - |
+        import ipaddress
+        import json
+        import sys
+
+        controller = ipaddress.IPv4Interface(sys.argv[1])
+        network = controller.network
+        gateway = ipaddress.IPv4Address(sys.argv[2])
+        ipaddress.IPv4Address(sys.argv[3])
+        nodes = [ipaddress.IPv4Address(address) for address in json.loads(sys.argv[4])]
+        unusable = {network.network_address, network.broadcast_address}
+        if any(address not in network or address in unusable for address in [controller.ip, gateway, *nodes]):
+            sys.exit("Las direcciones deben ser utilizables y estar en la misma subred IPv4")
+        if len(set(nodes)) != len(nodes) or {controller.ip, gateway}.intersection(nodes):
+            sys.exit("Las IP destino deben ser únicas y distintas del controlador y de la puerta de enlace")
+        print(json.dumps(dict(ip=str(controller.ip), subnet=str(network.network_address),
+                              prefix=network.prefixlen, netmask=str(network.netmask))))
+      - "{{ debian_netboot_address }}"
+      - "{{ debian_netboot_gateway }}"
+      - "{{ debian_netboot_dns }}"
+      - "{{ debian_netboot_nodes | map(attribute='address') | list | to_json }}"
+  delegate_to: localhost
+  become: false
+  check_mode: false
+  changed_when: false
+  register: debian_netboot_network_info
+
+- name: Establecer la red y la URL de arranque
+  ansible.builtin.set_fact:
+    debian_netboot_network: "{{ debian_netboot_network_info.stdout | from_json }}"
+    debian_netboot_url: "http://{{ (debian_netboot_network_info.stdout | from_json).ip }}:{{ debian_netboot_http_port }}"
+
+- name: Leer el manifiesto local de artefactos
+  ansible.builtin.set_fact:
+    debian_netboot_artifact_manifest: "{{ lookup('ansible.builtin.file', debian_netboot_artifacts + '/SHA256SUMS') }}"
+
+- name: Comprobar que el manifiesto cubra los cuatro artefactos
+  ansible.builtin.assert:
+    that:
+      - >-
+        debian_netboot_artifact_manifest.splitlines() | map('regex_replace', '^[a-f0-9]{64}  ', '') | sort
+        == debian_netboot_artifact_files | sort
+
+- name: Verificar los hashes del conjunto local de artefactos
+  ansible.builtin.command:
+    argv: [sha256sum, --check, --strict, SHA256SUMS]
+    chdir: "{{ debian_netboot_artifacts }}"
+  delegate_to: localhost
+  become: false
+  check_mode: false
+  changed_when: false
+
+- name: Determinar la ruta de la versión de los artefactos
+  ansible.builtin.set_fact:
+    debian_netboot_release_dir: "/opt/debian-netboot/releases/{{ debian_netboot_artifact_manifest | hash('sha256') }}"
+
+- name: Consultar IPv4 en la interfaz del controlador
+  ansible.builtin.command:
+    argv: [ip, -j, -4, address, show, dev, "{{ debian_netboot_interface }}"]
+  check_mode: false
+  changed_when: false
+  register: debian_netboot_interface_info
+
+- name: Verificar que la IP y el prefijo estén configurados en la interfaz indicada
+  ansible.builtin.assert:
+    that:
+      - >-
+        (debian_netboot_interface_info.stdout | from_json | map(attribute='addr_info') | flatten
+        | selectattr('local', 'equalto', debian_netboot_network.ip)
+        | selectattr('prefixlen', 'equalto', debian_netboot_network.prefix) | list | length) > 0
+    fail_msg: Configura la dirección CIDR de aprovisionamiento en la interfaz aislada antes de activar DHCP.
+
+- name: Consultar el estado de los servicios propios
+  ansible.builtin.service_facts:
+
+- name: Consultar los puertos DHCP y TFTP antes de iniciar el servicio
+  ansible.builtin.command:
+    argv: [ss, -H, -uln, '( sport = :67 or sport = :69 )']
+  check_mode: false
+  changed_when: false
+  register: debian_netboot_dhcp_sockets
+  when: ansible_facts.services.get('debian-netboot-dhcp.service', {}).get('state') != 'running'
+
+- name: Comprobar si el controlador ya tiene DHCP o TFTP
+  ansible.builtin.assert:
+    that: debian_netboot_dhcp_sockets.stdout | trim | length == 0
+    fail_msg: Hay un servicio DHCP o TFTP en el controlador. Usa un controlador dedicado a Debian netboot.
+  when: debian_netboot_dhcp_sockets is not skipped
+
+- name: Instalar el binario dnsmasq para el servicio independiente
+  ansible.builtin.apt:
+    name: dnsmasq-base
+    state: present
+    install_recommends: false
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Crear los directorios de Debian netboot
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/debian-netboot
+    - "{{ debian_netboot_release_dir }}/debian13"
+    - "{{ debian_netboot_release_dir }}/tftp"
+
+- name: Copiar los artefactos verificados al controlador
+  ansible.builtin.copy:
+    src: "{{ debian_netboot_artifacts }}/{{ item }}"
+    dest: "{{ debian_netboot_release_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ debian_netboot_artifact_files }}"
+
+- name: Publicar el servidor HTTP de Debian netboot
+  ansible.builtin.copy:
+    src: server.py
+    dest: /opt/debian-netboot/server.py
+    owner: root
+    group: root
+    mode: '0644'
+  register: debian_netboot_server_file
+
+- name: Renderizar y comprobar los perfiles HTTP e iPXE
+  ansible.builtin.template:
+    src: settings.json.j2
+    dest: /etc/debian-netboot/settings.json
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/bin/python3 /opt/debian-netboot/server.py --check %s
+  register: debian_netboot_http_config
+
+- name: Renderizar y comprobar la configuración DHCP y TFTP
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: /etc/debian-netboot/dnsmasq.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/dnsmasq --test --conf-file=%s
+  register: debian_netboot_dhcp_config
+
+- name: Instalar la unidad HTTP de Debian netboot
+  ansible.builtin.copy:
+    src: debian-netboot-http.service
+    dest: /etc/systemd/system/debian-netboot-http.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: debian_netboot_http_unit
+
+- name: Instalar la unidad DHCP y TFTP de Debian netboot
+  ansible.builtin.copy:
+    src: debian-netboot-dhcp.service
+    dest: /etc/systemd/system/debian-netboot-dhcp.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: debian_netboot_dhcp_unit
+
+- name: Activar los servicios de Debian netboot
+  when: not ansible_check_mode
+  block:
+    - name: Cargar las unidades nuevas e iniciar HTTP
+      ansible.builtin.systemd_service:
+        name: debian-netboot-http.service
+        daemon_reload: "{{ debian_netboot_http_unit.changed or debian_netboot_dhcp_unit.changed }}"
+        enabled: true
+        state: "{{ 'restarted' if (debian_netboot_http_unit.changed or debian_netboot_server_file.changed or debian_netboot_http_config.changed) else 'started' }}"
+
+    - name: Comprobar que HTTP sirve el menú de arranque
+      ansible.builtin.uri:
+        url: "{{ debian_netboot_url }}/boot.ipxe"
+        use_proxy: false
+        return_content: true
+      register: debian_netboot_http_ready
+      until: debian_netboot_http_ready.status == 200 and debian_netboot_http_ready.content.startswith('#!ipxe')
+      retries: 5
+      delay: 1
+
+    - name: Iniciar DHCP y TFTP una vez disponible HTTP
+      ansible.builtin.systemd_service:
+        name: debian-netboot-dhcp.service
+        enabled: true
+        state: "{{ 'restarted' if (debian_netboot_dhcp_unit.changed or debian_netboot_dhcp_config.changed) else 'started' }}"

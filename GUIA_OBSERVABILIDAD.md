@@ -115,7 +115,7 @@ flowchart TD
 * **Para qué sirve:** Es la pantalla donde los operadores ven gráficos, buscan logs y exploran trazas.
 * **Dónde está desplegada:** En el sistema operativo del Nodo 306 como servicio systemd (`grafana-server`).
 * **Qué datos recibe:** Consulta a VictoriaMetrics, Prometheus, Loki y Tempo.
-* **Archivos que la controlan:** [ansible/roles/monitoring/tasks/main.yml:45-60](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/roles/monitoring/tasks/main.yml#L45-L60) y [kubernetes/observability/grafana/datasources/datasources.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/grafana/datasources/datasources.yaml).
+* **Archivos que la controlan:** [ansible/roles/monitoring/tasks/main.yml:45-60](ansible/roles/monitoring/tasks/main.yml#L45-L60) y [kubernetes/observability/grafana/datasources/datasources.yaml](kubernetes/observability/grafana/datasources/datasources.yaml).
 * **Acceso:** Navegador web en `http://192.168.29.25:3000` (o `http://localhost:3000` vía `make tunnels`).
 * **Comprobar salud:** `curl -fsI http://10.100.29.30:3000/login` $\rightarrow$ `HTTP/1.1 200 OK`.
 
@@ -124,7 +124,7 @@ flowchart TD
 * **Dónde está desplegada:** En el Nodo 306 (`prometheus.service` y `prometheus-alertmanager.service`).
 * **Qué datos recibe:** Sockets `/metrics` de los 8 nodos (`node_exporter:9100`).
 * **A quién envía datos:** Reenvía a VictoriaMetrics y despacha alertas a Alertmanager (`:9093`).
-* **Archivos que la controlan:** `/etc/prometheus/prometheus.yml` y [ansible/roles/monitoring/templates/prometheus.yml.j2](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/roles/monitoring/templates/prometheus.yml.j2).
+* **Archivos que la controlan:** `/etc/prometheus/prometheus.yml` y [ansible/roles/monitoring/templates/prometheus.yml.j2](ansible/roles/monitoring/templates/prometheus.yml.j2).
 * **Acceso:** `http://192.168.29.25:9090` (Prometheus) y `http://192.168.29.25:9093` (Alertmanager).
 * **Comprobar salud:** `curl -fsS http://10.100.29.30:9090/-/ready` $\rightarrow$ `Prometheus is Ready`.
 
@@ -132,7 +132,7 @@ flowchart TD
 * **Para qué sirve:** Guarda las métricas numéricas durante 30 días consumiendo hasta 4 veces menos RAM y disco que Prometheus clásico.
 * **Dónde está desplegada:** En Kubernetes como StatefulSet `victoriametrics-0` en el namespace `observability`.
 * **Qué datos recibe:** Peticiones HTTP `remote_write` en `/api/v1/write`.
-* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:18-74](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/backends/01_backends.yaml#L18-L74).
+* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:18-74](kubernetes/observability/backends/01_backends.yaml#L18-L74).
 * **Acceso:** Servicio ClusterIP interno en puerto `8428` y NodePort `30428`.
 * **Comprobar salud:** `curl -fsS http://10.100.29.101:30428/health` $\rightarrow$ `OK`.
 
@@ -140,7 +140,7 @@ flowchart TD
 * **Para qué sirve:** Indexa metadatos de los logs (etiquetas) en lugar del texto completo, logrando búsquedas ultrarrápidas sin saturar el almacenamiento.
 * **Dónde está desplegada:** En Kubernetes como StatefulSet `loki-0` en el namespace `observability`.
 * **Qué datos recibe:** Registros enviados por OTel Collector en puerto HTTP `3100`.
-* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:84-193](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/backends/01_backends.yaml#L84-L193).
+* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:84-193](kubernetes/observability/backends/01_backends.yaml#L84-L193).
 * **Acceso:** Puerto interno `3100` y NodePort `30100`.
 * **Comprobar salud:** `curl -fsS http://10.100.29.101:30100/ready` $\rightarrow$ `ready`.
 
@@ -148,7 +148,7 @@ flowchart TD
 * **Para qué sirve:** Almacén masivo de trazas de llamadas entre microservicios, compatible con OpenTelemetry.
 * **Dónde está desplegada:** En Kubernetes como StatefulSet `tempo-0` en el namespace `observability`.
 * **Qué datos recibe:** Protocolo OTLP en puerto `4317` (gRPC) y puerto `4318` (HTTP).
-* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:203-302](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/backends/01_backends.yaml#L203-L302).
+* **Archivos que la controlan:** [kubernetes/observability/backends/01_backends.yaml:203-302](kubernetes/observability/backends/01_backends.yaml#L203-L302).
 * **Acceso:** Puerto de consulta TraceQL `3200` y NodePort `30200`.
 * **Comprobar salud:** `curl -fsS http://10.100.29.101:30200/ready` $\rightarrow$ `ready`.
 
@@ -156,7 +156,7 @@ flowchart TD
 * **Para qué sirve:** Es la "aduana" de la telemetría. Recibe datos en formato OTLP estándar, los procesa en memoria y los traduce al formato de cada base de datos.
 * **Dónde está desplegada:** En Kubernetes como Deployment de 2 réplicas (`otel-gateway-collector`).
 * **Qué datos recibe:** Trazas, métricas y logs de las aplicaciones en los puertos `4317` y `4318`.
-* **Archivos que la controlan:** [kubernetes/observability/otel/02_otel_operator_and_collectors.yaml:1-85](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/otel/02_otel_operator_and_collectors.yaml#L1-L85).
+* **Archivos que la controlan:** [kubernetes/observability/otel/02_otel_operator_and_collectors.yaml:1-85](kubernetes/observability/otel/02_otel_operator_and_collectors.yaml#L1-L85).
 * **Acceso:** NodePort `30317` (gRPC) y NodePort `30318` (HTTP).
 * **Comprobar salud:** `curl -fsS http://10.100.29.101:13133/` $\rightarrow$ Endpoint de healthcheck de OTel.
 
@@ -166,7 +166,7 @@ flowchart TD
   * Servidor Central + ClickHouse: Contenedores Docker en el Nodo 306 (`/opt/coroot/compose.yaml`).
   * Agentes de nodo: Servicio `coroot-node-agent` en los 8 nodos físicos bare-metal.
   * Agente de clúster: Deployment `coroot-cluster-agent` en el namespace `observability`.
-* **Archivos que la controlan:** [ansible/roles/coroot_node_agent/defaults/main.yml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/roles/coroot_node_agent/defaults/main.yml) y [kubernetes/observability/coroot/03_coroot_cluster_agent.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/coroot/03_coroot_cluster_agent.yaml).
+* **Archivos que la controlan:** [ansible/roles/coroot_node_agent/defaults/main.yml](ansible/roles/coroot_node_agent/defaults/main.yml) y [kubernetes/observability/coroot/03_coroot_cluster_agent.yaml](kubernetes/observability/coroot/03_coroot_cluster_agent.yaml).
 * **Acceso:** Panel web en `http://192.168.29.25:19000`.
 * **Comprobar salud:** `curl -fsI http://192.168.29.25:19000/` $\rightarrow$ `HTTP/1.1 200 OK`.
 
@@ -189,13 +189,13 @@ flowchart TD
 | `(Host todos)` | Coroot Node Agent | 10300 | Directo host | HTTP / Sondas eBPF |
 
 ### Políticas de Retención de Datos (Protección para SSD de 128 GB)
-Para evitar que los discos de 128 GB de los miniPCs se llenen, el proyecto define límites estrictos en [kubernetes/observability/backends/01_backends.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/backends/01_backends.yaml):
+Para evitar que los discos de 128 GB de los miniPCs se llenen, el proyecto define límites estrictos en [kubernetes/observability/backends/01_backends.yaml](kubernetes/observability/backends/01_backends.yaml):
 * **VictoriaMetrics:** `-retentionPeriod=30d` (30 días). Volumen persistente de `25 GiB`.
 * **Grafana Loki:** `retention_period: 168h` (7 días). Volumen persistente de `20 GiB`.
 * **Grafana Tempo:** `block_retention: 72h` (3 días) con muestreo (*sampling*) probabilístico del 20%. Volumen de `15 GiB`.
 
 ### Alertas y Reglas del Sistema
-Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/alerting/rules/alerts_k8s.yaml#L12-L35):
+Configuradas en [kubernetes/observability/alerting/rules/alerts_k8s.yaml:12-35](kubernetes/observability/alerting/rules/alerts_k8s.yaml#L12-L35):
 1. **`KubernetesNodeNotReady`:** Se dispara si un nodo físico permanece más de 5 minutos en estado `NotReady`. Severidad: `critical`.
 2. **`HighMemoryPressure`:** Se activa si el consumo de memoria RAM supera el `90%` durante 5 minutos en cualquier servidor bare-metal.
 3. **`HighDiskUsage128GB`:** Se activa si la partición raíz (`/`) supera el `80%` de ocupación.
@@ -353,13 +353,13 @@ Para verificar que toda la cadena de telemetría funciona:
 ## 9. Archivos Importantes y Próximos Pasos
 
 ### Archivos de Configuración Principales
-* **[kubernetes/observability/backends/01_backends.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/backends/01_backends.yaml):** Define los StatefulSets y servicios de VictoriaMetrics, Loki y Tempo.
-* **[kubernetes/observability/otel/02_otel_operator_and_collectors.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/otel/02_otel_operator_and_collectors.yaml):** Configura los pipelines OTLP para procesar métricas, logs y trazas.
-* **[kubernetes/observability/coroot/03_coroot_cluster_agent.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/coroot/03_coroot_cluster_agent.yaml):** Agente de Kubernetes para alimentar la topología de Coroot CE.
-* **[kubernetes/observability/grafana/datasources/datasources.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/grafana/datasources/datasources.yaml):** Aprovisionamiento declarativo de orígenes de datos en Grafana.
-* **[kubernetes/observability/alerting/rules/alerts_k8s.yaml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/kubernetes/observability/alerting/rules/alerts_k8s.yaml):** Reglas de alerta para salud de nodos, memoria y límites de disco en SSD de 128 GB.
-* **[ansible/roles/monitoring/tasks/main.yml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/roles/monitoring/tasks/main.yml):** Despliegue automatizado de Prometheus, Grafana y Node Exporter en el host.
-* **[ansible/roles/coroot_node_agent/tasks/main.yml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/roles/coroot_node_agent/tasks/main.yml):** Despliegue del agente eBPF en los 8 servidores físicos.
+* **[kubernetes/observability/backends/01_backends.yaml](kubernetes/observability/backends/01_backends.yaml):** Define los StatefulSets y servicios de VictoriaMetrics, Loki y Tempo.
+* **[kubernetes/observability/otel/02_otel_operator_and_collectors.yaml](kubernetes/observability/otel/02_otel_operator_and_collectors.yaml):** Configura los pipelines OTLP para procesar métricas, logs y trazas.
+* **[kubernetes/observability/coroot/03_coroot_cluster_agent.yaml](kubernetes/observability/coroot/03_coroot_cluster_agent.yaml):** Agente de Kubernetes para alimentar la topología de Coroot CE.
+* **[kubernetes/observability/grafana/datasources/datasources.yaml](kubernetes/observability/grafana/datasources/datasources.yaml):** Aprovisionamiento declarativo de orígenes de datos en Grafana.
+* **[kubernetes/observability/alerting/rules/alerts_k8s.yaml](kubernetes/observability/alerting/rules/alerts_k8s.yaml):** Reglas de alerta para salud de nodos, memoria y límites de disco en SSD de 128 GB.
+* **[ansible/roles/monitoring/tasks/main.yml](ansible/roles/monitoring/tasks/main.yml):** Despliegue automatizado de Prometheus, Grafana y Node Exporter en el host.
+* **[ansible/roles/coroot_node_agent/tasks/main.yml](ansible/roles/coroot_node_agent/tasks/main.yml):** Despliegue del agente eBPF en los 8 servidores físicos.
 
 ---
 

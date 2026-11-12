@@ -1,0 +1,6 @@
+---
+debian_netboot_artifact_files:
+  - debian13/linux
+  - debian13/initrd.gz
+  - tftp/undionly.kpxe
+  - tftp/snponly.efi

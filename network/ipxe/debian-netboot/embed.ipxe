@@ -1,0 +1,6 @@
+#!ipxe
+ifopen net0 || exit 0
+iflinkwait --timeout 15000 net0 || echo Tiempo de espera de enlace agotado
+dhcp net0 || dhcp net0 || exit 0
+isset ${filename} || exit 0
+chain --autofree ${filename} || exit 0

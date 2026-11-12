@@ -1,0 +1,11 @@
+{% set config = namespace(nodes={}) %}
+{% for node in debian_netboot_nodes %}
+{% set entry = {'address': node.address, 'attempt': node.attempt,
+                'installer': lookup('ansible.builtin.template', 'installer.ipxe.j2', template_vars={'node': node}),
+                'preseed': lookup('ansible.builtin.template', 'preseed.cfg.j2', template_vars={'node': node})} %}
+{% set config.nodes = config.nodes | combine({node.mac: entry}) %}
+{% endfor %}
+{{ {'address': debian_netboot_address, 'port': debian_netboot_http_port | int,
+    'gateway': debian_netboot_gateway, 'dns': debian_netboot_dns,
+    'images': debian_netboot_release_dir + '/debian13', 'nodes': config.nodes,
+    'boot': lookup('ansible.builtin.template', 'boot.ipxe.j2')} | to_nice_json }}

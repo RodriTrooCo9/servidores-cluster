@@ -1,0 +1,26 @@
+port=0
+pid-file
+interface={{ debian_netboot_interface }}
+listen-address={{ debian_netboot_network.ip }}
+bind-interfaces
+dhcp-authoritative
+log-dhcp
+dhcp-range={{ debian_netboot_network.subnet }},static,{{ debian_netboot_network.netmask }}
+dhcp-ignore=tag:!known
+dhcp-option=option:router,{{ debian_netboot_gateway }}
+dhcp-option=option:dns-server,{{ debian_netboot_dns }}
+{% for node in debian_netboot_nodes %}
+dhcp-host={{ node.mac }},{{ node.address }},{{ node.name }},infinite
+{% endfor %}
+
+enable-tftp
+tftp-root={{ debian_netboot_release_dir }}/tftp
+leasefile-ro
+dhcp-userclass=set:ipxe,iPXE
+dhcp-match=set:ipxe,175
+dhcp-match=set:bios,option:client-arch,0
+dhcp-match=set:uefi,option:client-arch,7
+dhcp-match=set:uefi,option:client-arch,9
+dhcp-boot=tag:!ipxe,tag:bios,undionly.kpxe,,{{ debian_netboot_network.ip }}
+dhcp-boot=tag:!ipxe,tag:uefi,snponly.efi,,{{ debian_netboot_network.ip }}
+dhcp-boot=tag:ipxe,http://{{ debian_netboot_network.ip }}:{{ debian_netboot_http_port }}/boot.ipxe

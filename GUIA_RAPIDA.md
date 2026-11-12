@@ -24,7 +24,7 @@ Antes de empezar, asegúrate de contar con los siguientes elementos:
 4. **La llave privada SSH del clúster (`cluster_key`):**
    - Es un archivo de llave criptográfica tipo **Ed25519**.
    - El administrador del laboratorio debe entregártelo en un medio seguro (por ejemplo, mediante USB o canal cifrado).
-5. **Datos de los servidores principales (Respaldo en [inventory/lab/hosts.yml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/inventory/lab/hosts.yml#L1-L50)):**
+5. **Datos de los servidores principales (Respaldo en [inventory/lab/hosts.yml](inventory/lab/hosts.yml#L1-L50)):**
    - **Servidor de entrada / Controlador:** Nodo 306 (`192.168.29.25`, puerto `22`, usuario `n306`).
    - **Servidores internos (Red privada `10.100.29.0/24`):**
      - Bastión de seguridad: `10.100.29.10`, usuario `aget-ic`.
@@ -88,7 +88,7 @@ Sigue estos pasos en estricto orden:
 
 ### Paso 4: Configurar los accesos rápidos SSH
 * **Dónde hacerlo:** En la terminal de tu computadora.
-* **Qué hace:** Ejecuta el configurador automático ([scripts/client/setup-client-workstation.sh](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/scripts/client/setup-client-workstation.sh#L1-L140)) para escribir en tu archivo local `~/.ssh/config` los atajos de red y la regla de salto (`ProxyJump`) hacia los nodos internos.
+* **Qué hace:** Ejecuta el configurador automático ([scripts/client/setup-client-workstation.sh](scripts/client/setup-client-workstation.sh#L1-L140)) para escribir en tu archivo local `~/.ssh/config` los atajos de red y la regla de salto (`ProxyJump`) hacia los nodos internos.
 * **Comando:**
   ```bash
   make setup
@@ -204,7 +204,6 @@ Si encuentras algún error durante la conexión o el uso de Git, consulta esta t
 ## Archivos de referencia en el proyecto
 
 Si deseas ver el código fuente y las configuraciones que respaldan esta guía:
-* [CONECTARSE_AL_SERVIDOR.md](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/CONECTARSE_AL_SERVIDOR.md): Guía de acceso rápido previa con detalles de túneles web y comandos de Kubernetes.
-* [scripts/client/setup-client-workstation.sh](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/scripts/client/setup-client-workstation.sh): Script Bash que automatiza los permisos de llave, comprobación de ping y generación de `~/.ssh/config`.
-* [Makefile](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/Makefile#L9-L12): Define el target `make setup` que invoca el script de configuración.
-* [inventory/lab/hosts.yml](file:///home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/inventory/lab/hosts.yml#L1-L50): Inventario oficial de Ansible con todos los nombres de nodos, IPs y usuarios.
+* [scripts/client/setup-client-workstation.sh](scripts/client/setup-client-workstation.sh): Script Bash que automatiza los permisos de llave, comprobación de ping y generación de `~/.ssh/config`.
+* [Makefile](Makefile#L9-L12): Define el target `make setup` que invoca el script de configuración.
+* [inventory/lab/hosts.yml](inventory/lab/hosts.yml#L1-L50): Inventario oficial de Ansible con todos los nombres de nodos, IPs y usuarios.

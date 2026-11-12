@@ -1,0 +1,6 @@
+---
+debian_netboot_http_port: 8088
+debian_netboot_targets: {}
+debian_netboot_domain: "{{ cluster_domain | default('lab.local') }}"
+debian_netboot_mirror: deb.debian.org
+debian_netboot_artifacts: "{{ playbook_dir }}/../../../artifacts/debian-netboot"

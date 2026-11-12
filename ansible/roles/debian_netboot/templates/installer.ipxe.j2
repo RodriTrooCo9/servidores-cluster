@@ -1,0 +1,7 @@
+#!ipxe
+echo Instalando Debian 13 en {{ node.name }} desde {{ node.disk }}
+kernel {{ debian_netboot_url }}/debian13/linux initrd=initrd.magic nomodeset auto=true priority=critical preseed/url={{ debian_netboot_url }}/preseed/{{ node.mac }}/{{ node.attempt }} interface=auto hw-detect/firmware-lookup=never hw-detect/load_firmware=false netcfg/disable_autoconfig=true netcfg/get_ipaddress={{ node.address }} netcfg/get_netmask={{ debian_netboot_network.netmask }} netcfg/get_gateway={{ debian_netboot_gateway }} netcfg/get_nameservers={{ debian_netboot_dns }} netcfg/confirm_static=true hostname={{ node.name }} domain={{ debian_netboot_domain }} console=tty0 || goto local
+initrd {{ debian_netboot_url }}/debian13/initrd.gz || goto local
+boot || goto local
+:local
+iseq ${platform} efi && exit 0 || sanboot --no-describe --drive 0x80 || exit 0

@@ -8,6 +8,8 @@ Este proyecto instala un sistema operativo en una máquina física y comprueba q
 
 **Alcance comprobado:** el repositorio contiene configuración Kolla y roles Ansible para PXE e Ironic. La [inspección del laboratorio](docs/reference/estado-observado-2026-10-30.md) no demuestra una instalación completa por red desde cero. Los pasos que exigen datos o validaciones pendientes lo indican expresamente.
 
+Para instalar Debian 13 por red con Debian Installer y preseed, usa la [opción independiente de Debian netboot](network/ipxe/debian-netboot/README.md). La [revisión de `pruebaIPXE`](docs/runbooks/integracion-ipxe-debian13.md) conserva la evidencia del entorno original.
+
 ## 2 Requisitos previos
 
 - Una PC Linux de administración con Git, cliente SSH, Python y `python3-venv`, conectada a la VLAN y Wi-Fi de administración. Para usar las API necesita una ruta real a la red de aprovisionamiento.

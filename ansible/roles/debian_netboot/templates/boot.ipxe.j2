@@ -1,0 +1,4 @@
+#!ipxe
+chain --autofree {{ debian_netboot_url }}/install/${net0/mac} || goto local
+:local
+iseq ${platform} efi && exit 0 || sanboot --no-describe --drive 0x80 || exit 0

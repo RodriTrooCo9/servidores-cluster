@@ -1,0 +1,14 @@
+[Unit]
+Description=HTTP para Debian netboot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/debian-netboot/server.py /etc/debian-netboot/settings.json
+DynamicUser=yes
+StateDirectory=debian-netboot
+StateDirectoryMode=0700
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

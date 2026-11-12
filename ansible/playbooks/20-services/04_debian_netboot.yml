@@ -1,0 +1,8 @@
+---
+- name: Preparar el controlador opcional de Debian netboot
+  hosts: "{{ debian_netboot_controller | mandatory }}"
+  gather_facts: false
+  become: true
+  any_errors_fatal: true
+  roles:
+    - debian_netboot

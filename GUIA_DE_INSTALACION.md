@@ -180,7 +180,7 @@ Edita estas rutas con tu editor:
 
 El DNS `192.168.26.120` y las interfaces `enp2s0` son valores del proyecto: cámbialos si no corresponden a tu red. El nodo 306 necesita una salida de administración y una red de provisión correctamente aisladas.
 
-**ALTO — red:** no hay un único procedimiento automatizado y validado que reconstruya el switch, la VLAN, el Wi-Fi y el NAT del nodo 306. Confirma esa configuración antes de continuar. Consulta [redes](docs/architecture/network/redes.md) y [aislamiento](docs/architecture/network/aislamiento_red_oficina.md), que contienen alternativas y deben adaptarse a tu equipo.
+**ALTO — red:** no hay un único procedimiento automatizado y validado que reconstruya el switch, la VLAN, el Wi-Fi y el NAT del nodo 306. Confirma esa configuración antes de continuar. Consulta las referencias de [diagnóstico de VLAN](docs/architecture/network/conflictos_vlan_manual.md) y [aislamiento de la red](docs/architecture/network/aislamiento_red_oficina.md), y adapta los pasos a tu equipo.
 
 **Comprobar:** este comando revisa que el YAML del inventario pueda leerse sin conectarse a servidores.
 
