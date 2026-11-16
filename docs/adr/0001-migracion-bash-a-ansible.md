@@ -14,5 +14,9 @@ Adoptar **Ansible Core** como el motor estándar de automatización de infraestr
 - Los scripts Bash se reservan exclusivamente para tareas de bajo nivel, diagnóstico interactivo en terminal y bootstrap inicial.
 
 ## Consecuencias
-- **Positivas**: Ejecución paralela en 8 nodos, idempotencia garantizada, trazabilidad con `--check --diff`, validación de sintaxis antes de ejecutar.
+- **Positivas**: Permite ejecutar sobre varios nodos y revisar cambios con `--check --diff`. La idempotencia y el alcance deben verificarse por tarea.
 - **Negativas**: Curva de aprendizaje para desarrolladores no familiarizados con YAML/Jinja2 y necesidad de gestionar el archivo `.vault_pass`.
+
+El orquestador actual importa dos playbooks de preflight que faltan. Hasta
+repararlos, selecciona los playbooks individuales descritos en la guía.
+[Guía Ansible](../../GUIA_ANSIBLE.md)

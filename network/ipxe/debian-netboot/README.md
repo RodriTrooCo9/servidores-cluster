@@ -1,6 +1,6 @@
 # Instalar Debian 13 por iPXE y preseed
 
-Esta opción usa las MAC y los usuarios de `inventory/lab/hosts.yml`. Debian Installer instala el sistema en el disco elegido. Después, `00_ping.yml` comprueba el acceso por SSH y Python. Usa un controlador dedicado conectado a la red de aprovisionamiento, con IPv4 ya configurada, salida al mirror Debian desde el destino y sin otro servidor DHCP en ese segmento.
+Esta opción usa las MAC y los usuarios de `inventory/lab/hosts.yml`. Debian Installer instala el sistema en el disco elegido. Después, el módulo `ansible.builtin.ping` comprueba el acceso por SSH y Python. Usa un controlador dedicado conectado a la red de aprovisionamiento, con IPv4 ya configurada, salida al mirror Debian desde el destino y un solo servidor DHCP en ese segmento.
 
 El playbook es `ansible/playbooks/20-services/04_debian_netboot.yml`. Instala `dnsmasq-base` y usa las unidades `debian-netboot-dhcp` y `debian-netboot-http`, con configuración en `/etc/debian-netboot` y artefactos en `/opt/debian-netboot/releases`. Para el HTTP de arranque reserva TCP 8088 por defecto. DHCP y TFTP usan UDP 67 y 69. El instalador debe poder alcanzar el mirror y DNS. Configura el enrutamiento en la red del piloto.
 
@@ -29,7 +29,7 @@ all:
       ansible_ssh_common_args: ''
 ```
 
-Guarda estas variables como `netboot.yml`. El ejemplo selecciona el perfil de `nodo-279` y toma de `baremetal` su MAC `64:00:6a:2a:2f:cb` y el usuario `debian`. Úsalo solo si ese equipo está destinado al piloto y su disco se puede borrar. El último registro del laboratorio describe al 279 como worker activo. [Estado observado](../../../docs/reference/estado-observado-2026-10-30.md)
+Guarda estas variables como `netboot.yml`. El ejemplo selecciona el perfil de `nodo-279` y toma de `baremetal` su MAC `64:00:6a:2a:2f:cb` y el usuario `debian`. Para ejecutar el ejemplo, sustitúyelo por un equipo destinado al piloto cuyo disco se pueda borrar. El 279 figura como worker activo. [Estado observado](../../../docs/reference/estado-laboratorio.md)
 
 ```yaml
 debian_netboot_controller: controlador-piloto
@@ -64,8 +64,7 @@ El permiso se consume cuando iPXE recibe el script de instalación para la MAC e
 Comprueba en la consola que el destino arranca desde disco. Entra por SSH con la llave correspondiente y valida la IP, el usuario, Python y `sudo -n true`. Si usaste una IP temporal del piloto, ajusta la conexión de Ansible a esa IP y a su ruta real antes del ping.
 
 ```bash
-ansible-playbook -i inventory/lab/hosts.yml \
-  ansible/playbooks/00-preflight/00_ping.yml --limit NOMBRE_DEL_DESTINO
+ansible -i inventory/lab/hosts.yml NOMBRE_DEL_DESTINO -m ansible.builtin.ping
 ```
 
 Para revisar los servicios o retirar esta opción del controlador:

@@ -37,6 +37,11 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: Comprobar si están instaladas las sondas adicionales
+      ansible.builtin.stat:
+        path: /etc/prometheus/observability-extra-scrapes.yaml
+      register: monitoring_extra_scrapes
+
     - name: "Desplegar configuración de Prometheus con todos los targets del inventario"
       ansible.builtin.template:
         src: prometheus.yml.j2

@@ -3,6 +3,9 @@
 ## Estado
 Aceptado
 
+Este documento registra objetivos de configuración. Las políticas de limpieza,
+cuotas y parámetros efectivos requieren comprobarse en cada servicio.
+
 ## Contexto
 Todos los servidores físicos (Dell OptiPlex 3020M) disponen de un único disco NVMe/SSD de **128 GB**. El almacenamiento sin control de imágenes de contenedor, registros de Nexus, snapshots de etcd y métricas de Prometheus causaría agotamiento de espacio en disco en cuestión de días.
 
@@ -24,5 +27,5 @@ Implementar una estrategia multidimensional de mitigación de almacenamiento:
    - Exclusión de imágenes ISO, binarios IPA (638 MB) y volcados de backup en `.gitignore`.
 
 ## Consecuencias
-- **Positivas**: Funcionamiento estable a largo plazo sin saturación de disco ni degradación del clúster.
+- **Positivas**: Limitar la retención y supervisar el consumo ayuda a planificar la capacidad.
 - **Negativas**: Necesidad de respaldar externamente métricas y registros históricos que superen la ventana de retención.

@@ -5,23 +5,22 @@ Este directorio está estrictamente protegido por el archivo [`.gitignore`](../.
 
 ---
 
-### Reglas de Seguridad Obligatorias:
+## Permisos y custodia
 
 1. **Permisos del Directorio:**
    El directorio `keys/` debe tener permisos restringidos exclusivamente a tu usuario (`0700`):
    ```bash
-   chmod 700 /home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/keys
+   chmod 700 ansible/keys
    ```
 
 2. **Permisos de las Llaves Privadas:**
    Cualquier llave SSH colocada en este directorio debe tener permisos `0600` (lectura/escritura solo por el dueño):
    ```bash
-   chmod 600 /home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/keys/*
+   chmod 600 ansible/keys/cluster_key
    ```
 
-3. **Contraseña Maestra de Ansible Vault (`.vault_pass`):**
-   La clave para desencriptar `vault.yml` debe residir en la raíz de `ansible/`:
-   ```bash
-   echo "mi_password_maestra" > /home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/.vault_pass
-   chmod 600 /home/rodrigo/Documents/gitlabinf/GuiaImplementacion/infra-scripts/ansible/.vault_pass
-   ```
+3. **Rotación SSH.** Autoriza la llave pública nueva en cada destino y prueba
+   el acceso desde una sesión independiente antes de retirar la anterior.
+4. **Ansible Vault.** Guarda la contraseña original en `.vault_pass` en la raíz
+   del repositorio con permisos `0600`. Usa el procedimiento de la guía al
+   preparar una instalación nueva. [Preparación de Vault](../../GUIA_DE_INSTALACION.md#etapa-a-preparar-equipos-y-laptop)

@@ -1,6 +1,6 @@
 # Almacenamiento Local de Respaldos (Disaster Recovery)
 
-Este directorio está destinado exclusivamente para la recepción temporal de volcados locales y snapshots de contingencia generados por Ansible (`ansible/playbooks/90-operations/01_disaster_recovery.yml`) o el script `scripts/ops/disaster-recovery.sh`.
+Este directorio recibe temporalmente los volcados y snapshots del playbook de recuperación, también invocado por `make backup`. Para respaldar un componente por separado, consulta las etiquetas del playbook. [Procedimiento de respaldo](../GUIA_ANSIBLE.md#5-respaldos-separados)
 
 ## Protocolo de Respaldos (DR Policy)
 1. **Exclusión de Git**: Todos los archivos de respaldo (`*.tar.gz`, `*.sql.gz`, `*.bak`) están estrictamente ignorados por Git (`.gitignore`).

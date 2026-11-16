@@ -6,6 +6,11 @@ Objetivo: operar el laboratorio, obtener métricas, logs y trazas de una aplicac
 
 Este documento organiza tareas pendientes; no certifica el estado actual de los servicios. La revisión se hizo sobre archivos del repositorio y notas aportadas por el usuario, sin acceder al clúster ni al panel. Los manifiestos y manuales existentes son puntos de partida que requieren validación.
 
+En la inspección del 16 de noviembre de 2026 estaban disponibles el operador
+OpenTelemetry, el Collector, Loki, Tempo, VictoriaMetrics y VictoriaLogs.
+Las tareas de esta sección conservan sus criterios para verificar instalación
+reproducible, ingesta, persistencia y recuperación.
+
 ## Organización y prioridades
 
 | Bloque | Resultado | Prioridad | Dependencias |
@@ -25,7 +30,7 @@ P0: resolver primero. P1: demostración funcional. P2: ampliar y automatizar. E 
 - [ ] **BM-02 — Elaborar un manual práctico de Kubernetes con kubectl.** Explicar contextos, nodos, namespaces, Deployments, Services, Ingress, pods y eventos. Incluir consultas con `get`, `describe`, `logs`, `logs --previous` y `top`, indicando que este último necesita la API de métricas. **Aceptación:** otra persona puede acceder al contexto correcto, localizar un pod, leer sus logs e identificar un reinicio siguiendo el manual.
 - [ ] **BM-03 — Inventariar almacenamiento y crear un dashboard de capacidad.** Identificar discos físicos, almacenamiento de VMs cuando exista, StorageClasses, PV y PVC, capacidad, uso y retención de telemetría. **Aceptación:** panel con filtros disponibles por nodo y namespace, relación entre PVC y aplicación, y una alerta de capacidad probada. Documentar las métricas que aún no se recolecten.
 
-Base: [guía de instalación](../GUIA_DE_INSTALACION.md), [inventario de laboratorio](../inventory/lab/hosts.yml) y [último estado documentado](reference/estado-observado-2026-10-30.md). La inspección anterior no sustituye BM-01.
+Base: [guía de instalación](../GUIA_DE_INSTALACION.md), [inventario de laboratorio](../inventory/lab/hosts.yml) y [estado documentado](reference/estado-laboratorio.md). La inspección anterior no sustituye BM-01.
 
 ## B. Operadores y observabilidad con OpenTelemetry
 
@@ -60,14 +65,14 @@ Base: [pruebas existentes](../kubernetes/load-testing/README.md), [k6](../kubern
 - [ ] **OS-02 — Completar el manual para aprovisionar un equipo físico.** Registrar máquina, MAC, imagen, disco, firmware, red y mecanismo de encendido. **Aceptación:** instalación comprobada en un destino de prueba autorizado, arranque desde disco, configuración de red y acceso SSH; evidencias y procedimiento de recuperación conservados.
 - [ ] **OS-03 — Crear y validar el manual de una máquina virtual.** Verificar primero que exista un servicio de cómputo con hipervisor para VMs operativo. Documentar proyecto, imagen, flavor, llave, red/subred, reglas de acceso y dirección alcanzable; incluir volumen si se utiliza. **Aceptación:** crear una VM de prueba, acceder por SSH, reiniciarla, consultar consola/estado y eliminar los recursos creados para la prueba. Registrar las IP en BM-01.
 
-Base: [guía OpenStack](../GUIA_OPENSTACK.md), [configuración](../openstack/README.md) y [comparativa de servicios](architecture/openstack/glance_ironic_bifrost_arquitectura_comparativa.md). Ironic aprovisiona equipos físicos. La creación de VMs constituye una ampliación del alcance que debe validarse por separado; activar opciones en un archivo no demuestra que el servicio funcione.
+Ironic aprovisiona equipos físicos. La creación de VMs requiere verificar el servicio de cómputo y completar una prueba por separado. [Guía OpenStack](../GUIA_OPENSTACK.md) · [Configuración](../openstack/README.md)
 
 ## F. Construcción de imágenes con Packer
 
 - [ ] **IMG-01 — Completar una receta reproducible de construcción de imagen.** Elegir destino VM y/o físico y documentar sus requisitos de formato y firmware. Preparar fuente del SO con checksum, plugins/versiones, instalación desatendida, cloud-init y limpieza de datos temporales. **Aceptación:** plantilla completa, `packer fmt -check`, `packer validate` con entradas preparadas y un build de laboratorio finalizado con checksum del artefacto.
 - [ ] **IMG-02 — Validar arranque e integrar la imagen con el aprovisionamiento.** Comprobar arranque, red, cloud-init y SSH primero en un destino de prueba compatible. Publicar en Glance si corresponde y probar el consumo por el procedimiento físico o de VM validado. Crear una variante con agente de observabilidad si se necesita. **Aceptación:** evidencia de primer arranque, identificación de versión de imagen, acceso y señales del agente cuando se incluya; documentar por separado los resultados en VM y hardware físico.
 
-Base: [estado de las plantillas](../cloud-init/README.md), [Packer](../cloud-init/packer/) y [referencia de imagen con Coroot](observability/coroot-debian13-packer.md). Las plantillas existentes no se consideran verificadas hasta completar el build y el arranque.
+Base: [referencia de imagen con Coroot](observability/coroot-debian13-packer.md). Las plantillas de ejemplo no se consideran verificadas hasta completar el build y el arranque.
 
 ## Primera iteración propuesta
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script: scripts/tunnels.sh
+# Script: scripts/client/tunnels.sh
 # Objetivo: Abrir túneles SSH automáticos para acceder a todos los dashboards web
 #           y APIs del clúster desde cualquier laptop conectada por WiFi.
 #

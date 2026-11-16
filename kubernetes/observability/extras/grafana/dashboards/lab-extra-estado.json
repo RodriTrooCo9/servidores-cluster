@@ -1,0 +1,355 @@
+{
+  "uid": "lab-extra-estado",
+  "title": "01 · Estado y servicios",
+  "schemaVersion": 40,
+  "editable": false,
+  "tags": [
+    "laboratorio",
+    "observabilidad-extra"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "Node Exporter · uno por nodo",
+      "type": "grafana-polystat-panel",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "globalOperator": "lastNotNull",
+        "globalShape": "hexagon_pointed_top",
+        "globalDisplayMode": "all",
+        "layoutDisplayLimit": 0,
+        "globalUnitFormat": "short",
+        "globalDecimals": 0,
+        "globalShowValueEnabled": true,
+        "globalThresholdsConfig": [
+          {
+            "value": 0,
+            "state": 2,
+            "color": "#e02f44"
+          },
+          {
+            "value": 1,
+            "state": 0,
+            "color": "#299c46"
+          }
+        ]
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "up{job=\"baremetal-nodes\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "2.1.16",
+      "id": 1
+    },
+    {
+      "title": "Kubelet y API de Kubernetes",
+      "type": "grafana-polystat-panel",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "globalOperator": "lastNotNull",
+        "globalShape": "hexagon_pointed_top",
+        "globalDisplayMode": "all",
+        "layoutDisplayLimit": 0,
+        "globalUnitFormat": "short",
+        "globalDecimals": 0,
+        "globalShowValueEnabled": true,
+        "globalThresholdsConfig": [
+          {
+            "value": 0,
+            "state": 2,
+            "color": "#e02f44"
+          },
+          {
+            "value": 1,
+            "state": 0,
+            "color": "#299c46"
+          }
+        ]
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "label_replace(up{job=\"kubernetes-apiserver\"}, \"node\", \"API Kubernetes\", \"job\", \".*\") or up{job=\"kubernetes-cadvisor\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{node}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "2.1.16",
+      "id": 2
+    },
+    {
+      "title": "Disponibilidad HTTP y apertura TCP",
+      "type": "grafana-polystat-panel",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 10
+      },
+      "options": {
+        "globalOperator": "lastNotNull",
+        "globalShape": "hexagon_pointed_top",
+        "globalDisplayMode": "all",
+        "layoutDisplayLimit": 0,
+        "globalUnitFormat": "short",
+        "globalDecimals": 0,
+        "globalShowValueEnabled": true,
+        "globalThresholdsConfig": [
+          {
+            "value": 0,
+            "state": 2,
+            "color": "#e02f44"
+          },
+          {
+            "value": 1,
+            "state": 0,
+            "color": "#299c46"
+          }
+        ]
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "probe_success{job=~\"observability-extra-http|observability-extra-tcp\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "2.1.16",
+      "id": 3
+    },
+    {
+      "title": "Scrape de backends y Redis",
+      "type": "grafana-polystat-panel",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 16,
+        "h": 7
+      },
+      "options": {
+        "globalOperator": "lastNotNull",
+        "globalShape": "hexagon_pointed_top",
+        "globalDisplayMode": "all",
+        "layoutDisplayLimit": 0,
+        "globalUnitFormat": "short",
+        "globalDecimals": 0,
+        "globalShowValueEnabled": true,
+        "globalThresholdsConfig": [
+          {
+            "value": 0,
+            "state": 2,
+            "color": "#e02f44"
+          },
+          {
+            "value": 1,
+            "state": 0,
+            "color": "#299c46"
+          }
+        ]
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "up{job=~\"observability-extra-backends|observability-extra-collector\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "2.1.16",
+      "id": 4
+    },
+    {
+      "title": "Redis responde al exporter",
+      "type": "grafana-polystat-panel",
+      "gridPos": {
+        "x": 16,
+        "y": 18,
+        "w": 8,
+        "h": 7
+      },
+      "options": {
+        "globalOperator": "lastNotNull",
+        "globalShape": "hexagon_pointed_top",
+        "globalDisplayMode": "all",
+        "layoutDisplayLimit": 0,
+        "globalUnitFormat": "short",
+        "globalDecimals": 0,
+        "globalShowValueEnabled": true,
+        "globalThresholdsConfig": [
+          {
+            "value": 0,
+            "state": 2,
+            "color": "#e02f44"
+          },
+          {
+            "value": 1,
+            "state": 0,
+            "color": "#299c46"
+          }
+        ]
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "redis_up{job=\"observability-extra-backends\"}",
+          "instant": true,
+          "range": false,
+          "legendFormat": "Redis"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "pluginVersion": "2.1.16",
+      "id": 5
+    },
+    {
+      "title": "Duración de sondas",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 8
+      },
+      "options": {},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "probe_duration_seconds{job=~\"observability-extra-http|observability-extra-tcp\"}",
+          "instant": false,
+          "range": true,
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "description": "Las sondas TCP verifican apertura del puerto. Squid, Nexus mirror y hosted pueden requerir validaciones funcionales adicionales.",
+      "id": 6
+    }
+  ],
+  "links": [
+    {
+      "title": "01 · Estado y servicios",
+      "url": "/d/lab-extra-estado/01-estado-y-servicios",
+      "type": "link"
+    },
+    {
+      "title": "02 · Métricas de nodos y Kubernetes",
+      "url": "/d/lab-extra-metricas/02-metricas-de-nodos-y-kubernetes",
+      "type": "link"
+    },
+    {
+      "title": "03 · Logs de aplicaciones",
+      "url": "/d/lab-extra-logs/03-logs-de-aplicaciones",
+      "type": "link"
+    },
+    {
+      "title": "04 · Trazas y OpenTelemetry",
+      "url": "/d/lab-extra-trazas/04-trazas-y-opentelemetry",
+      "type": "link"
+    }
+  ]
+}

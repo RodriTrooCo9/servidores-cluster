@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script: scripts/setup-client-workstation.sh
+# Script: scripts/client/setup-client-workstation.sh
 # Objetivo: Configurar automáticamente cualquier nueva PC o Laptop (Linux/WSL2/macOS)
 #           para administrar todo el clúster con Ansible, OpenStack, Kubernetes y SSH.
 #
 # Uso en la nueva PC/Laptop:
-#   chmod +x scripts/setup-client-workstation.sh
-#   ./scripts/setup-client-workstation.sh
+#   chmod +x scripts/client/setup-client-workstation.sh
+#   ./scripts/client/setup-client-workstation.sh
 # ==============================================================================
 
 set -Eeuo pipefail
@@ -85,9 +85,9 @@ mkdir -p "${HOME}/.ssh"
 chmod 700 "${HOME}/.ssh"
 SSH_CONFIG="${HOME}/.ssh/config"
 
-cat << EOF >> "${SSH_CONFIG}.tmp"
+cat << EOF > "${SSH_CONFIG}.tmp"
 # --- Clúster Bare-Metal Dell OptiPlex (Generado por setup-client-workstation.sh) ---
-Host nodo-306 controller
+Host nodo-306 controller n306-wifi
     HostName 192.168.29.25
     User n306
     IdentityFile ${SSH_KEY}
@@ -121,17 +121,36 @@ Host k8s-cp-02 nodo-280
     IdentityFile ${SSH_KEY}
     StrictHostKeyChecking no
 
+Host k8s-cp-03 nodo-320
+    HostName 10.100.29.103
+    User debian
+    ProxyJump n306@192.168.29.25
+    IdentityFile ${SSH_KEY}
+    StrictHostKeyChecking no
+
+Host k8s-worker-01 nodo-321
+    HostName 10.100.29.111
+    User debian
+    ProxyJump n306@192.168.29.25
+    IdentityFile ${SSH_KEY}
+    StrictHostKeyChecking no
+
 Host k8s-worker-02 nodo-279
     HostName 10.100.29.112
     User debian
     ProxyJump n306@192.168.29.25
     IdentityFile ${SSH_KEY}
     StrictHostKeyChecking no
+# --- Fin Clúster Bare-Metal Dell OptiPlex ---
 EOF
 
 # Unir limpiamente sin duplicados
 if [[ -f "${SSH_CONFIG}" ]]; then
-    sed -i '/--- Clúster Bare-Metal Dell OptiPlex/,+35d' "${SSH_CONFIG}" 2>/dev/null || true
+    if grep -q '# --- Fin Clúster Bare-Metal Dell OptiPlex ---' "${SSH_CONFIG}"; then
+        sed -i '/# --- Clúster Bare-Metal Dell OptiPlex/,/# --- Fin Clúster Bare-Metal Dell OptiPlex ---/d' "${SSH_CONFIG}" 2>/dev/null || true
+    else
+        sed -i '/--- Clúster Bare-Metal Dell OptiPlex/,+41d' "${SSH_CONFIG}" 2>/dev/null || true
+    fi
 fi
 cat "${SSH_CONFIG}.tmp" >> "${SSH_CONFIG}"
 rm -f "${SSH_CONFIG}.tmp"
@@ -165,10 +184,10 @@ echo -e "\n${GREEN}=============================================================
 echo -e "${GREEN}   ¡PC/LAPTOP CONFIGURADA CON ÉXITO PARA ADMINISTRAR EL CLÚSTER!  ${NC}"
 echo -e "${GREEN}==================================================================${NC}"
 echo "Pasos útiles a partir de ahora:"
-echo "  1. Levantar servicios o verificar salud:"
-echo "     ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/09_healthcheck.yml"
-echo "  2. Abrir túneles web a Horizon, Nexus, Grafana y Kubernetes:"
-echo "     ./scripts/tunnels.sh"
-echo "  3. Re-aprovisionar un nodo físico si falla su disco:"
-echo "     ./scripts/disaster-recovery.sh --reprovision <nodo>"
+echo "  1. Verificar salud del clúster:"
+echo "     make health   (o ./scripts/diagnostics/healthcheck.sh)"
+echo "  2. Abrir túneles web a Horizon, Nexus, Grafana, Prometheus y Kubernetes:"
+echo "     make tunnels  (o ./scripts/client/tunnels.sh)"
+echo "  3. Generar respaldos de contingencia:"
+echo "     make backup   (o ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/90-operations/01_disaster_recovery.yml --tags backup)"
 echo "=================================================================="

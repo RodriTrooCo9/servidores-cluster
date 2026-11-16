@@ -20,7 +20,7 @@ La preparación de la laptop y Vault está explicada en los pasos 3 a 8 de la [g
 
 Las rutas de playbooks de la tabla están bajo `ansible/playbooks/`. El rol `common` configura un sistema operativo existente; no instala Debian en un disco vacío.
 
-El inventario define nodos 269, 280 y 320 como control planes, pero el [registro de inspección](docs/reference/estado-observado-2026-10-30.md) describe otro estado real. Reconcilia los datos antes de aplicar cambios.
+El inventario define los nodos 269, 280 y 320 como control planes. En el laboratorio esos nodos son workers y el plano de control está en el 306. Reconcilia los datos antes de aplicar cambios. [Estado observado del laboratorio](docs/reference/estado-laboratorio.md)
 
 ## 3 Preparar y revisar
 
@@ -49,7 +49,7 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke
 
 Para instalar el sistema operativo sigue la [guía de OpenStack e Ironic](GUIA_OPENSTACK.md). Para configurar la plataforma sigue la [guía de Kubernetes](GUIA_DE_INSTALACION.md). Ambas explican qué modifica cada comando y cómo comprobarlo.
 
-`ansible/site.yml` mantiene imports de ambos proyectos. `--tags services` incluye Nexus, PXE e Ironic. `make deploy` y `make services` también mantienen ese alcance conjunto. No los uses para ejecutar un proyecto de forma independiente.
+`ansible/site.yml` mantiene imports de ambos proyectos. `--tags services` y `make services` incluyen Nexus, PXE e Ironic. El orquestador y `make deploy` dependen de dos playbooks de preflight que faltan. Usa los playbooks concretos de cada guía.
 
 El modo `--check` no prueba una instalación completa y algunas tareas consultan servicios reales. Consulta primero la sintaxis y los hosts del playbook concreto; no uses el orquestador integral como simulación de un único proyecto.
 

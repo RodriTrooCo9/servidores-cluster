@@ -1,0 +1,144 @@
+{
+  "uid": "lab-extra-trazas",
+  "title": "04 · Trazas y OpenTelemetry",
+  "schemaVersion": 40,
+  "editable": false,
+  "tags": [
+    "laboratorio",
+    "observabilidad-extra"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "Spans recibidos por Tempo",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "options": {},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "sum(rate(tempo_distributor_spans_received_total[5m]))",
+          "instant": false,
+          "range": true,
+          "legendFormat": "spans/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "id": 1
+    },
+    {
+      "title": "Trazas creadas en Tempo",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "options": {},
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus-BareMetal"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus-BareMetal"
+          },
+          "expr": "sum(rate(tempo_ingester_traces_created_total[5m]))",
+          "instant": false,
+          "range": true,
+          "legendFormat": "trazas/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "id": 2
+    },
+    {
+      "title": "Búsqueda de trazas recientes",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 14
+      },
+      "options": {},
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{}",
+          "limit": 20,
+          "tableType": "traces"
+        }
+      ],
+      "description": "La tabla muestra trazas almacenadas. El muestreo configurado reduce la cantidad observada.",
+      "id": 3
+    }
+  ],
+  "links": [
+    {
+      "title": "01 · Estado y servicios",
+      "url": "/d/lab-extra-estado/01-estado-y-servicios",
+      "type": "link"
+    },
+    {
+      "title": "02 · Métricas de nodos y Kubernetes",
+      "url": "/d/lab-extra-metricas/02-metricas-de-nodos-y-kubernetes",
+      "type": "link"
+    },
+    {
+      "title": "03 · Logs de aplicaciones",
+      "url": "/d/lab-extra-logs/03-logs-de-aplicaciones",
+      "type": "link"
+    },
+    {
+      "title": "04 · Trazas y OpenTelemetry",
+      "url": "/d/lab-extra-trazas/04-trazas-y-opentelemetry",
+      "type": "link"
+    },
+    {
+      "title": "Explore · Tempo",
+      "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22tempo%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22tempo%22%2C%22uid%22%3A%22tempo%22%7D%2C%22queryType%22%3A%22traceql%22%2C%22query%22%3A%22%7B%7D%22%2C%22limit%22%3A20%2C%22tableType%22%3A%22traces%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "type": "link"
+    }
+  ]
+}

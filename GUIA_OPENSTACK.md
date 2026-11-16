@@ -1,14 +1,26 @@
 # Instalación de sistemas operativos en máquinas físicas con OpenStack e Ironic
 
-Actualización: 5 de noviembre de 2026.
+Actualización del 16 de noviembre de 2026.
 
 ## 1 Qué vamos a instalar
 
 Este proyecto instala un sistema operativo en una máquina física y comprueba que arranque y permita acceso SSH. OpenStack con Ironic o Ironic standalone administran la instalación por red como alternativas. El procedimiento termina con el sistema operativo disponible; la plataforma de aplicaciones se instala con otra guía.
 
-**Alcance comprobado:** el repositorio contiene configuración Kolla y roles Ansible para PXE e Ironic. La [inspección del laboratorio](docs/reference/estado-observado-2026-10-30.md) no demuestra una instalación completa por red desde cero. Los pasos que exigen datos o validaciones pendientes lo indican expresamente.
+El repositorio contiene configuración Kolla y roles Ansible para PXE e Ironic. Sigue pendiente validar la instalación por red desde cero hasta el acceso SSH en un equipo físico de prueba. [Estado observado del laboratorio](docs/reference/estado-laboratorio.md)
 
 Para instalar Debian 13 por red con Debian Installer y preseed, usa la [opción independiente de Debian netboot](network/ipxe/debian-netboot/README.md). La [revisión de `pruebaIPXE`](docs/runbooks/integracion-ipxe-debian13.md) conserva la evidencia del entorno original.
+
+### Dependencias del aprovisionamiento
+
+| Operación | Dependencia y efecto de una parada |
+|---|---|
+| Consultar, registrar o descargar imágenes desde OpenStack | Requiere Glance. Una parada deja el catálogo inaccesible aunque los archivos sigan en su volumen. La ruta por URL directa obtiene la imagen de HTTPBoot. |
+| Instalar o reinstalar un equipo mediante Ironic | Requiere la API y el conductor de Ironic. DHCP, TFTP y HTTPBoot pueden seguir entregando el bootloader, el kernel, el initramfs y la imagen. Si IPA arranca y la API de Ironic está caída, el agente no puede registrarse ni completar el despliegue. |
+| Aplicar cloud-init en el primer arranque | Requiere que el equipo arranque una imagen con cloud-init y reciba su ConfigDrive o encuentre un origen NoCloud válido. HTTPBoot puede seguir sirviendo NoCloud mientras Ironic está detenido. Esa respuesta HTTP solo verifica que el archivo está publicado. |
+| Recuperar un nodo de RKE2 que perdió su sistema operativo | La ruta automatizada con Ironic requiere recuperar primero el SO y SSH. Un nodo con Debian instalado por USB o Debian netboot puede reincorporarse con Ansible cuando cumpla los requisitos de la plataforma. |
+| Mantener RKE2, Nexus, aplicaciones y monitoreo existentes | Usan el SO ya instalado, el plano de control de Kubernetes y sus propios servicios. Una parada de Glance o Ironic bloquea el aprovisionamiento y puede retrasar la reposición de capacidad. Una caída de todo `nodo-306` también afecta los servicios de Kubernetes, PXE y monitoreo que ejecuta ese host. |
+
+La opción Debian Installer con preseed usa su propio DHCP, TFTP y HTTP. Su procedimiento requiere un controlador y una red de aprovisionamiento aislados. [Debian netboot](network/ipxe/debian-netboot/README.md)
 
 ## 2 Requisitos previos
 
@@ -90,7 +102,7 @@ systemctl is-active ssh
 Este comando consulta Docker en el controlador sin iniciar ni detener contenedores.
 
 ```bash
-ssh -i ansible/keys/cluster_key n306@192.168.29.25 'sudo docker ps --format "{{.Names}} {{.Status}}"'
+ssh -i ansible/keys/cluster_key n306@192.168.29.25 'sudo docker ps -a --format "{{.Names}} {{.Status}}"'
 ```
 
 **Resultado esperado:** una lista que permita identificar Ironic y los servicios Kolla si existen. Si Docker no está instalado, revisa también el servicio standalone; ese error no demuestra que el controlador esté vacío.
@@ -225,8 +237,6 @@ baremetal port list --node "$NODE_UUID"
 
 Usa una imagen de disco completo, con cloud-init, validada en una máquina de prueba con el mismo modo de arranque. Verifica su firma o checksum con el proveedor antes de usarla. Confirma que Ironic, el agente IPA y el destino pueden alcanzar la URL. El controlador necesita además kernel y ramdisk IPA compatibles y accesibles según su configuración.
 
-El repositorio contiene plantillas Packer anteriores y una imagen especializada con un agente de observabilidad. Ninguna es un requisito de esta guía; consulta sus límites en [imágenes y metadatos](cloud-init/README.md).
-
 En el editor crea `configdrive-so.json` con este formato y sustituye **todos** los valores `CAMBIAR_...`. Solo se coloca una llave pública.
 
 ```json
@@ -310,8 +320,11 @@ Aquí termina este proyecto. Si después necesitas una plataforma de aplicacione
 |---|---|---|
 | No responde SSH al controlador | Red, usuario o llave incorrectos | Comprueba primero la guía de conexión |
 | Dos servidores DHCP responden | Alternativas activas sobre la misma red | Conserva un único servicio de aprovisionamiento por red y destino |
+| `boot.ipxe` responde y el agente IPA no avanza | HTTPBoot entrega los archivos, pero falta la API indicada en `ipa-api-url` o el conductor | Desde la red de aprovisionamiento comprueba la URL de Ironic y verifica que la API vea un conductor activo |
+| Kolla Ironic falla al abrir DHCP, TFTP o HTTPBoot | El controlador local u otra instancia ya usa UDP 67/69 o TCP 8089 | Revisa los procesos e interfaces que escuchan. Define qué servicio atenderá el arranque en ese segmento antes de activarlo |
 | `prechecks` falla | Host, interfaces o configuración no compatibles | Resuelve el fallo antes de desplegar Kolla |
 | Ironic no muestra el destino | Registro pendiente o cliente conectado a otra API | Revisa endpoint, alternativa y enrolamiento |
+| Ironic devuelve una lista vacía con una cuenta de proyecto | La política puede mostrar solo los nodos accesibles al proyecto | Para auditar todo el inventario Kolla, consulta la API con una credencial de alcance de sistema y un rol autorizado |
 | `validate` devuelve un fallo requerido | Driver, arranque, imagen o energía incompletos | Corrige los parámetros concretos del equipo |
 | La imagen no descarga | URL inaccesible o checksum de otro archivo | Comprueba acceso desde el aprovisionamiento y el hash exacto |
 | `active` pero no arranca el disco | Imagen incompatible con el firmware o disco | Inspecciona la consola y valida la imagen en el mismo modo de arranque |
@@ -334,8 +347,13 @@ baremetal driver list
 **Dónde:** PC de administración, raíz del repositorio. Esta consulta muestra los contenedores Kolla existentes sin reiniciarlos.
 
 ```bash
-ssh -i ansible/keys/cluster_key n306@192.168.29.25 'sudo docker ps --format "{{.Names}} {{.Status}}"'
+ssh -i ansible/keys/cluster_key n306@192.168.29.25 \
+  'sudo docker ps -a --format "{{.Names}} {{.Status}}"; sudo ss -ltnup'
 ```
+
+Para comprobar una recuperación de Kolla, consulta `openstack image list` con una credencial de proyecto que tenga acceso al catálogo. En otra sesión, usa una credencial de alcance de sistema autorizada para consultar `baremetal node list` y `baremetal conductor list`. Verifica HTTPBoot y el acceso a Ironic desde la red donde inicia IPA. La prueba completa termina con el arranque desde disco y acceso SSH a un equipo de prueba.
+
+Antes de reactivar el conductor en un controlador compartido con RKE2, revisa los estados de aprovisionamiento y las operaciones pendientes de sus nodos. La configuración del repositorio establece `force_power_state_during_sync = false` para que la sincronización adopte el estado de energía observado en el equipo.
 
 **Dónde:** laptop con Ansible y Vault configurados. **Advertencia:** la siguiente orden crea y copia datos sensibles del Kolla existente; revisa credenciales y almacenamiento antes de usarla.
 
@@ -352,6 +370,5 @@ Ese respaldo requiere Kolla y no corresponde al servicio standalone. Completa la
 - [Configuración del proyecto](openstack/README.md), [globals](openstack/globals.yml) e [inventario Kolla](openstack/inventory/multinode).
 - [Rol Ironic](ansible/roles/ironic/tasks/main.yml) y [plantilla de inventario baremetal](ansible/roles/ironic/templates/baremetal.yaml.j2).
 - [Rol PXE](ansible/roles/pxe_controller/tasks/main.yml) e [inventario de laboratorio](inventory/lab/hosts.yml).
-- [Formato y límites de las imágenes y metadatos](cloud-init/README.md).
 
 Las direcciones del laboratorio son ejemplos del repositorio, no valores universales. La compatibilidad y los comandos externos se contrastaron con la documentación oficial enlazada; los despliegues y la escritura de discos necesitan su prueba en el entorno de destino.

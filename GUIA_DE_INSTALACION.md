@@ -6,6 +6,8 @@ Fecha de preparación: 30 de octubre de 2026. Separación de proyectos: 5 de nov
 
 Instalaremos Kubernetes RKE2, Nexus, aplicaciones y monitoreo sobre máquinas con Debian y SSH ya disponibles. Al terminar, podrás abrir la aplicación de ejemplo y consultar sus servicios. La instalación de sistemas operativos en máquinas físicas pertenece al [proyecto de OpenStack e Ironic](GUIA_OPENSTACK.md) y tiene su propia guía.
 
+Con los nodos ya instalados, la plataforma puede operar con Glance e Ironic detenidos. Si un equipo pierde Debian o se incorpora uno nuevo, esa parada bloquea su preparación por Ironic y retrasa la recuperación de capacidad hasta instalar el SO y restablecer SSH. En el laboratorio, `nodo-306` también ejecuta el plano de control de RKE2. La disponibilidad de ese host importa aunque OpenStack esté apagado. [Dependencias del aprovisionamiento](GUIA_OPENSTACK.md#dependencias-del-aprovisionamiento)
+
 > **Para equipos nuevos:** esta guía no debe ejecutarse como reinstalación del clúster que ya funciona. Durante la inspección, el nodo 306 era el único control plane real, pero el inventario del repositorio asignaba ese trabajo a los nodos 269, 280 y 320. Ejecutar los playbooks con un inventario incorrecto puede cambiar servicios, red y datos.
 
 **Límite importante:** el repositorio todavía tiene tramos de instalación incompletos o incompatibles entre sí. Los pasos marcados **ALTO** indican lo que debes resolver antes de continuar con esa etapa. No se ha probado una instalación completa desde cero; las comprobaciones de la infraestructura existente no sustituyen esa prueba.
@@ -49,7 +51,7 @@ Instalaremos Kubernetes RKE2, Nexus, aplicaciones y monitoreo sobre máquinas co
 | nodo-321 | `10.100.29.111` | Worker RKE2 |
 | nodo-279 | `10.100.29.112` | Worker RKE2 |
 
-Un **control plane** administra Kubernetes; un **worker** ejecuta las aplicaciones. Esta tabla describe el diseño del inventario, no el estado actual del laboratorio. Para ese estado consulta [el registro de inspección](docs/reference/estado-observado-2026-10-30.md).
+Un **control plane** administra Kubernetes y un **worker** ejecuta las aplicaciones. Esta tabla describe el diseño del inventario para una instalación nueva. Para trabajar con equipos existentes, consulta [el estado del laboratorio](docs/reference/estado-laboratorio.md).
 
 ## 3. Instalación paso a paso
 
@@ -180,7 +182,7 @@ Edita estas rutas con tu editor:
 
 El DNS `192.168.26.120` y las interfaces `enp2s0` son valores del proyecto: cámbialos si no corresponden a tu red. El nodo 306 necesita una salida de administración y una red de provisión correctamente aisladas.
 
-**ALTO — red:** no hay un único procedimiento automatizado y validado que reconstruya el switch, la VLAN, el Wi-Fi y el NAT del nodo 306. Confirma esa configuración antes de continuar. Consulta las referencias de [diagnóstico de VLAN](docs/architecture/network/conflictos_vlan_manual.md) y [aislamiento de la red](docs/architecture/network/aislamiento_red_oficina.md), y adapta los pasos a tu equipo.
+Antes de continuar, confirma el aislamiento del switch o VLAN, el acceso de administración y el encaminamiento del 306. [Red y aislamiento del aprovisionamiento](network/README.md)
 
 **Comprobar:** este comando revisa que el YAML del inventario pueda leerse sin conectarse a servidores.
 
@@ -267,12 +269,12 @@ ansible-vault view inventory/lab/group_vars/all/vault.yml > /dev/null && echo "V
 - **Dónde:** laptop, raíz del proyecto, con `.venv` activado.
 - **Para qué:** detectar problemas antes de cambiar servidores.
 
-Estos comandos prueban la conexión y leen el playbook principal.
+Estos comandos prueban la conexión y validan la sintaxis del playbook de RKE2.
 
 ```bash
 ansible-inventory -i inventory/lab/hosts.yml --graph
-ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/00-preflight/00_ping.yml
-ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --syntax-check
+ansible -i inventory/lab/hosts.yml baremetal -m ansible.builtin.ping
+ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke2_cluster.yml --syntax-check
 ```
 
 **Comprobar:** estas pruebas ejecutan regresiones locales sin desplegar servicios.
@@ -281,7 +283,7 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --syntax-check
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
-**Resultado esperado:** ningún host inaccesible, sintaxis aceptada y las pruebas terminan en `OK`. En la revisión pasaron 11 pruebas; el número puede cambiar con nuevas versiones del proyecto.
+**Resultado esperado:** ningún host inaccesible, sintaxis aceptada y pruebas en `OK`.
 
 **Si aparece un error:** añade `--ask-become-pass` si falta sudo sin contraseña. No uses `make deploy` para intentar resolver errores de acceso.
 
@@ -352,7 +354,7 @@ Para acceder desde la laptop, este túnel mantiene el puerto de Nexus disponible
 ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:8081:10.100.29.20:8081 n306@192.168.29.25
 ```
 
-Abre `http://127.0.0.1:8081`. Completa el asistente, cambia la credencial administrativa inicial y configura repositorios usando `nexus/repositories.yml` y `nexus/blobstores.yml` como referencia. Esos YAML son declaraciones: el rol no los aplica automáticamente.
+Abre `http://127.0.0.1:8081`. Completa el asistente, cambia la credencial administrativa inicial y configura los repositorios desde la interfaz de Nexus. [Referencia de repositorios](nexus/repositories.yml)
 
 Necesitas un proxy Debian accesible como `debian-proxy` y un registro de lectura en `8082`. El mirror de RKE2 configura tanto `docker.io` como `quay.io` en ese puerto: confirma que los repositorios atiendan ambos orígenes antes de desplegar.
 
@@ -368,7 +370,7 @@ curl -fsSI http://127.0.0.1:8081/repository/debian-proxy/dists/trixie-updates/Re
 
 **Resultado esperado:** Nexus responde HTTP 200 y las distribuciones necesarias pueden descargarse. Si alguna falla, detén aquí el cambio de APT.
 
-**Si aparece un error:** consulta `journalctl -u nexus` en el nodo 315. Revisa Java, la plantilla JVM y la configuración del repositorio. No uses el script del registro Kolla con una contraseña predeterminada: además atiende un caso distinto del grupo de registros requerido por RKE2.
+**Si aparece un error**, consulta `journalctl -u nexus` en el nodo 315. Revisa Java, la plantilla JVM y la configuración del repositorio.
 
 **Paso 12. Preparar los nodos Kubernetes y comprobar APT**
 
@@ -491,13 +493,20 @@ kubectl get pods -n kube-system -l k8s-app=cilium
 
 La documentación histórica menciona versiones, pero no se comprobó su combinación para una instalación nueva. No se incluye aquí una URL `latest` que cambie lo que se instala sin control.
 
-**Comprobar:** este script existente revisa almacenamiento, CRD y operador.
+**Comprobar:** consulta los prerrequisitos desde el contexto de Kubernetes elegido.
 
 ```bash
-bash scripts/diagnostics/kubernetes-prerequisites.sh
+kubectl wait --for=condition=Established --timeout=15s \
+  crd/opentelemetrycollectors.opentelemetry.io \
+  crd/instrumentations.opentelemetry.io
+kubectl get storageclass local-path
+kubectl get deployments -A
 ```
 
-**Resultado esperado:** CRD establecidos, `storageclass.storage.k8s.io/local-path` y operador disponible. Los CRD son las definiciones que permiten a Kubernetes entender tipos nuevos como `OpenTelemetryCollector`.
+**Resultado esperado:** ambos CRD están establecidos y existe la StorageClass
+`local-path`. En la lista de Deployments, comprueba que el operador
+OpenTelemetry tenga al menos una réplica disponible. Los CRD definen los tipos
+de recursos que el operador administra.
 
 **Si aparece un error:** instala o corrige el requisito concreto antes de aplicar el overlay. Crear un PVC no instala una StorageClass.
 
@@ -850,8 +859,10 @@ El healthcheck integral del repositorio espera servicios de ambos proyectos. No 
 
 - **Cerrar un túnel:** presiona `Ctrl+C` en la terminal que lo mantiene abierto. Eso cierra el acceso local, no detiene el servicio remoto.
 
-No hay una orden segura de «detener todo». No uses `docker stop` sobre todos los contenedores, `kubectl delete namespace`, `compose down -v`, `--heal-etcd` o `--reprovision` como comandos normales de parada: pueden interrumpir la nube o perder datos.
+Para detener un componente, usa su unidad o Deployment específico. Una parada
+global de contenedores, el borrado de namespaces o la eliminación de volúmenes
+pueden interrumpir servicios y perder datos.
 
 ### Archivos que sustentan esta guía
 
-Las rutas principales son [el inventario](inventory/lab/hosts.yml), [las variables](inventory/lab/group_vars/all/vars.yml), [el orquestador](ansible/site.yml), [los roles](ansible/roles), [los manifiestos](kubernetes/base/kustomization.yaml), [los requisitos Kubernetes](scripts/diagnostics/kubernetes-prerequisites.sh), [las pruebas](tests) y [el estado observado](docs/reference/estado-observado-2026-10-30.md). Las fuentes oficiales enlazadas se consultaron para aclarar compatibilidad y requisitos externos; no convierten los tramos pendientes del repositorio en una instalación probada.
+Las rutas principales son [el inventario](inventory/lab/hosts.yml), [las variables](inventory/lab/group_vars/all/vars.yml), [el orquestador](ansible/site.yml), [los roles](ansible/roles), [los manifiestos](kubernetes/base/kustomization.yaml), [las pruebas](tests) y [el estado observado](docs/reference/estado-laboratorio.md). La instalación completa sigue pendiente de validación.

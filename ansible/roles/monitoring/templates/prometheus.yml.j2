@@ -5,6 +5,11 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+{% if monitoring_extra_scrapes.stat.exists | default(false) %}
+scrape_config_files:
+  - /etc/prometheus/observability-extra-scrapes.yaml
+
+{% endif %}
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:

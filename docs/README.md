@@ -6,10 +6,9 @@ El repositorio mantiene dos proyectos separados y herramientas compartidas.
 
 - [Instalación de RKE2, aplicaciones y monitoreo](../GUIA_DE_INSTALACION.md).
 - [Guía de observabilidad](../GUIA_OBSERVABILIDAD.md).
-- [Obtener y documentar logs y trazas de Kubernetes](observability/extraer-logs-y-trazas-kubernetes.md).
-- [Plantilla de informe de logs y trazas](observability/plantilla-informe-logs-trazas.md).
 - [Añadir un nodo con sistema operativo instalado](runbooks/anadir_nodo.md).
 - [Instalar Coroot en un sistema existente](observability/instalar-coroot-primero.md).
+- [Construir una imagen con el agente Coroot](observability/coroot-debian13-packer.md).
 
 ## Instalación de sistemas operativos en máquinas físicas
 
@@ -17,17 +16,12 @@ El repositorio mantiene dos proyectos separados y herramientas compartidas.
 - [Instalación desatendida de Debian 13 por iPXE](../network/ipxe/debian-netboot/README.md).
 - [Evidencia del piloto e integración de iPXE](runbooks/integracion-ipxe-debian13.md).
 - [Configuraciones del proyecto](../openstack/README.md).
-- [Imágenes y metadatos](../cloud-init/README.md).
-- [Referencia de arranque PXE](architecture/arranque_pxe_detallado.md).
-- [Comparativa de Ironic, Glance y Bifrost](architecture/openstack/glance_ironic_bifrost_arquitectura_comparativa.md).
 
 ## Herramientas y datos compartidos
 
 - [Plan de trabajo: bare metal, observabilidad, carga e imágenes](plan-trabajo-baremetal.md).
 - [Conexión SSH](../GUIA_RAPIDA.md).
 - [Ansible por proyecto y respaldos separados](../GUIA_ANSIBLE.md).
-- [Red y aislamiento](architecture/network/aislamiento_red_oficina.md).
-- [Diagnóstico de conflictos de red y VLAN](architecture/network/conflictos_vlan_manual.md).
-- [Estado observado del laboratorio](reference/estado-observado-2026-10-30.md).
-- [Auditoría y mejoras](reference/auditoria-proyecto-2026-10-27.md).
-- [Correcciones y validación pendiente](reference/correcciones-aplicadas-2026-10-27.md).
+- [Red y aislamiento del aprovisionamiento](../network/README.md).
+- [Estado observado del laboratorio](reference/estado-laboratorio.md).
+- [Matriz de puertos y servicios](reference/puertos_y_servicios.md).

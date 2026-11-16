@@ -1,0 +1,192 @@
+---
+- name: Instalar los paneles y las comprobaciones de observabilidad del laboratorio
+  hosts: pxe_controller
+  become: true
+  gather_facts: false
+  vars:
+    grafana_lan: "{{ lab_grafana_lan | default(ansible_host) }}"
+    grafana_extras_dir: "{{ playbook_dir }}/../../../kubernetes/observability/extras/grafana"
+    grafana_cli:
+      - /usr/share/grafana/bin/grafana
+      - cli
+      - --homepath
+      - /usr/share/grafana
+      - --pluginsDir
+      - /var/lib/grafana/plugins
+    rke2_kubectl:
+      - /var/lib/rancher/rke2/bin/kubectl
+      - --kubeconfig
+      - /etc/rancher/rke2/rke2.yaml
+      - --request-timeout=10s
+    grafana_extras_plugins:
+      - { id: grafana-polystat-panel, version: '2.1.16' }
+      - { id: victoriametrics-logs-datasource, version: '0.34.0' }
+  tasks:
+    - name: Consultar las IP de los servicios de observabilidad y aplicaciones
+      ansible.builtin.command:
+        argv: "{{ rke2_kubectl + ['-n', item, 'get', 'services', '-o', 'json'] }}"
+      register: cluster_services
+      changed_when: false
+      loop: [observability, aplicaciones]
+
+    - name: Registrar las direcciones internas para Grafana y Prometheus
+      ansible.builtin.set_fact:
+        observability_ips: >-
+          {{ dict(((cluster_services.results[0].stdout | from_json)["items"] | map(attribute='metadata.name'))
+             | zip((cluster_services.results[0].stdout | from_json)["items"] | map(attribute='spec.clusterIP'))) }}
+        application_ips: >-
+          {{ dict(((cluster_services.results[1].stdout | from_json)["items"] | map(attribute='metadata.name'))
+             | zip((cluster_services.results[1].stdout | from_json)["items"] | map(attribute='spec.clusterIP'))) }}
+
+    - name: Consultar plugins instalados
+      ansible.builtin.command:
+        argv: "{{ grafana_cli + ['plugins', 'ls'] }}"
+      register: installed_plugins
+      changed_when: false
+
+    - name: Instalar las versiones de plugins utilizadas por estos paneles
+      ansible.builtin.command:
+        argv: "{{ grafana_cli + ['plugins', 'install', item.id, item.version] }}"
+      when: (item.id ~ ' @ ' ~ item.version) not in installed_plugins.stdout_lines
+      loop: "{{ grafana_extras_plugins }}"
+      notify: Reiniciar Grafana
+
+    - name: Preparar el directorio de paneles adicionales
+      ansible.builtin.file:
+        path: /var/lib/grafana/observability-extras
+        state: directory
+        owner: root
+        group: grafana
+        mode: '0755'
+
+    - name: Copiar los paneles de la carpeta adicional
+      ansible.builtin.copy:
+        src: "{{ grafana_extras_dir }}/dashboards/"
+        dest: /var/lib/grafana/observability-extras/
+        owner: root
+        group: grafana
+        mode: '0644'
+
+    - name: Aprovisionar la carpeta adicional en Grafana
+      ansible.builtin.copy:
+        src: "{{ grafana_extras_dir }}/provider.yml"
+        dest: /etc/grafana/provisioning/dashboards/observability-extra.yaml
+        owner: root
+        group: grafana
+        mode: '0644'
+      notify: Reiniciar Grafana
+
+    - name: Aprovisionar la fuente VictoriaLogs
+      ansible.builtin.template:
+        src: grafana-extra-datasources.yml.j2
+        dest: /etc/grafana/provisioning/datasources/observability-extra.yaml
+        owner: root
+        group: grafana
+        mode: '0644'
+      notify: Reiniciar Grafana
+
+    - name: Localizar el archivo de las fuentes Loki y Tempo
+      ansible.builtin.stat:
+        path: /etc/grafana/provisioning/datasources/observability_stack.yaml
+      register: grafana_stack_sources
+
+    - name: Corregir la variable del enlace de Loki a Tempo si fue expandida por el shell
+      ansible.builtin.replace:
+        path: /etc/grafana/provisioning/datasources/observability_stack.yaml
+        regexp: "^(\\s*url:\\s*)'[0-9]+\\{__value\\.raw\\}'\\s*$"
+        replace: "\\1'$${__value.raw}'"
+        backup: true
+      when: grafana_stack_sources.stat.exists
+      notify: Reiniciar Grafana
+
+    - name: Configurar el enlace de Tempo a los logs de aplicaciones
+      ansible.builtin.replace:
+        path: /etc/grafana/provisioning/datasources/observability_stack.yaml
+        regexp: '(?m)^      tracesToLogs:\n(?:^        [^\n]*\n)+'
+        replace: |
+          {{ '      ' }}tracesToLogsV2:
+          {{ '        ' }}datasourceUid: Loki
+          {{ '        ' }}spanStartTimeShift: '-2m'
+          {{ '        ' }}spanEndTimeShift: '2m'
+          {{ '        ' }}customQuery: true
+          {{ '        ' }}query: '{k8s_namespace_name="aplicaciones"} |= "trace_id=$${__trace.traceId}"'
+        backup: true
+      when: grafana_stack_sources.stat.exists
+      notify: Reiniciar Grafana
+
+    - name: Copiar el certificado público de RKE2 para el descubrimiento
+      ansible.builtin.copy:
+        src: /var/lib/rancher/rke2/server/tls/server-ca.crt
+        remote_src: true
+        dest: /etc/prometheus/observability-extra-k8s-ca.crt
+        owner: root
+        group: prometheus
+        mode: '0644'
+      notify: Recargar Prometheus
+
+    - name: Configurar las comprobaciones adicionales de Prometheus
+      ansible.builtin.template:
+        src: observability-extra-scrapes.yml.j2
+        dest: /etc/prometheus/observability-extra-scrapes.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Recargar Prometheus
+
+    - name: Comprobar si Prometheus ya incluye las sondas adicionales
+      ansible.builtin.slurp:
+        src: /etc/prometheus/prometheus.yml
+      register: prometheus_config
+
+    - name: Incorporar las comprobaciones a la configuración existente
+      ansible.builtin.blockinfile:
+        path: /etc/prometheus/prometheus.yml
+        insertbefore: '^scrape_configs:'
+        marker: '# {mark} observability extras'
+        block: |
+          scrape_config_files:
+            - /etc/prometheus/observability-extra-scrapes.yaml
+        validate: /usr/local/bin/promtool check config %s
+        backup: true
+      when: >-
+        '/etc/prometheus/observability-extra-scrapes.yaml' not in
+        ((prometheus_config.content | b64decode | from_yaml).scrape_config_files | default([]))
+      notify: Recargar Prometheus
+
+    - name: Validar la configuración completa de Prometheus
+      ansible.builtin.command:
+        argv: [/usr/local/bin/promtool, check, config, /etc/prometheus/prometheus.yml]
+      changed_when: false
+
+    - name: Comprobar si Grafana ya cargó Polystat
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/public/plugins/grafana-polystat-panel/module.js
+        status_code: [200, 404]
+      register: polystat_module
+
+    - name: Solicitar la carga de plugins pendientes
+      ansible.builtin.debug:
+        msg: Grafana debe cargar los plugins instalados.
+      changed_when: polystat_module.status == 404
+      notify: Reiniciar Grafana
+
+    - name: Aplicar las recargas pendientes
+      ansible.builtin.meta: flush_handlers
+
+    - name: Comprobar la API de Grafana
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/api/health
+      register: grafana_health
+      until: grafana_health.status == 200 and grafana_health.json.database == 'ok'
+      retries: 10
+      delay: 2
+  handlers:
+    - name: Reiniciar Grafana
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: restarted
+
+    - name: Recargar Prometheus
+      ansible.builtin.command:
+        argv: [systemctl, kill, --kill-whom=main, --signal=HUP, prometheus]
+      changed_when: true

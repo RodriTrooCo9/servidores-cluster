@@ -37,7 +37,7 @@ Antes de empezar, asegúrate de contar con los siguientes elementos:
 
 Sigue estos pasos en estricto orden:
 
-### Paso 1: Descargar el repositorio completo
+### Paso 1. Descargar el repositorio
 * **Dónde hacerlo:** En la terminal de tu computadora.
 * **Qué hace:** Descarga todos los playbooks, scripts, inventarios y archivos de configuración del proyecto.
 * **Comando:**
@@ -86,22 +86,32 @@ Sigue estos pasos en estricto orden:
 
 ---
 
-### Paso 4: Configurar los accesos rápidos SSH
-* **Dónde hacerlo:** En la terminal de tu computadora.
-* **Qué hace:** Ejecuta el configurador automático ([scripts/client/setup-client-workstation.sh](scripts/client/setup-client-workstation.sh#L1-L140)) para escribir en tu archivo local `~/.ssh/config` los atajos de red y la regla de salto (`ProxyJump`) hacia los nodos internos.
-* **Comando:**
-  ```bash
-  make setup
-  ```
-  *(Si no tienes `make` instalado en tu laptop, ejecuta directamente: `./scripts/client/setup-client-workstation.sh`)*
-* **Resultado esperado:**
-  ```text
-  [INFO] 1. Verificando conectividad de red con el controlador (192.168.29.25)...
-  [OK] Conexión con el controlador 192.168.29.25 exitosa.
-  [INFO] 2. Asegurando permisos restrictivos en llaves SSH...
-  [OK] Permisos de llave SSH corregidos.
-  [OK] Accesos SSH configurados. Ahora puedes escribir: 'ssh k8s-master', 'ssh bastion', 'ssh nexus'.
-  ```
+### Paso 4. Configurar los accesos SSH
+
+En tu laptop, edita `~/.ssh/config` y sustituye `RUTA_ABSOLUTA_AL_REPOSITORIO`
+por la ruta real. Si ya tienes alguno de los alias, revisa su bloque antes de
+añadir otro. Verifica las huellas de los equipos con el administrador antes
+de aceptarlas.
+
+```ssh-config
+Host nodo-306 bastion nexus
+    IdentityFile "RUTA_ABSOLUTA_AL_REPOSITORIO/ansible/keys/cluster_key"
+    IdentitiesOnly yes
+
+Host nodo-306
+    HostName 192.168.29.25
+    User n306
+
+Host bastion
+    HostName 10.100.29.10
+    User aget-ic
+    ProxyJump nodo-306
+
+Host nexus
+    HostName 10.100.29.20
+    User io
+    ProxyJump nodo-306
+```
 
 ---
 
@@ -110,15 +120,12 @@ Sigue estos pasos en estricto orden:
 * **Qué hace:** Abre una sesión interactiva en el servidor físico principal (`nodo-306`), que actúa como puerta de enlace y controlador de todo el laboratorio.
 * **Comando:**
   ```bash
-  ssh k8s-master
+  ssh nodo-306
   ```
   *(O usando el comando directo tradicional sin atajo: `ssh -i ansible/keys/cluster_key n306@192.168.29.25`)*
 * **Resultado esperado:**
-  El mensaje de bienvenida del servidor y el prompt cambiarán a:
-  ```text
-  Linux nodo-306 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian ...
-  n306@nodo-306:~$
-  ```
+  El comando `hostname` debe identificar al controlador
+  `pxe-controller.lab.local`.
   *(Para salir y volver a tu computadora, escribe `exit`).*
 
 ---
@@ -143,17 +150,19 @@ Sigue estos pasos en estricto orden:
 
 ---
 
-### ¿Faltan submódulos o archivos con Git LFS?
-> [!NOTE]
-> **Estado en el proyecto:** **Implementado como repositorio único.**
-> Este proyecto **NO utiliza submódulos de Git (`.gitmodules` no existe)** ni **Git LFS** (archivos binarios pesados en Git).
-> Toda la estructura de carpetas, playbooks, roles, plantillas y scripts se descarga completa en el `git clone` del Paso 1. No necesitas ejecutar `git submodule update` ni descargar paquetes adicionales de Git.
+### Obtener el chart de Helm
+
+Git registra `agetic-base-chart` como un repositorio anidado sin un mapeo en
+`.gitmodules`. Si necesitas usarlo y el directorio no contiene el chart,
+clona su repositorio por separado y selecciona el commit que muestra
+`git ls-tree HEAD agetic-base-chart`.
+[Repositorio del chart](https://gitlab.agetic.gob.bo/agetic/agetic/proyectos-base/agetic-base-chart)
 
 ---
 
 ## 3. Comprobación rápida
 
-Para comprobar que todo está listo y funcionando al 100%, corre estos 5 comandos cortos desde tu computadora:
+Desde tu computadora, comprueba el repositorio, la red y el acceso SSH:
 
 1. **Comprobar la integridad del repositorio:**
    ```bash
@@ -169,9 +178,9 @@ Para comprobar que todo está listo y funcionando al 100%, corre estos 5 comando
 
 3. **Comprobar la conexión SSH al controlador:**
    ```bash
-   ssh k8s-master "hostname && uptime"
+   ssh nodo-306 "hostname && uptime"
    ```
-   *Respuesta esperada:* Mostrará `nodo-306` seguido del tiempo que lleva encendido el servidor.
+   *Respuesta esperada:* El hostname del controlador y su tiempo de actividad.
 
 4. **Comprobar el salto transparente (ProxyJump) al Bastión:**
    ```bash
@@ -181,7 +190,7 @@ Para comprobar que todo está listo y funcionando al 100%, corre estos 5 comando
 
 5. **Comprobar el clúster de Kubernetes desde el maestro:**
    ```bash
-   ssh k8s-master "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes"
+   ssh nodo-306 "sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes"
    ```
    *Respuesta esperada:* La lista de los nodos físicos del laboratorio con el estado `Ready`.
 
@@ -195,8 +204,8 @@ Si encuentras algún error durante la conexión o el uso de Git, consulta esta t
 | :--- | :--- | :--- |
 | **`Permission denied (publickey)`** | El servidor rechazó la llave SSH porque tiene permisos demasiado abiertos o el archivo no existe en esa ruta. | 1. Asegura permisos estrictos: `chmod 600 ansible/keys/cluster_key`<br>2. Verifica que el archivo exista: `ls -la ansible/keys/cluster_key` |
 | **`No route to host` o ping no responde** | Tu laptop no puede comunicarse físicamente con la dirección `192.168.29.25`. | Conéctate a la red Wi-Fi o al cable de red del laboratorio de servidores (`192.168.29.x`). Verifica tu IP con `ip a` o `ipconfig`. |
-| **`Could not resolve hostname k8s-master`** | Tu computadora no reconoce el nombre corto porque aún no se guardó la configuración en `~/.ssh/config`. | 1. Ejecuta `make setup` en la raíz de `infra-scripts`.<br>2. O conéctate directamente con IP: `ssh -i ansible/keys/cluster_key n306@192.168.29.25`. |
-| **`Host key verification failed`** | El servidor cambió de tarjeta de red, fue reinstalado o cambió su huella digital SSH. | Borra la huella digital antigua guardada en tu laptop ejecutando:<br>`ssh-keygen -f ~/.ssh/known_hosts -R "192.168.29.25"` |
+| **`Could not resolve hostname nodo-306`** | El alias SSH falta o tiene otra configuración. | Revisa el bloque correspondiente en `~/.ssh/config` o conecta por IP con `ssh -i ansible/keys/cluster_key n306@192.168.29.25`. |
+| **`Host key verification failed`** | La huella falta o difiere de la guardada. | Confirma la huella por un canal independiente. Si corresponde a un cambio autorizado, retira la entrada antigua y acepta la nueva. |
 | **`fatal: Authentication failed for ...` al hacer git clone** | GitLab rechazó tus credenciales o expiró tu Personal Access Token. | Ingresa a [https://gitlab.agetic.gob.bo](https://gitlab.agetic.gob.bo), genera un nuevo **Personal Access Token** con permisos `read_repository` y úsalo como contraseña al clonar. |
 
 ---
@@ -204,6 +213,6 @@ Si encuentras algún error durante la conexión o el uso de Git, consulta esta t
 ## Archivos de referencia en el proyecto
 
 Si deseas ver el código fuente y las configuraciones que respaldan esta guía:
-* [scripts/client/setup-client-workstation.sh](scripts/client/setup-client-workstation.sh): Script Bash que automatiza los permisos de llave, comprobación de ping y generación de `~/.ssh/config`.
-* [Makefile](Makefile#L9-L12): Define el target `make setup` que invoca el script de configuración.
-* [inventory/lab/hosts.yml](inventory/lab/hosts.yml#L1-L50): Inventario oficial de Ansible con todos los nombres de nodos, IPs y usuarios.
+- [Permisos y gestión de llaves](ansible/keys/README.md).
+- [Inventario Ansible del laboratorio](inventory/lab/hosts.yml).
+- [Roles y direcciones observados](docs/reference/estado-laboratorio.md).

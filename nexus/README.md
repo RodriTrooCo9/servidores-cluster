@@ -1,19 +1,11 @@
-# Repositorios y Registros Locales (Sonatype Nexus 3 as Code)
+# Repositorios de Sonatype Nexus
 
-Este directorio gestiona la configuración declarativa de **Sonatype Nexus 3 OSS** sobre el Nodo 315 (`10.100.29.20`), proporcionando repositorio APT local y registro de contenedores OCI para el clúster.
+El nodo 315 (`10.100.29.20`) aloja el proxy APT y el registro de contenedores del laboratorio. Usa el YAML como referencia para configurar los repositorios en Nexus y confirma el almacenamiento existente antes de asignarlo. Ansible configura el servicio. [Referencia de repositorios](repositories.yml)
 
-## Estructura
-```text
-nexus/
-├── repositories.yml           # Declaración de repositorios APT, Docker Hosted, Proxy y Group
-├── blobstores.yml             # Cuotas y afinamiento de almacenamiento para SSD 128 GB
-├── cleanup_policies.json      # Políticas de retención y purga automática de imágenes
-├── scripts/
-│   └── setup_nexus_kolla_registry.sh # Automatización de carga de imágenes Kolla-Ansible
-└── README.md
-```
+## Puertos
 
-## Puertos de Servicio
-- **`8081`**: Interfaz Web y API REST de Nexus / Proxy APT (`/repository/debian-proxy/`).
-- **`8082`**: Registro Docker Group (Lectura/Pull unificado para RKE2 y containerd).
-- **`8083`**: Registro Docker Hosted (Escritura/Push para imágenes Kolla locales).
+- `8081` para la interfaz web, la API REST y el proxy APT `/repository/debian-proxy/`.
+- `8082` para descargar imágenes a través de `docker-group`.
+- `8083` para publicar imágenes en `docker-hosted`.
+
+En el laboratorio también existe `docker-quay-proxy`. Antes de configurar el mirror de RKE2, verifica en Nexus los miembros de `docker-group` y el acceso a las imágenes de Docker Hub y Quay. [Guía de instalación](../GUIA_DE_INSTALACION.md)

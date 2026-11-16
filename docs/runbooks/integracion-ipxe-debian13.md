@@ -74,7 +74,7 @@ e80bd68d752554cacdb4697c3659942a904b8ad3ea35a44a8f0214add8c963fc  tftpboot/ipxe.
 | Gateway, DNS y dominio | `192.168.1.2`, `1.1.1.1`/`8.8.8.8`, `rodri.local` | `10.100.29.30`, `192.168.26.120`, `lab.local` en el diseño. Confirmar que el instalador alcance DNS y el mirror desde el destino. |
 | HTTP y telemetría | Nginx TCP 80 bajo `/ipxe/`, Python TCP 8089 | Nginx del rol actual usa TCP 8089. Dar al monitor otro puerto si ambos viven en el mismo controlador. |
 
-Para la primera prueba del proyecto grande, usar un controlador y un equipo con disco prescindible en una red aislada. El 306 alojaba el control plane de RKE2 y servicios Kolla en la última inspección. Kolla declara DHCP en `enp2s0`. Un segundo rango DHCP en la misma VLAN no evita que ambos servidores respondan. Verificar quién gestiona DHCP UDP 67, TFTP UDP 69 y HTTP antes de asignar esa interfaz o publicar archivos en el 306. [Inventario YAML](../../inventory/lab/hosts.yml) · [Configuración de Kolla](../../openstack/globals.yml) · [Estado observado del laboratorio](../reference/estado-observado-2026-10-30.md)
+Para la primera prueba del proyecto grande, usar un controlador y un equipo con disco prescindible en una red aislada. El 306 aloja el control plane de RKE2 y el HTTPBoot actual. Un segundo rango DHCP en la misma VLAN puede producir respuestas competidoras. Identifica quién atiende UDP 67 y 69, además de HTTPBoot, antes de asignar otra interfaz o publicar archivos. [Red del laboratorio](../../network/README.md) · [Estado observado del laboratorio](../reference/estado-laboratorio.md)
 
 ### 2. Integrar un playbook de aprovisionamiento Debian netboot
 
@@ -113,8 +113,7 @@ El rol `pxe_controller` actual comprueba `ironic_dnsmasq` de Kolla, pero contin�
 
    ```bash
    ansible-inventory -i inventory/lab/hosts.yml --graph
-   ansible-playbook -i inventory/lab/hosts.yml \
-     ansible/playbooks/00-preflight/00_ping.yml --limit NOMBRE_DEL_PILOTO
+   ansible -i inventory/lab/hosts.yml NOMBRE_DEL_PILOTO -m ansible.builtin.ping
    ```
 
 5. **Prueba de regresión del arranque.** Una vez deshabilitado el destino, forzar otro arranque por red y verificar que vuelve al disco o al firmware. Comprobar que otra MAC no recibe instrucciones para instalar. Si falla alguna etapa, deshabilitar el destino y retirar DHCP del segmento de prueba hasta corregirla. Guardar la consola del instalador y los logs del controlador para identificar el último paso completado.

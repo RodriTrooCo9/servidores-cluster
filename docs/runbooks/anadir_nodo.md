@@ -2,6 +2,10 @@
 
 Este procedimiento comienza con el sistema operativo instalado y acceso SSH disponible. La instalación del sistema operativo es [otro proyecto](../../GUIA_OPENSTACK.md).
 
+El inventario actual asigna roles de control plane a tres equipos que operan como
+workers. Reconcilia el inventario y el líder antes de aplicar el playbook de
+plataforma. [Estado observado](../reference/estado-laboratorio.md)
+
 ## 1 Revisar el equipo
 
 Confirma IP, MAC, usuario, disco y rol previsto. Comprueba que el equipo nuevo no contiene datos o servicios que deban conservarse. No conviertas un agente o un control plane activo en otro rol mediante cambios de inventario.
@@ -24,7 +28,7 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/playbooks/30-platform/01_rke
 
 ## 4 Aplicar la configuración
 
-Sigue las etapas de sistema base, Nexus y RKE2 de la [guía de infraestructura](../../GUIA_DE_INSTALACION.md). Revisa el alcance de cada playbook antes de aplicarlo: la incorporación requiere acceso al líder existente y no equivale a reinstalar todos los nodos.
+Sigue las etapas pertinentes de sistema base y RKE2 de la [guía de infraestructura](../../GUIA_DE_INSTALACION.md). Revisa el alcance de cada playbook antes de aplicarlo. La incorporación requiere acceso al líder existente.
 
 ## 5 Validar
 

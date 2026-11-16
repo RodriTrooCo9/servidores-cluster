@@ -1,7 +1,8 @@
-# Estado observado de la infraestructura — 30 de octubre de 2026
+# Estado observado del laboratorio
 
-Esta nota registra una inspección puntual. Antes de operar, comprobar que los
-datos sigan vigentes y contrastarlos con el inventario y el entorno efectivo.
+Servicios y topología comprobados el 16 de noviembre de 2026, hora de Bolivia.
+Las copias de respaldo conservan la fecha de su propia verificación.
+Antes de operar, contrasta estos datos con el inventario y el entorno efectivo.
 
 ## RKE2 y discrepancia con el inventario
 
@@ -23,15 +24,36 @@ despliegue ni recuperación de RKE2 sobre esa infraestructura sin reconciliar
 primero el inventario y los procedimientos. El playbook de plataforma detecta
 algunas inversiones de roles, pero no protege fases anteriores del despliegue.
 
+Cilium está activo con `kube-proxy-replacement=false` y kube-proxy sigue
+ejecutándose en los siete nodos. La API de Kubernetes responde en
+`10.100.29.30:6443`. El destino `10.100.29.101:6443` que usa `make tunnels`
+corresponde a un worker y rechaza la conexión.
+
 ## OpenStack y arranque
 
-En el nodo 306 estaban activos servicios Kolla para Ironic, Glance, Keystone,
-MariaDB y otros componentes. El servicio standalone de Ironic estaba inactivo.
-La existencia de servicios y puertos no comprueba el aprovisionamiento completo.
-La ruta `/etc/kolla/passwords.yml` usada por el playbook de respaldo no estaba
-presente en ese nodo; debe identificarse la fuente de credenciales correcta.
+En el nodo 306, la API y el conductor de Ironic están detenidos y
+deshabilitados en systemd. Ironic standalone también está deshabilitado.
+Glance está detenido y su unidad sigue habilitada para el próximo arranque.
+Keystone y MariaDB están activos. Horizon está detenido.
 
-Se copió `/etc/kolla` y el volumen local de Glance a
+Nginx sirve `boot.ipxe`, la imagen Debian QCOW2 y los metadatos NoCloud en
+`8089`. El script inicia IPA y lo dirige a Ironic en `6385`. La publicación
+de archivos sigue funcionando. La instalación por ese flujo requiere
+reactivar Ironic y comprobar el primer arranque. El `user-data` también
+respondió por HTTP sin autenticación desde la red Wi-Fi de administración.
+
+El playbook de respaldo requiere `/etc/kolla/passwords.yml`, que sigue
+ausente en el nodo 306.
+
+## Respaldos de OpenStack
+
+El 16 de noviembre se creó una copia en frío de `/etc/kolla` y los volúmenes
+MariaDB, RabbitMQ, Glance e Ironic en
+`/var/backups/kolla-recovery-20261116.3Qpswv` del nodo 306. Se comprobó la
+lectura de los archivos y se generaron checksums. Quedan pendientes la copia
+a almacenamiento independiente y una restauración de prueba.
+
+El 30 de octubre se copió `/etc/kolla` y el volumen local de Glance a
 `backups/openstack/nodo-306/20261030_102000/kolla-glance.tar.gz` con permisos
 privados. Se verificaron su checksum y lectura. Los servicios estaban activos
 durante la copia, por lo que no se garantiza una imagen coherente de Glance si
@@ -41,7 +63,7 @@ La cuenta disponible en el contenedor solo tenía permisos de monitoreo; el
 archivo local de contraseñas está cifrado y la clave Vault disponible no lo
 descifró. Identificar una credencial administrativa válida antes de continuar.
 
-## Imagen y respaldo
+## Imagen y respaldos del 30 de octubre
 
 En el nodo 306 se observaron una plantilla Packer en `/opt/infra/packer/`, un
 preseed en `/httpboot/debian/` y una imagen QCOW2 en `/httpboot/images/`. El
@@ -67,23 +89,16 @@ su API volvió a responder HTTP 200. No se ha probado una restauración; el
 directorio de instalación de Nexus no se incluyó en esta copia. No sustituir
 este respaldo de datos por el volcado PostgreSQL casi vacío.
 
-## Cargas que requieren atención
-
-Dos deployments del namespace `dev-prueba` no podían descargar sus imágenes:
-el registro devolvía HTTP 401. Ambos tenían referencias a secretos de tipo
-`kubernetes.io/dockerconfigjson`. Validar la vigencia y autorización de esas
-credenciales sin mostrar ni registrar sus valores.
-
 ## Respaldo de VictoriaMetrics
 
-Se usó `vmbackup` v1.101.0, verificando el checksum publicado, para crear un
-respaldo sin detener VictoriaMetrics. La copia permanece en el nodo 269 bajo
+El 30 de octubre se usó `vmbackup` v1.101.0, verificando el checksum
+publicado, para crear un respaldo sin detener VictoriaMetrics. La copia
+quedó en el nodo 269 bajo
 `/tmp/infra-vmbackup-20261030_103154/data`, protegida con permisos 0700. Su
 tamaño es aproximadamente 1,5 GiB. Una restauración con `vmrestore` terminó en
 un directorio aislado y se comprobaron los directorios de datos e índices; la
 prueba temporal se eliminó. No se arrancó VictoriaMetrics con la copia.
 
-La copia está en `/tmp`, en el mismo equipo que los datos originales, y puede
-desaparecer por limpieza del sistema. Falta transferirla a almacenamiento
-independiente, verificar allí el archivo y probar consultas en una instancia
-restaurada antes de considerarla una recuperación completa.
+La copia se dejó en `/tmp` del equipo que alojaba los datos y su presencia
+actual queda sin comprobar. Falta una copia en almacenamiento independiente
+y una prueba de consultas en la instancia restaurada.

@@ -1,0 +1,154 @@
+{
+  "uid": "lab-extra-logs",
+  "title": "03 · Logs de aplicaciones",
+  "schemaVersion": 40,
+  "editable": false,
+  "tags": [
+    "laboratorio",
+    "observabilidad-extra"
+  ],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "Volumen de logs en Loki por contenedor",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "options": {},
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "expr": "sum by (service_name) (count_over_time({k8s_namespace_name=\"aplicaciones\"}[5m]))",
+          "queryType": "range",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "id": 1
+    },
+    {
+      "title": "Loki · registros recientes",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 16
+      },
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "enableLogDetails": true,
+        "wrapLogMessage": true
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "Loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "expr": "{k8s_namespace_name=\"aplicaciones\"}",
+          "queryType": "range",
+          "maxLines": 150
+        }
+      ],
+      "id": 2
+    },
+    {
+      "title": "VictoriaLogs · registros recientes",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 16
+      },
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "enableLogDetails": true,
+        "wrapLogMessage": true
+      },
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victoria-logs"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victoria-logs"
+          },
+          "expr": "k8s.namespace.name:=\"aplicaciones\"",
+          "queryType": "instant",
+          "maxLines": 150
+        }
+      ],
+      "id": 3
+    }
+  ],
+  "links": [
+    {
+      "title": "01 · Estado y servicios",
+      "url": "/d/lab-extra-estado/01-estado-y-servicios",
+      "type": "link"
+    },
+    {
+      "title": "02 · Métricas de nodos y Kubernetes",
+      "url": "/d/lab-extra-metricas/02-metricas-de-nodos-y-kubernetes",
+      "type": "link"
+    },
+    {
+      "title": "03 · Logs de aplicaciones",
+      "url": "/d/lab-extra-logs/03-logs-de-aplicaciones",
+      "type": "link"
+    },
+    {
+      "title": "04 · Trazas y OpenTelemetry",
+      "url": "/d/lab-extra-trazas/04-trazas-y-opentelemetry",
+      "type": "link"
+    },
+    {
+      "title": "Abrir Logs Drilldown",
+      "url": "/a/grafana-lokiexplore-app/explore",
+      "type": "link"
+    },
+    {
+      "title": "Explore · Loki",
+      "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22Loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22Loki%22%7D%2C%22expr%22%3A%22%7Bk8s_namespace_name%3D%5C%22aplicaciones%5C%22%7D%22%2C%22queryType%22%3A%22range%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "type": "link"
+    },
+    {
+      "title": "Explore · VictoriaLogs",
+      "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22victoria-logs%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22victoriametrics-logs-datasource%22%2C%22uid%22%3A%22victoria-logs%22%7D%2C%22expr%22%3A%22k8s.namespace.name%3A%3D%5C%22aplicaciones%5C%22%22%2C%22queryType%22%3A%22instant%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22now-1h%22%2C%22to%22%3A%22now%22%7D%7D%7D",
+      "type": "link"
+    }
+  ]
+}

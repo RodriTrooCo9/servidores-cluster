@@ -1,0 +1,108 @@
+scrape_configs:
+  - job_name: observability-extra-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['http://{{ grafana_lan }}:6385/v1']
+        labels: { service: Ironic API }
+      - targets: ['http://{{ grafana_lan }}:9292/healthcheck']
+        labels: { service: Glance API }
+      - targets: ['http://{{ grafana_lan }}:19000/']
+        labels: { service: Coroot }
+      - targets: ['http://{{ grafana_lan }}:30080/']
+        labels: { service: Frontend }
+      - targets: ['http://{{ grafana_lan }}:30800/health']
+        labels: { service: Backend API }
+      - targets: ['http://{{ application_ips["orders-service"] }}:8080/health']
+        labels: { service: Pedidos }
+      - targets: ['http://{{ application_ips["notifications-service"] }}:8081/health']
+        labels: { service: Notificaciones }
+      - targets: ['http://{{ nexus_ip }}:8081/service/rest/v1/status']
+        labels: { service: Nexus API }
+      - targets: ['http://127.0.0.1:3000/api/health']
+        labels: { service: Grafana }
+      - targets: ['http://{{ observability_ips.loki }}:3100/ready']
+        labels: { service: Loki }
+      - targets: ['http://{{ observability_ips.tempo }}:3200/ready']
+        labels: { service: Tempo }
+      - targets: ['http://{{ observability_ips.victoriametrics }}:8428/health']
+        labels: { service: VictoriaMetrics }
+      - targets: ['http://{{ observability_ips["victoria-logs"] }}:9428/health']
+        labels: { service: VictoriaLogs }
+    relabel_configs: &blackbox
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [service]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+  - job_name: observability-extra-tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ['{{ bastion_ip }}:22']
+        labels: { service: Bastión SSH }
+      - targets: ['{{ bastion_ip }}:3128']
+        labels: { service: Squid TCP }
+      - targets: ['{{ nexus_ip }}:8082']
+        labels: { service: Nexus mirror TCP }
+      - targets: ['{{ nexus_ip }}:8083']
+        labels: { service: Nexus hosted TCP }
+      - targets: ['{{ grafana_lan }}:9345']
+        labels: { service: RKE2 supervisor TCP }
+    relabel_configs: *blackbox
+  - job_name: observability-extra-backends
+    static_configs:
+      - targets: ['{{ observability_ips.loki }}:3100']
+        labels: { service: Loki }
+      - targets: ['{{ observability_ips.tempo }}:3200']
+        labels: { service: Tempo }
+      - targets: ['{{ observability_ips.victoriametrics }}:8428']
+        labels: { service: VictoriaMetrics }
+      - targets: ['{{ observability_ips["victoria-logs"] }}:9428']
+        labels: { service: VictoriaLogs }
+      - targets: ['{{ application_ips.redis }}:9121']
+        labels: { service: Redis }
+  - job_name: observability-extra-collector
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: https://{{ grafana_lan }}:6443
+        tls_config:
+          ca_file: /etc/prometheus/observability-extra-k8s-ca.crt
+        bearer_token_file: /etc/prometheus/tokens/k8s_token
+        namespaces:
+          names: [observability]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name, __meta_kubernetes_pod_container_port_number, __meta_kubernetes_pod_ready]
+        regex: otel-gateway-collector;8888;true
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: service
+  - job_name: proyecto-hola-api
+    metrics_path: /metrics
+    scrape_interval: 15s
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: https://{{ grafana_lan }}:6443
+        tls_config:
+          ca_file: /etc/prometheus/observability-extra-k8s-ca.crt
+        bearer_token_file: /etc/prometheus/tokens/k8s_token
+        namespaces:
+          names: [demo-telemetria]
+        selectors:
+          - role: pod
+            label: app=hola-api
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_container_name, __meta_kubernetes_pod_container_port_number, __meta_kubernetes_pod_ready]
+        regex: hola-api;3000;true
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: service
