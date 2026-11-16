@@ -29,10 +29,9 @@ syntax-check: ## Valida la sintaxis de todos los playbooks de Ansible
 	@echo "==> Validando sintaxis de playbooks de Ansible..."
 	@$(ANSIBLE_PLAYBOOK) ansible/site.yml --syntax-check
 
-preflight: ## [Fase 00] Ejecuta pruebas previas de conectividad y auditoria de hardware
+preflight: ## [Fase 00] Ejecuta pruebas previas de conectividad y auditoria de puertos
 	@echo "==> Ejecutando Fase 00: Preflight..."
-	@$(ANSIBLE_PLAYBOOK) ansible/playbooks/00-preflight/00_ping.yml
-	@$(ANSIBLE_PLAYBOOK) ansible/playbooks/00-preflight/02_system_summary.yml
+	@$(ANSIBLE_PLAYBOOK) ansible/playbooks/00-preflight/01_audit_ports.yml
 
 bootstrap: ## Inyecta y distribuye llaves SSH en la flota de servidores
 	@echo "==> Ejecutando distribucion de llaves SSH..."

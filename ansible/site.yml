@@ -12,23 +12,11 @@
 #   ansible-playbook -i inventory/lab/hosts.yml ansible/site.yml --tags validation
 # ==============================================================================
 
-- name: "[Fase 00] Preflight: Comprobación de Conectividad SSH"
-  import_playbook: playbooks/00-preflight/00_ping.yml
-  tags:
-    - preflight
-    - ping
-
 - name: "[Fase 00] Preflight: Auditoría de Mapeo de Puertos y Switch"
   import_playbook: playbooks/00-preflight/01_audit_ports.yml
   tags:
     - preflight
     - audit
-
-- name: "[Fase 00] Preflight: Telemetría y Resumen del Sistema"
-  import_playbook: playbooks/00-preflight/02_system_summary.yml
-  tags:
-    - preflight
-    - facts
 
 - name: "[Fase 10] Base: Configuración del Sistema Operativo Debian 13"
   import_playbook: playbooks/10-base/01_os_base.yml

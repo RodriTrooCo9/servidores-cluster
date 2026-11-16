@@ -1,0 +1,405 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" compressed="false" type="device">
+  <diagram id="lab-1" name="01 · Recorrido">
+    <mxGraphModel dx="940" dy="765" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="765" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Infraestructura bare metal del laboratorio&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;Del inventario inicial a la operación de Kubernetes y la recuperación de datos.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="step0" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;0 · Preparar y verificar&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Laptop, Git, Ansible y SSH&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Cruzar ID, MAC, IP y rol&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Probar acceso disponible&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="141" width="225" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="gate" value="&lt;span style=&quot;font-size:16px&quot;&gt;&lt;b&gt;¿Tiene SO?&lt;/b&gt;&lt;/span&gt;" style="shape=rhombus;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="295" y="137" width="146" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;2 · Base y repositorios&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Debian, red y bastión&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Nexus antes de los clientes APT&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · pasos 9–12&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="141" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="step1" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;1 · Instalar Debian 13&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;USB, iPXE o Ironic&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Validar disco, red y SSH&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="413" y="267" width="220" height="87" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;3 · Preparar Kubernetes&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Reconciliar roles y versión&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;RKE2 + Cilium y acceso kubectl&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · pasos 13–15&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="382" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;4 · Telemetría y aplicaciones&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;StorageClass y OTel Operator&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Backends → Collector → apps&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · pasos 16–19&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="382" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;5 · Monitorear el laboratorio&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Prometheus, Grafana y agentes&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Coroot y paneles adicionales&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · pasos 20–21&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="382" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;6 · Respaldar&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;etcd + token, Nexus y telemetría&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Copias externas y restauración&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · paso 22&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="524" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="step7" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;7 · Validar y operar&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Salud, app, red y señales&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Operación y pruebas de carga&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Guía Kubernetes · pasos 23–25&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="524" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Cierre de la instalación&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Aplicación y señales verificadas&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Restauración probada&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#285A3B;fontSize=16;fillColor=#EDF7EF;strokeColor=#8BB99A;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="524" width="262" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="numbering" value="&lt;span style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Punto de partida&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;El paso 0 corresponde a la fase 00 de Ansible. Los pasos 1–7 agrupan el recorrido de esta topología.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Las páginas de detalle incluyen la red, el aprovisionamiento, la preparación de RKE2 y la operación.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="651" width="876" height="57" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="step0" target="gate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="gate" target="step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#8C6C32;strokeColor=#8C6C32;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="gate" target="step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#8C6C32;strokeColor=#8C6C32;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0.16;entryY=1;entryPerimeter=1;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="step1" target="step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.65;exitY=1;exitPerimeter=1;entryX=0.65;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="step2" target="step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="step3" target="step4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="step4" target="step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="step5" target="step6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="step6" target="step7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="step7" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · GUIA_RAPIDA.md   /   GUIA_DE_INSTALACION.md   /   GUIA_OPENSTACK.md   /   GUIA_ANSIBLE.md&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="723" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="lab-2" name="02 · Topología de red">
+    <mxGraphModel dx="940" dy="768" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="768" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Red y roles del laboratorio&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;Roles RKE2 registrados el 30 de octubre de 2026 · siete nodos Ready · v1.36.5+rke2r1.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="pc" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;PC de administración&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Red de gestión · SSH y túneles&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="347" y="117" width="246" height="57" as="geometry" />
+        </mxCell>
+        <mxCell id="router" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Router de oficina&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Salida hacia Internet&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="671" y="212" width="237" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="306" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;306 · cp-01 y gateway LAN&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Wi-Fi 192.168.29.25 · LAN 10.100.29.30&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Control plane / etcd · Kolla · monitoreo&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Acceso SSH vía Wi-Fi al laboratorio&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="315" y="224" width="310" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="switch" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Switch privado de los ocho nodos&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;LAN de laboratorio 10.100.29.0/24&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="382" width="876" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="314" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;314 · Bastión&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;10.100.29.10&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Squid :3128&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;SSH y cortafuegos&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="497" width="195" height="127" as="geometry" />
+        </mxCell>
+        <mxCell id="315" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;315 · Nexus / worker-06&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;10.100.29.20&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;UI / APT :8081&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Docker :8082 y :8083&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Base H2 y blobs observados&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="253" y="497" width="223" height="127" as="geometry" />
+        </mxCell>
+        <mxCell id="workers" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Cinco workers RKE2 adicionales&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;280 · worker-01 · 10.100.29.102&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;320 · worker-02 · 10.100.29.103&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;321 · worker-03 · 10.100.29.111&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;279 · worker-04 · 10.100.29.112&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;269 · worker-05 · 10.100.29.101&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="503" y="497" width="405" height="127" as="geometry" />
+        </mxCell>
+        <mxCell id="design" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Diseño para instalación nueva · inventory/lab/hosts.yml&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;269, 280 y 320 como control planes · 321 y 279 como workers · 306, 314 y 315 para servicios de infraestructura.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="650" width="876" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="SSH / ProxyJump" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="pc" target="306">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="NAT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.34;exitPerimeter=1;entryX=0;entryY=0.64;entryPerimeter=1;" edge="1" parent="1" source="306" target="router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Ethernet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=none;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="306" target="switch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=none;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.1113;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="switch" target="314">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=none;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.3796;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="switch" target="315">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=none;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.7688;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="switch" target="workers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · Topología adjunta   /   docs/reference/estado-observado-2026-10-30.md   /   inventory/lab/hosts.yml&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="726" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="lab-3" name="03 · Aprovisionamiento">
+    <mxGraphModel dx="940" dy="790" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="790" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Paso 1 · Instalar el sistema operativo&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;Ruta para equipos sin un sistema utilizable o cuya reinstalación se haya decidido.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="target" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Identificar el equipo de prueba&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Confirmar ID, MAC, IP, disco y firmware BIOS/UEFI.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Para PXE, usar la LAN aislada y comprobar el controlador.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="255" y="122" width="430" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="usb" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;USB · Debian Installer&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Instalar desde consola&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Definir red, usuario y SSH&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Confirmar arranque desde disco&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="265" width="262" height="117" as="geometry" />
+        </mxCell>
+        <mxCell id="ipxe" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;iPXE · Debian netboot&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;DHCP/TFTP → iPXE → HTTP&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Debian Installer + preseed&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Usar el rol debian_netboot&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="265" width="262" height="117" as="geometry" />
+        </mxCell>
+        <mxCell id="ironic" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Ironic · Imagen de disco&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Elegir Kolla con Glance&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;o Ironic standalone con PXE&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Registrar el destino y preparar&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;imagen + ConfigDrive&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="265" width="262" height="117" as="geometry" />
+        </mxCell>
+        <mxCell id="disk" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Fin de la instalación del SO&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Arranque desde disco local · hostname e IP correctos&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;SSH operativo · cloud-init completado si aplica&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#285A3B;fontSize=16;fillColor=#EDF7EF;strokeColor=#8BB99A;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="255" y="478" width="430" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="evidence" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Qué se comprobó en el laboratorio&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Servicios Kolla activos en el 306 e Ironic standalone inactivo.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Se observó una imagen QCOW2 con checksum coincidente.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Falta probar el aprovisionamiento por red de extremo a extremo.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="616" width="426" height="111" as="geometry" />
+        </mxCell>
+        <mxCell id="packer" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Packer y cloud-init · Trabajo pendiente&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Completar un build reproducible y validar su checksum.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Probar arranque, red y SSH en un destino compatible.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Publicar en Glance cuando la ruta elegida lo requiera.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="482" y="616" width="426" height="111" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.2;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="target" target="usb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="target" target="ipxe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.8;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="target" target="ironic">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.2;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="usb" target="disk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="ipxe" target="disk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.8;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="ironic" target="disk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · GUIA_OPENSTACK.md   /   network/ipxe/debian-netboot/   /   cloud-init/   /   estado observado del 30/10/2026&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="748" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="lab-4" name="04 · Preparación y RKE2">
+    <mxGraphModel dx="940" dy="778" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="778" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Pasos 0, 2 y 3 · Preparar la plataforma&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;Con Debian y SSH operativos, verificar el inventario efectivo y aplicar solo los playbooks necesarios.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="access" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;0A · PC y acceso&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Clonar infra-scripts y preparar&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Git, Python, Ansible y colecciones.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Probar SSH al controlador 306.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="126" width="262" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="inventory" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;0B · Inventario y red&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Cruzar ID, MAC, IP y rol por host.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Verificar LAN, ruta, DNS y salto SSH.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;inventory/lab/hosts.yml&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="126" width="262" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="check" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;0C · Preflight&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Llaves SSH, Python, sudo y Vault.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Validar sintaxis, ping Ansible&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;y auditoría de puertos y sistema.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="126" width="262" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="base" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;2A · Base y bastión&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Configurar primero infraestructura.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;01_os_base.yml&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;02_bastion_hardening.yml&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="292" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="nexus" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;2B · Nexus&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Preparar APT y el registro Docker.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;01_nexus.yml&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Comprobar descargas desde la LAN.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="292" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="clients" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;2C · Clientes&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Configurar los nodos Kubernetes.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Comprobar APT, DNS y proxy.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Preparar acceso al registro.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="292" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="roles" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;3A · Roles y versión&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Reconciliar inventario y topología.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Verificar servicios RKE2 existentes.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Elegir versión y endpoint de la API.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="473" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="rke2" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;3B · Instalar RKE2&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Para un clúster nuevo, configurar&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;RKE2 + Cilium y unir workers.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;01_rke2_cluster.yml&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="473" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="verify" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;3C · Comprobar el clúster&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Preparar kubectl con el contexto&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;correcto. Revisar nodos Ready&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;y pods Cilium operativos.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#285A3B;fontSize=16;fillColor=#EDF7EF;strokeColor=#8BB99A;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="646" y="473" width="262" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="access" target="inventory">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="inventory" target="check">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="roles" target="rke2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="rke2" target="verify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="check" target="base">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="base" target="nexus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitPerimeter=1;entryX=1;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="nexus" target="clients">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitPerimeter=1;entryX=0.5;entryY=0;entryPerimeter=1;" edge="1" parent="1" source="clients" target="roles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gate" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Si RKE2 ya está activo&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Contrastar nodos, endpoint y versión con kubectl y el inventario. Pasar a la comprobación del clúster si el objetivo es operarlo.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="631" width="876" height="69" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · GUIA_DE_INSTALACION.md, pasos 1–15   /   GUIA_ANSIBLE.md   /   ansible/playbooks/00-preflight/&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="736" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="lab-5" name="05 · Aplicaciones y señales">
+    <mxGraphModel dx="940" dy="767" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="767" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Pasos 4–5 · Aplicaciones y observabilidad&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;OpenTelemetry Operator y sus CRD, almacenamiento local-path y backends preceden al Collector y las apps.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Aplicaciones en RKE2&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Frontend :30080 → API interna :8000 · API directa :30800 · pedidos, notificaciones y Redis&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="123" width="876" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hardware" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Infraestructura&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Node Exporter y kubelets&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Sondas HTTP / TCP&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="231" width="190" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Prometheus host&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Nodo 306 · :9090&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Scrape y alertas&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="261" y="231" width="199" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="vm" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;VictoriaMetrics&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Series de tiempo&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Prometheus remote_write&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="503" y="231" width="200" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="stdout" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Logs de las apps&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;stdout de contenedores&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Archivos /var/log/pods&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="340" width="190" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="log" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Collector de logs&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;DaemonSet en RKE2&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Envía a ambos destinos&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="261" y="340" width="199" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="logs" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Loki + VictoriaLogs&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;LogQL y LogsQL&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Correlación por trace_id&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="503" y="340" width="200" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="spans" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Trazas del backend&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;SDK e instrumentación&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Exportación por OTLP&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="449" width="190" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="otel" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;OTel Gateway&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;OpenTelemetry Collector&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;2 réplicas documentadas&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="261" y="449" width="199" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="tempo" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Tempo&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Almacén de trazas&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Consulta TraceQL&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#543A84;fontSize=16;fillColor=#F4F0FC;strokeColor=#B4A4D9;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="503" y="449" width="200" height="77" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Grafana&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Nodo 306 · :3000&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Estado de servicios&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Métricas y logs&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Trazas en Explore&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="745" y="231" width="163" height="295" as="geometry" />
+        </mxCell>
+        <mxCell id="agent" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Agentes Coroot&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Señales eBPF del host&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#3E5770;fontSize=16;fillColor=#F3F6FA;strokeColor=#B7C7D5;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="581" width="190" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="coroot" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Coroot CE + ClickHouse · ruta adicional&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Nodo 306 · :19000 documentado · VM dedicada como propuesta de piloto&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="261" y="581" width="442" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="hardware" target="prom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="prom" target="vm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.13;entryPerimeter=1;" edge="1" parent="1" source="vm" target="grafana">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="stdout" target="log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="log" target="logs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="logs" target="grafana">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="spans" target="otel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="otel" target="tempo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.87;entryPerimeter=1;" edge="1" parent="1" source="tempo" target="grafana">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="agent" target="coroot">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="evidence" value="&lt;span style=&quot;font-size:13px&quot;&gt;El registro de observabilidad extra documenta cuatro paneles, consultas a ambos backends de logs y trazas del backend en Tempo.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="678" width="876" height="39" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · GUIA_OBSERVABILIDAD.md   /   kubernetes/apps/microservices/   /   kubernetes/observability/extras/README.md&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="725" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="lab-6" name="06 · Validación y pendientes">
+    <mxGraphModel dx="940" dy="754" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="940" pageHeight="754" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;span style=&quot;font-size:33px&quot;&gt;&lt;b&gt;Pasos 6–7 · Validación y operación&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="25" width="876" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="&lt;span style=&quot;font-size:15px&quot;&gt;Criterios de cierre de la instalación y trabajo pendiente del laboratorio.&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="74" width="876" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="backup" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;6 · Copias recuperables&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;etcd + token · H2 y blobs Nexus&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Configuración y datos de telemetría&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Checksum, copia externa&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;y restauración aislada&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="130" width="263" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="health" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;7 · Comprobación integral&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Nodos Ready y PVC Bound&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Frontend y backend por túnel&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Prometheus y Grafana disponibles&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Métrica, log y traza verificables&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="339" y="130" width="263" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="load" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Pruebas de carga&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;k6 TestRun y Job de JMeter&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Registrar p95/p99 y errores&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Correlacionar las tres señales&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;y comprobar la recuperación&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#145D55;fontSize=16;fillColor=#EBF8F6;strokeColor=#80BFB3;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="645" y="130" width="263" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#617E94;strokeColor=#617E94;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;" edge="1" parent="1" source="backup" target="health">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Inter,Helvetica;fontSize=13;fontColor=#8C6C32;strokeColor=#8C6C32;strokeWidth=1.6;endArrow=block;endSize=7;endFill=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="health" target="load">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="status" value="&lt;span style=&quot;font-size:22px&quot;&gt;&lt;b&gt;Evidencia del laboratorio y siguientes verificaciones&lt;/b&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#142B41;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="294" width="876" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="platform-status" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;RKE2 y aplicaciones&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Registrado: siete nodos Ready el 30/10/2026.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;El registro de observabilidad extra recoge pruebas de la app,&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;logs en Loki/VictoriaLogs y trazas en Tempo.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Pendiente: reconciliar roles del inventario y validar alta nueva.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="352" width="426" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="observability-status" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Diagnóstico y carga&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;k6 y JMeter tienen definiciones versionadas.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;El adjunto refiere ejecuciones distribuidas con k6.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Pendiente: conservar informes reproducibles y correlacionar&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;carga, latencia y fallos con las señales de la aplicación.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="482" y="352" width="426" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="backup-status" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Respaldos del laboratorio&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;etcd y Nexus: copias con checksum, restauración pendiente.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;VictoriaMetrics: vmrestore en directorio aislado.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Pendiente: copia externa y consulta de datos restaurados.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Kolla/Glance: copia de archivos; falta respaldo de MariaDB.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#154B73;fontSize=16;fillColor=#EEF6FC;strokeColor=#83B3D6;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="32" y="504" width="426" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="provision-status" value="&lt;span style=&quot;font-size:17px&quot;&gt;&lt;b&gt;Aprovisionamiento y trazabilidad&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Pendiente: probar Ironic/iPXE en un equipo de principio a fin,&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;completar el build Packer y validar el primer arranque.&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;Ampliar el caso de trazas hasta una consulta real a base&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:14px&quot;&gt;de datos y registrar un fallo controlado bajo carga.&lt;/span&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=6;spacingLeft=10;spacingRight=10;fontFamily=Inter,Helvetica;fontColor=#73511E;fontSize=16;fillColor=#FFF7E7;strokeColor=#D8B774;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="482" y="504" width="426" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;span style=&quot;font-size:12px&quot;&gt;Fuentes · docs/plan-trabajo-baremetal.md   /   docs/reference/estado-observado-2026-10-30.md   /   kubernetes/load-testing/&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacing=0;fontFamily=Inter,Helvetica;fontColor=#42617A;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="32" y="712" width="876" height="25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
